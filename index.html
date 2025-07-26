@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Survey Website</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .container {
+            background: white;
+            border-radius: 15px;
+            padding: 3rem;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+            text-align: center;
+            max-width: 500px;
+            width: 90%;
+            transform: translateY(0);
+            transition: transform 0.3s ease;
+        }
+
+        .container:hover {
+            transform: translateY(-5px);
+        }
+
+        h1 {
+            font-size: 2rem;
+            margin-bottom: 0.5rem;
+            color: #2c3e50;
+        }
+
+        .subtitle {
+            font-size: 1.1rem;
+            color: #7f8c8d;
+            margin-bottom: 2rem;
+        }
+
+        .language-section {
+            margin: 2rem 0;
+        }
+
+        .language-title {
+            font-size: 1.3rem;
+            margin-bottom: 1.5rem;
+            color: #34495e;
+            font-weight: 600;
+        }
+
+        .language-buttons {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .lang-btn {
+            background: linear-gradient(45deg, #3498db, #2980b9);
+            color: white;
+            border: none;
+            padding: 0.8rem 2rem;
+            border-radius: 25px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            min-width: 100px;
+        }
+
+        .lang-btn:hover {
+            background: linear-gradient(45deg, #2980b9, #1f639a);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .survey-content {
+            display: none;
+            animation: fadeIn 0.5s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .question {
+            background: #f8f9fa;
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin: 1rem 0;
+            text-align: left;
+        }
+
+        .question h3 {
+            color: #2c3e50;
+            margin-bottom: 1rem;
+        }
+
+        .options {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .option {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .option input {
+            margin-right: 0.5rem;
+        }
+
+        .submit-btn {
+            background: linear-gradient(45deg, #27ae60, #219a52);
+            color: white;
+            border: none;
+            padding: 1rem 2rem;
+            border-radius: 25px;
+            font-size: 1.1rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 2rem;
+        }
+
+        .submit-btn:hover {
+            background: linear-gradient(45deg, #219a52, #1e8449);
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+        }
+
+        .back-btn {
+            background: #95a5a6;
+            color: white;
+            border: none;
+            padding: 0.5rem 1rem;
+            border-radius: 20px;
+            cursor: pointer;
+            margin-bottom: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        .back-btn:hover {
+            background: #7f8c8d;
+        }
+
+        @media (max-width: 600px) {
+            .container {
+                padding: 2rem;
+            }
+            
+            h1 {
+                font-size: 1.5rem;
+            }
+            
+            .language-buttons {
+                flex-direction: column;
+                align-items: center;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Language Selection Page -->
+        <div id="language-selection">
+            <h1>窗景感知问卷</h1>
+            <h1>Window View Perception Questionnaire</h1>
+            <p class="subtitle">Please select your preferred language</p>
+            
+            <div class="language-section">
+                <h2 class="language-title">语言选择 / Select Language</h2>
+                <div class="language-buttons">
+                    <button class="lang-btn" onclick="startSurvey('chinese')">中文</button>
+                    <button class="lang-btn" onclick="startSurvey('english')">English</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Survey Content (Hidden Initially) -->
+        <div id="survey-content" class="survey-content">
+            <button class="back-btn" onclick="goBack()">← Back to Language Selection</button>
+            
+            <h2 id="survey-title">Survey Questions</h2>
+            
+            <form id="survey-form">
+                <div class="question">
+                    <h3 id="q1-title">How do you rate your current window view?</h3>
+                    <div class="options">
+                        <label class="option">
+                            <input type="radio" name="q1" value="excellent">
+                            <span id="q1-opt1">Excellent</span>
+                        </label>
+                        <label class="option">
+                            <input type="radio" name="q1" value="good">
+                            <span id="q1-opt2">Good</span>
+                        </label>
+                        <label class="option">
+                            <input type="radio" name="q1" value="fair">
+                            <span id="q1-opt3">Fair</span>
+                        </label>
+                        <label class="option">
+                            <input type="radio" name="q1" value="poor">
+                            <span id="q1-opt4">Poor</span>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="question">
+                    <h3 id="q2-title">What type of view do you prefer?</h3>
+                    <div class="options">
+                        <label class="option">
+                            <input type="radio" name="q2" value="nature">
+                            <span id="q2-opt1">Nature/Greenery</span>
+                        </label>
+                        <label class="option">
+                            <input type="radio" name="q2" value="city">
+                            <span id="q2-opt2">City/Urban</span>
+                        </label>
+                        <label class="option">
+                            <input type="radio" name="q2" value="water">
+                            <span id="q2-opt3">Water/Ocean</span>
+                        </label>
+                        <label class="option">
+                            <input type="radio" name="q2" value="mountain">
+                            <span id="q2-opt4">Mountain/Hills</span>
+                        </label>
+                    </div>
+                </div>
+
+                <button type="submit" class="submit-btn" id="submit-btn">Submit Survey</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // Language content
+        const content = {
+            chinese: {
+                title: "窗景感知问卷",
+                q1_title: "您如何评价您当前的窗外景观？",
+                q1_opt1: "优秀",
+                q1_opt2: "良好", 
+                q1_opt3: "一般",
+                q1_opt4: "较差",
+                q2_title: "您更喜欢哪种类型的景观？",
+                q2_opt1: "自然/绿色植物",
+                q2_opt2: "城市/都市",
+                q2_opt3: "水景/海洋",
+                q2_opt4: "山景/丘陵",
+                submit: "提交问卷"
+            },
+            english: {
+                title: "Window View Perception Questionnaire",
+                q1_title: "How do you rate your current window view?",
+                q1_opt1: "Excellent",
+                q1_opt2: "Good",
+                q1_opt3: "Fair", 
+                q1_opt4: "Poor",
+                q2_title: "What type of view do you prefer?",
+                q2_opt1: "Nature/Greenery",
+                q2_opt2: "City/Urban",
+                q2_opt3: "Water/Ocean",
+                q2_opt4: "Mountain/Hills",
+                submit: "Submit Survey"
+            }
+        };
+
+        let currentLanguage = 'english';
+
+        function startSurvey(language) {
+            currentLanguage = language;
+            document.getElementById('language-selection').style.display = 'none';
+            document.getElementById('survey-content').style.display = 'block';
+            updateLanguage();
+        }
+
+        function goBack() {
+            document.getElementById('survey-content').style.display = 'none';
+            document.getElementById('language-selection').style.display = 'block';
+        }
+
+        function updateLanguage() {
+            const lang = content[currentLanguage];
+            document.getElementById('survey-title').textContent = lang.title;
+            document.getElementById('q1-title').textContent = lang.q1_title;
+            document.getElementById('q1-opt1').textContent = lang.q1_opt1;
+            document.getElementById('q1-opt2').textContent = lang.q1_opt2;
+            document.getElementById('q1-opt3').textContent = lang.q1_opt3;
+            document.getElementById('q1-opt4').textContent = lang.q1_opt4;
+            document.getElementById('q2-title').textContent = lang.q2_title;
+            document.getElementById('q2-opt1').textContent = lang.q2_opt1;
+            document.getElementById('q2-opt2').textContent = lang.q2_opt2;
+            document.getElementById('q2-opt3').textContent = lang.q2_opt3;
+            document.getElementById('q2-opt4').textContent = lang.q2_opt4;
+            document.getElementById('submit-btn').textContent = lang.submit;
+        }
+
+        // Handle form submission
+        document.getElementById('survey-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(this);
+            const responses = {};
+            for (let [key, value] of formData.entries()) {
+                responses[key] = value;
+            }
+            
+            alert('Survey submitted! Responses: ' + JSON.stringify(responses));
+            // Here you would typically send the data to a server
+        });
+    </script>
+</body>
+</html>
