@@ -1,329 +1,442 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Survey Website</title>
+    <title>街景行为问卷调研</title>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
-
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            line-height: 1.6;
-            color: #333;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .container {
-            background: white;
-            border-radius: 15px;
-            padding: 3rem;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.1);
-            text-align: center;
-            max-width: 500px;
-            width: 90%;
-            transform: translateY(0);
-            transition: transform 0.3s ease;
-        }
-
-        .container:hover {
-            transform: translateY(-5px);
-        }
-
-        h1 {
-            font-size: 2rem;
-            margin-bottom: 0.5rem;
-            color: #2c3e50;
-        }
-
-        .subtitle {
-            font-size: 1.1rem;
-            color: #7f8c8d;
-            margin-bottom: 2rem;
-        }
-
-        .language-section {
-            margin: 2rem 0;
-        }
-
-        .language-title {
-            font-size: 1.3rem;
-            margin-bottom: 1.5rem;
-            color: #34495e;
-            font-weight: 600;
-        }
-
-        .language-buttons {
-            display: flex;
-            gap: 1rem;
-            justify-content: center;
-            flex-wrap: wrap;
-        }
-
-        .lang-btn {
-            background: linear-gradient(45deg, #3498db, #2980b9);
-            color: white;
-            border: none;
-            padding: 0.8rem 2rem;
-            border-radius: 25px;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            text-decoration: none;
-            display: inline-block;
-            min-width: 100px;
-        }
-
-        .lang-btn:hover {
-            background: linear-gradient(45deg, #2980b9, #1f639a);
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-        }
-
-        .survey-content {
-            display: none;
-            animation: fadeIn 0.5s ease-in;
-        }
-
+        .hidden { display: none; }
+        .fade-in { animation: fadeIn 0.3s ease-in; }
         @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(20px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .question {
-            background: #f8f9fa;
-            padding: 1.5rem;
-            border-radius: 10px;
-            margin: 1rem 0;
-            text-align: left;
-        }
-
-        .question h3 {
-            color: #2c3e50;
-            margin-bottom: 1rem;
-        }
-
-        .options {
-            display: flex;
-            flex-direction: column;
-            gap: 0.5rem;
-        }
-
-        .option {
-            display: flex;
-            align-items: center;
-            gap: 0.5rem;
-        }
-
-        .option input {
-            margin-right: 0.5rem;
-        }
-
-        .submit-btn {
-            background: linear-gradient(45deg, #27ae60, #219a52);
-            color: white;
-            border: none;
-            padding: 1rem 2rem;
-            border-radius: 25px;
-            font-size: 1.1rem;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            margin-top: 2rem;
-        }
-
-        .submit-btn:hover {
-            background: linear-gradient(45deg, #219a52, #1e8449);
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0,0,0,0.2);
-        }
-
-        .back-btn {
-            background: #95a5a6;
-            color: white;
-            border: none;
-            padding: 0.5rem 1rem;
-            border-radius: 20px;
-            cursor: pointer;
-            margin-bottom: 1rem;
-            transition: all 0.3s ease;
-        }
-
-        .back-btn:hover {
-            background: #7f8c8d;
-        }
-
-        @media (max-width: 600px) {
-            .container {
-                padding: 2rem;
-            }
-            
-            h1 {
-                font-size: 1.5rem;
-            }
-            
-            .language-buttons {
-                flex-direction: column;
-                align-items: center;
-            }
+            from { opacity: 0; }
+            to { opacity: 1; }
         }
     </style>
 </head>
-<body>
-    <div class="container">
-        <!-- Language Selection Page -->
-        <div id="language-selection">
-            <h1>窗景感知问卷</h1>
-            <h1>Window View Perception Questionnaire</h1>
-            <p class="subtitle">Please select your preferred language</p>
+<body class="bg-gray-100">
+    <!-- 语言选择页面 -->
+    <div id="languagePage" class="min-h-screen bg-gray-100 flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg shadow-lg p-8 text-center max-w-md w-full">
+            <h1 class="text-2xl font-bold text-gray-800 mb-2">街景行为问卷</h1>
+            <h2 class="text-lg text-gray-600 mb-8">Street View behaviours Questionnaire</h2>
             
-            <div class="language-section">
-                <h2 class="language-title">语言选择 / Select Language</h2>
-                <div class="language-buttons">
-                    <button class="lang-btn" onclick="startSurvey('chinese')">中文</button>
-                    <button class="lang-btn" onclick="startSurvey('english')">English</button>
+            <div class="mb-6">
+                <h3 class="text-lg font-semibold text-gray-700 mb-4">语言选择</h3>
+                <h4 class="text-md text-gray-600 mb-6">Select Language</h4>
+            </div>
+            
+            <div class="flex justify-center space-x-4">
+                <button onclick="selectLanguage('zh')" class="px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors font-medium">
+                    中文
+                </button>
+                <button onclick="selectLanguage('en')" class="px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors font-medium">
+                    English
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 基础信息收集页面 -->
+    <div id="surveyPage" class="hidden min-h-screen bg-gray-100 p-4">
+        <div class="max-w-2xl mx-auto">
+            <h1 id="surveyTitle" class="text-2xl font-bold text-center text-gray-800 mb-8">窗景感知问卷：第一部分</h1>
+            
+            <div class="bg-white rounded-lg shadow-lg p-6">
+                <div class="space-y-6">
+                    <!-- 性别选择 -->
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-3">
+                            <span id="genderLabel">您的性别是：</span> <span class="text-red-500">*</span>
+                        </label>
+                        <div class="flex space-x-6">
+                            <label class="flex items-center">
+                                <input type="radio" name="gender" value="male" class="mr-2">
+                                <span id="maleLabel">男</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="radio" name="gender" value="female" class="mr-2">
+                                <span id="femaleLabel">女</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- 年龄输入 -->
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-3">
+                            <span id="ageLabel">您的年龄：</span> <span class="text-red-500">*</span>
+                        </label>
+                        <input type="number" id="ageInput" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent" min="1" max="120">
+                    </div>
+
+                    <!-- 专业背景 -->
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-3">
+                            <span id="professionalLabel">您来自城市规划/园林/风景园林相关专业吗？</span> <span class="text-red-500">*</span>
+                        </label>
+                        <div class="flex space-x-6">
+                            <label class="flex items-center">
+                                <input type="radio" name="professional" value="yes" class="mr-2">
+                                <span id="yesLabel">是</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="radio" name="professional" value="no" class="mr-2">
+                                <span id="noLabel">否</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-8 text-right">
+                    <button onclick="startComparisons()" id="nextButton" class="px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors font-medium">
+                        下一部分
+                    </button>
                 </div>
             </div>
         </div>
+    </div>
 
-        <!-- Survey Content (Hidden Initially) -->
-        <div id="survey-content" class="survey-content">
-            <button class="back-btn" onclick="goBack()">← Back to Language Selection</button>
+    <!-- 图片对比页面 -->
+    <div id="comparisonPage" class="hidden min-h-screen bg-green-500 p-4">
+        <div class="max-w-6xl mx-auto">
+            <div class="text-right text-white mb-4">
+                <span id="timerLabel">自动跳转：</span> <span id="progressCounter">1/10</span>
+            </div>
             
-            <h2 id="survey-title">Survey Questions</h2>
+            <h1 id="compareTitle" class="text-white text-xl font-medium text-center mb-6">
+                以下两张窗景中，您认为哪张更加静谧：
+            </h1>
             
-            <form id="survey-form">
-                <div class="question">
-                    <h3 id="q1-title">How do you rate your current window view?</h3>
-                    <div class="options">
-                        <label class="option">
-                            <input type="radio" name="q1" value="excellent">
-                            <span id="q1-opt1">Excellent</span>
-                        </label>
-                        <label class="option">
-                            <input type="radio" name="q1" value="good">
-                            <span id="q1-opt2">Good</span>
-                        </label>
-                        <label class="option">
-                            <input type="radio" name="q1" value="fair">
-                            <span id="q1-opt3">Fair</span>
-                        </label>
-                        <label class="option">
-                            <input type="radio" name="q1" value="poor">
-                            <span id="q1-opt4">Poor</span>
-                        </label>
+            <div class="flex justify-between items-start">
+                <!-- 左侧提示 -->
+                <div class="w-48 bg-white rounded-lg p-4 mr-4">
+                    <h3 id="hintTitle" class="font-bold text-gray-800 mb-2">提示</h3>
+                    <p id="instructions" class="text-sm text-gray-600">
+                        在此调研中，您需要在成对的图片中做出选择。请根据您的直觉选择您认为更加静谧的窗景。
+                    </p>
+                </div>
+                
+                <!-- 图片对比区域 -->
+                <div class="flex-1 space-y-4">
+                    <div id="imageA" class="bg-white rounded-lg p-4 cursor-pointer hover:shadow-lg transition-shadow" onclick="selectImage('A')">
+                        <img id="imageA_img" src="" alt="" class="w-full h-64 object-cover rounded">
+                        <div class="text-center mt-2 flex justify-end">
+                            <div class="w-6 h-6 border-2 border-gray-300 rounded-full"></div>
+                        </div>
+                    </div>
+                    
+                    <div id="imageB" class="bg-white rounded-lg p-4 cursor-pointer hover:shadow-lg transition-shadow" onclick="selectImage('B')">
+                        <img id="imageB_img" src="" alt="" class="w-full h-64 object-cover rounded">
+                        <div class="text-center mt-2 flex justify-end">
+                            <div class="w-6 h-6 border-2 border-gray-300 rounded-full"></div>
+                        </div>
                     </div>
                 </div>
-
-                <div class="question">
-                    <h3 id="q2-title">What type of view do you prefer?</h3>
-                    <div class="options">
-                        <label class="option">
-                            <input type="radio" name="q2" value="nature">
-                            <span id="q2-opt1">Nature/Greenery</span>
-                        </label>
-                        <label class="option">
-                            <input type="radio" name="q2" value="city">
-                            <span id="q2-opt2">City/Urban</span>
-                        </label>
-                        <label class="option">
-                            <input type="radio" name="q2" value="water">
-                            <span id="q2-opt3">Water/Ocean</span>
-                        </label>
-                        <label class="option">
-                            <input type="radio" name="q2" value="mountain">
-                            <span id="q2-opt4">Mountain/Hills</span>
-                        </label>
-                    </div>
+                
+                <!-- 右侧确认按钮 -->
+                <div class="w-32 ml-4">
+                    <button onclick="nextComparison()" class="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition-colors font-medium">
+                        确认
+                    </button>
                 </div>
+            </div>
+        </div>
+    </div>
 
-                <button type="submit" class="submit-btn" id="submit-btn">Submit Survey</button>
-            </form>
+    <!-- 结果页面 -->
+    <div id="resultsPage" class="hidden min-h-screen bg-gray-100 p-4">
+        <div class="max-w-4xl mx-auto">
+            <h1 id="resultsTitle" class="text-3xl font-bold text-center text-gray-800 mb-8">调研结果</h1>
+            
+            <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
+                <h2 id="rankingTitle" class="text-xl font-semibold mb-4">图片排名情况：</h2>
+                <div id="rankingList" class="space-y-4">
+                    <!-- 排名列表将由JavaScript生成 -->
+                </div>
+            </div>
+            
+            <div class="bg-white rounded-lg shadow-lg p-6">
+                <h2 class="text-xl font-semibold mb-4">用户信息</h2>
+                <div id="userInfo" class="grid grid-cols-3 gap-4 text-sm">
+                    <!-- 用户信息将由JavaScript生成 -->
+                </div>
+            </div>
+            
+            <div class="text-center mt-8">
+                <button onclick="restart()" id="restartButton" class="px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors font-medium">
+                    重新开始
+                </button>
+            </div>
         </div>
     </div>
 
     <script>
-        // Language content
-        const content = {
-            chinese: {
-                title: "窗景感知问卷",
-                q1_title: "您如何评价您当前的窗外景观？",
-                q1_opt1: "优秀",
-                q1_opt2: "良好", 
-                q1_opt3: "一般",
-                q1_opt4: "较差",
-                q2_title: "您更喜欢哪种类型的景观？",
-                q2_opt1: "自然/绿色植物",
-                q2_opt2: "城市/都市",
-                q2_opt3: "水景/海洋",
-                q2_opt4: "山景/丘陵",
-                submit: "提交问卷"
+        // 全局变量
+        let currentLanguage = 'zh';
+        let userData = { gender: '', age: '', isProfessional: '' };
+        let comparisons = [];
+        let currentComparison = null;
+        let imageRankings = {};
+        let currentPair = { imageA: null, imageB: null };
+
+        // 图片库
+        const imageLibrary = [
+            {
+                id: 1,
+                url: 'https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=600&h=400&fit=crop',
+                name: '城市景观1'
             },
-            english: {
-                title: "Window View Perception Questionnaire",
-                q1_title: "How do you rate your current window view?",
-                q1_opt1: "Excellent",
-                q1_opt2: "Good",
-                q1_opt3: "Fair", 
-                q1_opt4: "Poor",
-                q2_title: "What type of view do you prefer?",
-                q2_opt1: "Nature/Greenery",
-                q2_opt2: "City/Urban",
-                q2_opt3: "Water/Ocean",
-                q2_opt4: "Mountain/Hills",
-                submit: "Submit Survey"
+            {
+                id: 2,
+                url: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=600&h=400&fit=crop',
+                name: '城市景观2'
+            },
+            {
+                id: 3,
+                url: 'https://images.unsplash.com/photo-1444927714506-8492d94b5ba0?w=600&h=400&fit=crop',
+                name: '自然景观1'
+            },
+            {
+                id: 4,
+                url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600&h=400&fit=crop',
+                name: '自然景观2'
+            },
+            {
+                id: 5,
+                url: 'https://images.unsplash.com/photo-1519501025264-65ba15a82390?w=600&h=400&fit=crop',
+                name: '混合景观1'
+            },
+            {
+                id: 6,
+                url: 'https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=600&h=400&fit=crop',
+                name: '混合景观2'
+            }
+        ];
+
+        // 文本内容
+        const texts = {
+            zh: {
+                surveyTitle: '窗景感知问卷：第一部分',
+                genderLabel: '您的性别是：',
+                maleLabel: '男',
+                femaleLabel: '女',
+                ageLabel: '您的年龄：',
+                professionalLabel: '您来自城市规划/园林/风景园林相关专业吗？',
+                yesLabel: '是',
+                noLabel: '否',
+                nextButton: '下一部分',
+                compareTitle: '以下两张街景中，您认为哪张更适合坐：',
+                timerLabel: '自动跳转：',
+                hintTitle: '提示',
+                instructions: '在此调研中，您需要在成对的图片中做出选择。请根据您的直觉选择您认为更加适合指定行为的场景。',
+                resultsTitle: '调研结果',
+                rankingTitle: '图片排名情况：',
+                restartButton: '重新开始'
+            },
+            en: {
+                surveyTitle: 'Window View Perception Questionnaire: Part 1',
+                genderLabel: 'Your gender is:',
+                maleLabel: 'Male',
+                femaleLabel: 'Female',
+                ageLabel: 'Your age:',
+                professionalLabel: 'Are you from urban planning/landscape/landscape architecture related majors?',
+                yesLabel: 'Yes',
+                noLabel: 'No',
+                nextButton: 'Next Part',
+                compareTitle: 'Which of the following two street views do you think is more suitable for sitting:',
+                timerLabel: 'Auto redirect:',
+                hintTitle: 'Hint',
+                instructions: 'In this survey, you need to make choices between pairs of images. Please choose the street view you think is more suitable for certain behaviours based on your intuition.',
+                resultsTitle: 'Survey Results',
+                rankingTitle: 'Image Rankings:',
+                restartButton: 'Start Over'
             }
         };
 
-        let currentLanguage = 'english';
-
-        function startSurvey(language) {
-            currentLanguage = language;
-            document.getElementById('language-selection').style.display = 'none';
-            document.getElementById('survey-content').style.display = 'block';
-            updateLanguage();
+        // 初始化排名系统
+        function initializeRankings() {
+            imageRankings = {};
+            imageLibrary.forEach(img => {
+                imageRankings[img.id] = { score: 1000, wins: 0, losses: 0 };
+            });
         }
 
-        function goBack() {
-            document.getElementById('survey-content').style.display = 'none';
-            document.getElementById('language-selection').style.display = 'block';
+        // 语言选择
+        function selectLanguage(lang) {
+            currentLanguage = lang;
+            updateTexts();
+            showPage('surveyPage');
         }
 
-        function updateLanguage() {
-            const lang = content[currentLanguage];
-            document.getElementById('survey-title').textContent = lang.title;
-            document.getElementById('q1-title').textContent = lang.q1_title;
-            document.getElementById('q1-opt1').textContent = lang.q1_opt1;
-            document.getElementById('q1-opt2').textContent = lang.q1_opt2;
-            document.getElementById('q1-opt3').textContent = lang.q1_opt3;
-            document.getElementById('q1-opt4').textContent = lang.q1_opt4;
-            document.getElementById('q2-title').textContent = lang.q2_title;
-            document.getElementById('q2-opt1').textContent = lang.q2_opt1;
-            document.getElementById('q2-opt2').textContent = lang.q2_opt2;
-            document.getElementById('q2-opt3').textContent = lang.q2_opt3;
-            document.getElementById('q2-opt4').textContent = lang.q2_opt4;
-            document.getElementById('submit-btn').textContent = lang.submit;
+        // 更新文本内容
+        function updateTexts() {
+            const t = texts[currentLanguage];
+            document.getElementById('surveyTitle').textContent = t.surveyTitle;
+            document.getElementById('genderLabel').textContent = t.genderLabel;
+            document.getElementById('maleLabel').textContent = t.maleLabel;
+            document.getElementById('femaleLabel').textContent = t.femaleLabel;
+            document.getElementById('ageLabel').textContent = t.ageLabel;
+            document.getElementById('professionalLabel').textContent = t.professionalLabel;
+            document.getElementById('yesLabel').textContent = t.yesLabel;
+            document.getElementById('noLabel').textContent = t.noLabel;
+            document.getElementById('nextButton').textContent = t.nextButton;
+            document.getElementById('compareTitle').textContent = t.compareTitle;
+            document.getElementById('timerLabel').textContent = t.timerLabel;
+            document.getElementById('hintTitle').textContent = t.hintTitle;
+            document.getElementById('instructions').textContent = t.instructions;
+            document.getElementById('resultsTitle').textContent = t.resultsTitle;
+            document.getElementById('rankingTitle').textContent = t.rankingTitle;
+            document.getElementById('restartButton').textContent = t.restartButton;
         }
 
-        // Handle form submission
-        document.getElementById('survey-form').addEventListener('submit', function(e) {
-            e.preventDefault();
-            
-            const formData = new FormData(this);
-            const responses = {};
-            for (let [key, value] of formData.entries()) {
-                responses[key] = value;
+        // 显示页面
+        function showPage(pageId) {
+            const pages = ['languagePage', 'surveyPage', 'comparisonPage', 'resultsPage'];
+            pages.forEach(page => {
+                document.getElementById(page).classList.add('hidden');
+            });
+            document.getElementById(pageId).classList.remove('hidden');
+            document.getElementById(pageId).classList.add('fade-in');
+        }
+
+        // 开始对比
+        function startComparisons() {
+            // 验证表单
+            const gender = document.querySelector('input[name="gender"]:checked');
+            const age = document.getElementById('ageInput').value;
+            const professional = document.querySelector('input[name="professional"]:checked');
+
+            if (!gender || !age || !professional) {
+                alert('请完整填写所有必填项！');
+                return;
             }
+
+            userData = {
+                gender: gender.value,
+                age: age,
+                isProfessional: professional.value
+            };
+
+            initializeRankings();
+            generateNewComparison();
+            showPage('comparisonPage');
+        }
+
+        // 生成新的对比
+        function generateNewComparison() {
+            const shuffled = [...imageLibrary].sort(() => 0.5 - Math.random());
+            currentPair = {
+                imageA: shuffled[0],
+                imageB: shuffled[1]
+            };
+
+            document.getElementById('imageA_img').src = currentPair.imageA.url;
+            document.getElementById('imageA_img').alt = currentPair.imageA.name;
+            document.getElementById('imageB_img').src = currentPair.imageB.url;
+            document.getElementById('imageB_img').alt = currentPair.imageB.name;
+
+            document.getElementById('progressCounter').textContent = `${comparisons.length + 1}/10`;
+        }
+
+        // 选择图片
+        function selectImage(choice) {
+            let winnerId, loserId;
+            if (choice === 'A') {
+                winnerId = currentPair.imageA.id;
+                loserId = currentPair.imageB.id;
+            } else {
+                winnerId = currentPair.imageB.id;
+                loserId = currentPair.imageA.id;
+            }
+
+            // 更新排名（简化的ELO算法）
+            const K = 32;
+            const winnerRating = imageRankings[winnerId].score;
+            const loserRating = imageRankings[loserId].score;
             
-            alert('Survey submitted! Responses: ' + JSON.stringify(responses));
-            // Here you would typically send the data to a server
+            const expectedWinner = 1 / (1 + Math.pow(10, (loserRating - winnerRating) / 400));
+            
+            imageRankings[winnerId].score += K * (1 - expectedWinner);
+            imageRankings[loserId].score += K * (0 - expectedWinner);
+            imageRankings[winnerId].wins += 1;
+            imageRankings[loserId].losses += 1;
+
+            // 记录对比结果
+            comparisons.push({
+                winner: winnerId,
+                loser: loserId,
+                timestamp: new Date().toISOString()
+            });
+
+            // 检查是否完成所有对比
+            if (comparisons.length >= 10) {
+                showResults();
+            }
+        }
+
+        // 下一个对比
+        function nextComparison() {
+            if (comparisons.length < 10) {
+                generateNewComparison();
+            }
+        }
+
+        // 显示结果
+        function showResults() {
+            showPage('resultsPage');
+            
+            // 生成排名列表
+            const sortedImages = imageLibrary
+                .map(img => ({
+                    ...img,
+                    ...imageRankings[img.id]
+                }))
+                .sort((a, b) => b.score - a.score);
+
+            const rankingHTML = sortedImages.map((img, index) => `
+                <div class="flex items-center space-x-4 p-4 border rounded-lg">
+                    <div class="text-2xl font-bold text-green-600">#${index + 1}</div>
+                    <img src="${img.url}" alt="${img.name}" class="w-20 h-16 object-cover rounded">
+                    <div class="flex-1">
+                        <h3 class="font-medium">${img.name}</h3>
+                        <p class="text-sm text-gray-600">
+                            得分: ${Math.round(img.score)} | 胜: ${img.wins} | 负: ${img.losses}
+                        </p>
+                    </div>
+                </div>
+            `).join('');
+
+            document.getElementById('rankingList').innerHTML = rankingHTML;
+
+            // 显示用户信息
+            const genderText = userData.gender === 'male' ? (currentLanguage === 'zh' ? '男' : 'Male') : (currentLanguage === 'zh' ? '女' : 'Female');
+            const professionalText = userData.isProfessional === 'yes' ? (currentLanguage === 'zh' ? '是' : 'Yes') : (currentLanguage === 'zh' ? '否' : 'No');
+            
+            document.getElementById('userInfo').innerHTML = `
+                <div>${currentLanguage === 'zh' ? '性别' : 'Gender'}: ${genderText}</div>
+                <div>${currentLanguage === 'zh' ? '年龄' : 'Age'}: ${userData.age}</div>
+                <div>${currentLanguage === 'zh' ? '专业背景' : 'Professional'}: ${professionalText}</div>
+            `;
+        }
+
+        // 重新开始
+        function restart() {
+            userData = { gender: '', age: '', isProfessional: '' };
+            comparisons = [];
+            currentComparison = null;
+            imageRankings = {};
+            currentPair = { imageA: null, imageB: null };
+            
+            // 清空表单
+            document.querySelectorAll('input[type="radio"]').forEach(input => input.checked = false);
+            document.getElementById('ageInput').value = '';
+            
+            showPage('languagePage');
+        }
+
+        // 页面加载完成后初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            initializeRankings();
         });
     </script>
 </body>
