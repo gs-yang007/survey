@@ -18,8 +18,8 @@
     <!-- 语言选择页面 -->
     <div id="languagePage" class="min-h-screen bg-gray-100 flex items-center justify-center p-4">
         <div class="bg-white rounded-lg shadow-lg p-8 text-center max-w-md w-full">
-            <h1 class="text-2xl font-bold text-gray-800 mb-2">街景行为问卷</h1>
-            <h2 class="text-lg text-gray-600 mb-8">Street View behaviours Questionnaire</h2>
+            <h1 class="text-2xl font-bold text-gray-800 mb-2">街景行为感知问卷</h1>
+            <h2 class="text-lg text-gray-600 mb-8">Street View Behaviours Questionnaire</h2>
             
             <div class="mb-6">
                 <h3 class="text-lg font-semibold text-gray-700 mb-4">语言选择</h3>
@@ -72,7 +72,7 @@
                     <!-- 专业背景 -->
                     <div>
                         <label class="block text-gray-700 font-medium mb-3">
-                            <span id="professionalLabel">您来自城市规划/园林/风景园林相关专业吗？</span> <span class="text-red-500">*</span>
+                            <span id="professionalLabel">您来自城市规划/建筑/风景园林相关专业吗？</span> <span class="text-red-500">*</span>
                         </label>
                         <div class="flex space-x-6">
                             <label class="flex items-center">
@@ -104,7 +104,7 @@
             </div>
             
             <h1 id="compareTitle" class="text-white text-xl font-medium text-center mb-6">
-                以下两张窗景中，您认为哪张更加静谧：
+                以下两张街景中，您认为哪张更加适合“坐”的行为：
             </h1>
             
             <div class="flex justify-between items-start">
@@ -112,30 +112,30 @@
                 <div class="w-48 bg-white rounded-lg p-4 mr-4">
                     <h3 id="hintTitle" class="font-bold text-gray-800 mb-2">提示</h3>
                     <p id="instructions" class="text-sm text-gray-600">
-                        在此调研中，您需要在成对的图片中做出选择。请根据您的直觉选择您认为更加静谧的窗景。
+                        在此调研中，您需要在成对的图片中做出选择。请根据您的直觉选择您认为更加适合进行指定活动的街景。
                     </p>
                 </div>
                 
                 <!-- 图片对比区域 -->
                 <div class="flex-1 space-y-4">
-                    <div id="imageA" class="bg-white rounded-lg p-4 cursor-pointer hover:shadow-lg transition-shadow" onclick="selectImage('A')">
+                    <div id="imageA" class="bg-white rounded-lg p-4 hover:shadow-lg transition-shadow">
                         <img id="imageA_img" src="" alt="" class="w-full h-64 object-cover rounded">
                         <div class="text-center mt-2 flex justify-end">
-                            <div class="w-6 h-6 border-2 border-gray-300 rounded-full"></div>
+                            <div id="radioA" class="w-6 h-6 border-2 border-gray-300 rounded-full cursor-pointer hover:border-green-500 transition-colors" onclick="selectOption('A')"></div>
                         </div>
                     </div>
                     
-                    <div id="imageB" class="bg-white rounded-lg p-4 cursor-pointer hover:shadow-lg transition-shadow" onclick="selectImage('B')">
+                    <div id="imageB" class="bg-white rounded-lg p-4 hover:shadow-lg transition-shadow">
                         <img id="imageB_img" src="" alt="" class="w-full h-64 object-cover rounded">
                         <div class="text-center mt-2 flex justify-end">
-                            <div class="w-6 h-6 border-2 border-gray-300 rounded-full"></div>
+                            <div id="radioB" class="w-6 h-6 border-2 border-gray-300 rounded-full cursor-pointer hover:border-green-500 transition-colors" onclick="selectOption('B')"></div>
                         </div>
                     </div>
                 </div>
                 
                 <!-- 右侧确认按钮 -->
                 <div class="w-32 ml-4">
-                    <button onclick="nextComparison()" class="w-full bg-green-600 text-white py-3 rounded-lg hover:bg-green-700 transition-colors font-medium">
+                    <button id="confirmButton" onclick="confirmSelection()" disabled class="w-full bg-gray-400 text-white py-3 rounded-lg transition-colors font-medium cursor-not-allowed">
                         确认
                     </button>
                 </div>
@@ -178,6 +178,7 @@
         let currentComparison = null;
         let imageRankings = {};
         let currentPair = { imageA: null, imageB: null };
+        let selectedOption = null;
 
         // 图片库
         const imageLibrary = [
@@ -225,10 +226,10 @@
                 yesLabel: '是',
                 noLabel: '否',
                 nextButton: '下一部分',
-                compareTitle: '以下两张街景中，您认为哪张更适合坐：',
+                compareTitle: '以下两张窗景中，您认为哪张更加静谧：',
                 timerLabel: '自动跳转：',
                 hintTitle: '提示',
-                instructions: '在此调研中，您需要在成对的图片中做出选择。请根据您的直觉选择您认为更加适合指定行为的场景。',
+                instructions: '在此调研中，您需要在成对的图片中做出选择。请根据您的直觉选择您认为更加静谧的窗景。',
                 resultsTitle: '调研结果',
                 rankingTitle: '图片排名情况：',
                 restartButton: '重新开始'
@@ -243,10 +244,10 @@
                 yesLabel: 'Yes',
                 noLabel: 'No',
                 nextButton: 'Next Part',
-                compareTitle: 'Which of the following two street views do you think is more suitable for sitting:',
+                compareTitle: 'Which of the following two window views do you think is more tranquil:',
                 timerLabel: 'Auto redirect:',
                 hintTitle: 'Hint',
-                instructions: 'In this survey, you need to make choices between pairs of images. Please choose the street view you think is more suitable for certain behaviours based on your intuition.',
+                instructions: 'In this survey, you need to make choices between pairs of images. Please choose the window view you think is more tranquil based on your intuition.',
                 resultsTitle: 'Survey Results',
                 rankingTitle: 'Image Rankings:',
                 restartButton: 'Start Over'
@@ -336,12 +337,66 @@
             document.getElementById('imageB_img').alt = currentPair.imageB.name;
 
             document.getElementById('progressCounter').textContent = `${comparisons.length + 1}/10`;
+            
+            // 重置选择状态
+            resetSelection();
         }
 
-        // 选择图片
-        function selectImage(choice) {
-            let winnerId, loserId;
+        // 重置选择状态
+        function resetSelection() {
+            selectedOption = null;
+            
+            // 重置小圆点样式
+            const radioA = document.getElementById('radioA');
+            const radioB = document.getElementById('radioB');
+            
+            radioA.className = 'w-6 h-6 border-2 border-gray-300 rounded-full cursor-pointer hover:border-green-500 transition-colors';
+            radioB.className = 'w-6 h-6 border-2 border-gray-300 rounded-full cursor-pointer hover:border-green-500 transition-colors';
+            radioA.innerHTML = '';
+            radioB.innerHTML = '';
+            
+            // 禁用确认按钮
+            const confirmButton = document.getElementById('confirmButton');
+            confirmButton.disabled = true;
+            confirmButton.classList.remove('bg-green-600', 'hover:bg-green-700');
+            confirmButton.classList.add('bg-gray-400', 'cursor-not-allowed');
+        }
+
+        // 选择选项
+        function selectOption(choice) {
+            selectedOption = choice;
+            
+            // 重置所有小圆点
+            const radioA = document.getElementById('radioA');
+            const radioB = document.getElementById('radioB');
+            
+            radioA.className = 'w-6 h-6 border-2 border-gray-300 rounded-full cursor-pointer hover:border-green-500 transition-colors';
+            radioB.className = 'w-6 h-6 border-2 border-gray-300 rounded-full cursor-pointer hover:border-green-500 transition-colors';
+            radioA.innerHTML = '';
+            radioB.innerHTML = '';
+            
+            // 高亮选中的选项
             if (choice === 'A') {
+                radioA.className = 'w-6 h-6 border-2 border-green-500 bg-green-500 rounded-full cursor-pointer transition-colors';
+                radioA.innerHTML = '<div class="w-2 h-2 bg-white rounded-full m-auto mt-1"></div>';
+            } else {
+                radioB.className = 'w-6 h-6 border-2 border-green-500 bg-green-500 rounded-full cursor-pointer transition-colors';
+                radioB.innerHTML = '<div class="w-2 h-2 bg-white rounded-full m-auto mt-1"></div>';
+            }
+            
+            // 启用确认按钮
+            const confirmButton = document.getElementById('confirmButton');
+            confirmButton.disabled = false;
+            confirmButton.classList.remove('bg-gray-400', 'cursor-not-allowed');
+            confirmButton.classList.add('bg-green-600', 'hover:bg-green-700', 'cursor-pointer');
+        }
+
+        // 确认选择
+        function confirmSelection() {
+            if (!selectedOption) return;
+            
+            let winnerId, loserId;
+            if (selectedOption === 'A') {
                 winnerId = currentPair.imageA.id;
                 loserId = currentPair.imageB.id;
             } else {
@@ -371,12 +426,7 @@
             // 检查是否完成所有对比
             if (comparisons.length >= 10) {
                 showResults();
-            }
-        }
-
-        // 下一个对比
-        function nextComparison() {
-            if (comparisons.length < 10) {
+            } else {
                 generateNewComparison();
             }
         }
@@ -426,6 +476,7 @@
             currentComparison = null;
             imageRankings = {};
             currentPair = { imageA: null, imageB: null };
+            selectedOption = null;
             
             // 清空表单
             document.querySelectorAll('input[type="radio"]').forEach(input => input.checked = false);
