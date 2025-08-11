@@ -11,24 +11,6 @@
         @keyframes fadeIn {
             from { opacity: 0; }
             to { opacity: 1; }
-        // 从可用的图片中随机选择指定数量进行对比
-        function selectRandomImagesForComparison(totalImages, comparisonCount = 100) {
-            const selectedImages = [];
-            const imageCount = totalImages.length;
-            
-            // 确保我们有足够的图片进行对比
-            const maxPossibleComparisons = Math.min(comparisonCount, imageCount);
-            
-            // 随机选择图片用于对比
-            const shuffledIndices = Array.from({length: imageCount}, (_, i) => i)
-                .sort(() => 0.5 - Math.random())
-                .slice(0, maxPossibleComparisons);
-            
-            shuffledIndices.forEach(index => {
-                selectedImages.push(totalImages[index]);
-            });
-            
-            return selectedImages;
         }
     </style>
 </head>
@@ -189,18 +171,21 @@
     </div>
 
     <script>
+        // ====================================================================
+        // 配置区域 - 选择加载方法
+        // ====================================================================
+        const LOADING_METHOD = 3; // 1=预定义数组, 2=JSON文件, 3=文本文件
+
         // Cloudinary配置
         const CLOUDINARY_CONFIG = {
             cloudName: 'dw3huanrk',
             folderName: 'my_website_images',
-            transformations: 'w_666,h_500,c_fill,q_auto,f_auto'  // 优化的变换参数
+            transformations: 'w_666,h_500,c_fill,q_auto,f_auto'
         };
 
         // 构建Cloudinary URL的函数
         function buildCloudinaryUrl(filename) {
-            // 移除文件扩展名（如果有的话）
             const publicId = filename.replace(/\.(jpg|jpeg|png|gif|webp)$/i, '');
-            
             return `https://res.cloudinary.com/${CLOUDINARY_CONFIG.cloudName}/image/upload/${CLOUDINARY_CONFIG.transformations}/${CLOUDINARY_CONFIG.folderName}/${publicId}`;
         }
 
@@ -209,35 +194,23 @@
             return filenames.map((filename, index) => ({
                 id: index + 1,
                 url: buildCloudinaryUrl(filename),
-                name: filename.replace(/\.(jpg|jpeg|png|gif|webp)$/i, ''), // 使用文件名作为名称（去掉扩展名）
+                name: filename.replace(/\.(jpg|jpeg|png|gif|webp)$/i, ''),
                 filename: filename
             }));
         }
 
-        // ====================================================================
-        // 研究者配置区域 - 请根据需要选择一种方法来设置图片列表
-        // ====================================================================
-
-        // 方案1: 直接在代码中定义图片名数组（推荐用于固定的图片列表）
+        // 预定义图片列表（如果使用方法1）
         const PREDEFINED_IMAGE_LIST = [
-            // 在这里粘贴你的5000个图片文件名
-            // 示例格式：
             'street_001.jpg',
             'street_002.jpg',
             'building_001.png',
             'landscape_001.jpg',
-            'urban_view_001.webp',
-            // ... 继续添加你的5000个图片名
-            // 你可以从txt文件复制粘贴到这里
+            'urban_view_001.webp'
         ];
 
-        // 方案2: 从外部JSON文件加载（推荐用于需要经常更换图片列表的情况）
-        const IMAGE_LIST_JSON_URL = 'image_list.json';  // 设置你的JSON文件URL
-
-        // 方案3: 从外部文本文件加载（最灵活）
-        const IMAGE_LIST_TXT_URL = 'image_list.txt';    // 设置你的TXT文件URL
-
-        // ====================================================================
+        // 外部文件URLs
+        const IMAGE_LIST_JSON_URL = 'image_list.json';
+        const IMAGE_LIST_TXT_URL = 'image_list.txt';
 
         // 全局变量存储图片库
         let imageLibrary = [];
@@ -256,6 +229,9 @@
         async function loadFromJSONFile() {
             try {
                 const response = await fetch(IMAGE_LIST_JSON_URL);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
                 const data = await response.json();
                 console.log(`Loaded ${data.images.length} images from JSON file`);
                 return data.images;
@@ -269,6 +245,9 @@
         async function loadFromTextFile() {
             try {
                 const response = await fetch(IMAGE_LIST_TXT_URL);
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
                 const text = await response.text();
                 const filenames = text
                     .split('\n')
@@ -282,26 +261,14 @@
             }
         }
 
-        // 程序化生成图片名（如果图片名有规律）
-        function generateImageNames(count = 5000, prefix = 'image_', extension = '.jpg', startNumber = 1) {
+        // 程序化生成图片名（作为后备方案）
+        function generateImageNames(count = 100, prefix = 'image_', extension = '.jpg', startNumber = 1) {
             const filenames = [];
             for (let i = startNumber; i < startNumber + count; i++) {
-                // 生成格式如: image_0001.jpg, image_0002.jpg 等
                 const paddedNumber = i.toString().padStart(4, '0');
                 filenames.push(`${prefix}${paddedNumber}${extension}`);
             }
             console.log(`Generated ${filenames.length} image names programmatically`);
-            return filenames;
-        }
-
-        // 方法3: 如果图片名有规律，可以程序化生成
-        function generateImageNames(count = 5000, prefix = 'image_', extension = '.jpg') {
-            const filenames = [];
-            for (let i = 1; i <= count; i++) {
-                // 生成格式如: image_0001.jpg, image_0002.jpg 等
-                const paddedNumber = i.toString().padStart(4, '0');
-                filenames.push(`${prefix}${paddedNumber}${extension}`);
-            }
             return filenames;
         }
 
@@ -310,10 +277,8 @@
             const selectedImages = [];
             const imageCount = totalImages.length;
             
-            // 确保我们有足够的图片进行对比
             const maxPossibleComparisons = Math.min(comparisonCount, imageCount);
             
-            // 随机选择图片用于对比
             const shuffledIndices = Array.from({length: imageCount}, (_, i) => i)
                 .sort(() => 0.5 - Math.random())
                 .slice(0, maxPossibleComparisons);
@@ -348,32 +313,33 @@
                         break;
                 }
 
-                // 如果主要方案失败，尝试备用方案
+                // 如果主要方案失败，尝试其他方案
                 if (!filenames || filenames.length === 0) {
-                    console.log('Primary method failed, trying predefined array...');
+                    console.log('Primary method failed, trying text file...');
+                    filenames = await loadFromTextFile();
+                }
+
+                if (!filenames || filenames.length === 0) {
+                    console.log('Text file failed, trying predefined array...');
                     filenames = await loadFromPredefinedArray();
                 }
 
-                // 如果仍然失败，尝试程序化生成（假设有规律的命名）
+                // 如果仍然失败，使用程序化生成作为最后的后备方案
                 if (!filenames || filenames.length === 0) {
-                    console.log('All methods failed, generating names programmatically...');
-                    // 根据你的实际命名规律调整这些参数
-                    filenames = generateImageNames(5000, 'street_', '.jpg', 1);
+                    console.log('All file methods failed, generating names programmatically...');
+                    filenames = generateImageNames(100, 'street_', '.jpg', 1);
                 }
 
                 if (filenames && filenames.length > 0) {
                     const fullImageLibrary = generateImageLibraryFromFilenames(filenames);
-                    // 从所有图片中随机选择100张用于对比，确保50组对比
+                    // 从所有图片中随机选择100张用于对比
                     imageLibrary = selectRandomImagesForComparison(fullImageLibrary, 100);
                     isImageLibraryLoaded = true;
                     console.log(`Image library initialized with ${imageLibrary.length} images for comparison (from ${filenames.length} total images)`);
+                    console.log('Sample URLs:', imageLibrary.slice(0, 2).map(img => img.url));
                 } else {
                     console.error('Failed to load any image names');
-                    // 提供默认的少量图片作为后备
-                    imageLibrary = generateImageLibraryFromFilenames([
-                        'sample1.jpg', 'sample2.jpg', 'sample3.jpg', 'sample4.jpg'
-                    ]);
-                    console.log('Using fallback sample images');
+                    isImageLibraryLoaded = false;
                 }
             } catch (error) {
                 console.error('Error during image library initialization:', error);
@@ -494,20 +460,35 @@
                 isProfessional: professional.value
             };
 
+            // 显示加载状态
+            const button = document.getElementById('nextButton');
+            button.disabled = true;
+            button.textContent = currentLanguage === 'zh' ? '正在准备图片对比...' : 'Preparing image comparisons...';
+
             // 确保图片库已加载
             if (!isImageLibraryLoaded) {
-                const loadingMessage = currentLanguage === 'zh' ? '正在准备图片对比...' : 'Preparing image comparisons...';
-                alert(loadingMessage);
-                
-                await initializeImageLibrary();
-                
-                if (!isImageLibraryLoaded || imageLibrary.length < 2) {
-                    const errorMessage = currentLanguage === 'zh' ? 
-                        '图片库加载失败，请检查配置或联系管理员。' : 
-                        'Failed to load image library. Please check configuration or contact administrator.';
-                    alert(errorMessage);
-                    return;
+                try {
+                    await initializeImageLibrary();
+                } catch (error) {
+                    console.error('Failed to initialize image library:', error);
                 }
+            }
+
+            // 恢复按钮状态
+            button.disabled = false;
+            button.textContent = currentLanguage === 'zh' ? '下一部分' : 'Next Part';
+
+            if (!isImageLibraryLoaded || imageLibrary.length < 2) {
+                const errorMessage = currentLanguage === 'zh' ? 
+                    '图片库加载失败。请检查：\n1. image_list.txt 文件是否存在\n2. 文件中是否有图片文件名\n3. 网络连接是否正常' : 
+                    'Failed to load image library. Please check:\n1. image_list.txt file exists\n2. File contains image filenames\n3. Network connection';
+                alert(errorMessage);
+                console.log('Debug info - Image library status:', {
+                    isLoaded: isImageLibraryLoaded,
+                    imageCount: imageLibrary.length,
+                    sampleImages: imageLibrary.slice(0, 3)
+                });
+                return;
             }
 
             initializeRankings();
@@ -530,7 +511,6 @@
 
             document.getElementById('progressCounter').textContent = `${comparisons.length + 1}/50`;
             
-            // 重置选择状态
             resetSelection();
         }
 
@@ -538,7 +518,6 @@
         function resetSelection() {
             selectedOption = null;
             
-            // 重置小圆点样式
             const radioA = document.getElementById('radioA');
             const radioB = document.getElementById('radioB');
             
@@ -547,7 +526,6 @@
             radioA.innerHTML = '';
             radioB.innerHTML = '';
             
-            // 禁用确认按钮
             const confirmButton = document.getElementById('confirmButton');
             confirmButton.disabled = true;
             confirmButton.classList.remove('bg-green-600', 'hover:bg-green-700');
@@ -558,7 +536,6 @@
         function selectOption(choice) {
             selectedOption = choice;
             
-            // 重置所有小圆点
             const radioA = document.getElementById('radioA');
             const radioB = document.getElementById('radioB');
             
@@ -567,7 +544,6 @@
             radioA.innerHTML = '';
             radioB.innerHTML = '';
             
-            // 高亮选中的选项
             if (choice === 'A') {
                 radioA.className = 'w-6 h-6 border-2 border-green-500 bg-green-500 rounded-full cursor-pointer transition-colors';
                 radioA.innerHTML = '<div class="w-2 h-2 bg-white rounded-full m-auto mt-1"></div>';
@@ -576,7 +552,6 @@
                 radioB.innerHTML = '<div class="w-2 h-2 bg-white rounded-full m-auto mt-1"></div>';
             }
             
-            // 启用确认按钮
             const confirmButton = document.getElementById('confirmButton');
             confirmButton.disabled = false;
             confirmButton.classList.remove('bg-gray-400', 'cursor-not-allowed');
@@ -690,6 +665,7 @@
                 console.log('Sample URLs:', imageLibrary.slice(0, 2).map(img => img.url));
             } else {
                 console.warn('Image library initialization failed or incomplete');
+                console.log('Please check that image_list.txt exists and contains image filenames');
             }
         });
     </script>
