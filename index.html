@@ -11,6 +11,24 @@
         @keyframes fadeIn {
             from { opacity: 0; }
             to { opacity: 1; }
+        // 从可用的图片中随机选择指定数量进行对比
+        function selectRandomImagesForComparison(totalImages, comparisonCount = 100) {
+            const selectedImages = [];
+            const imageCount = totalImages.length;
+            
+            // 确保我们有足够的图片进行对比
+            const maxPossibleComparisons = Math.min(comparisonCount, imageCount);
+            
+            // 随机选择图片用于对比
+            const shuffledIndices = Array.from({length: imageCount}, (_, i) => i)
+                .sort(() => 0.5 - Math.random())
+                .slice(0, maxPossibleComparisons);
+            
+            shuffledIndices.forEach(index => {
+                selectedImages.push(totalImages[index]);
+            });
+            
+            return selectedImages;
         }
     </style>
 </head>
@@ -100,11 +118,11 @@
     <div id="comparisonPage" class="hidden min-h-screen bg-green-500 p-4">
         <div class="max-w-6xl mx-auto">
             <div class="text-right text-white mb-4">
-                <span id="timerLabel">自动跳转：</span> <span id="progressCounter">1/10</span>
+                <span id="timerLabel">自动跳转：</span>                 <span id="progressCounter">1/50</span>
             </div>
             
             <h1 id="compareTitle" class="text-white text-xl font-medium text-center mb-6">
-                以下两张街景中，您认为哪张更加适合“坐”的行为：
+                以下两张街景中，您认为哪张更加适合"坐"的行为：
             </h1>
             
             <div class="flex justify-between items-start">
@@ -171,6 +189,198 @@
     </div>
 
     <script>
+        // Cloudinary配置
+        const CLOUDINARY_CONFIG = {
+            cloudName: 'dw3huanrk',
+            folderName: 'my_website_images',
+            transformations: 'w_666,h_500,c_fill,q_auto,f_auto'  // 优化的变换参数
+        };
+
+        // 构建Cloudinary URL的函数
+        function buildCloudinaryUrl(filename) {
+            // 移除文件扩展名（如果有的话）
+            const publicId = filename.replace(/\.(jpg|jpeg|png|gif|webp)$/i, '');
+            
+            return `https://res.cloudinary.com/${CLOUDINARY_CONFIG.cloudName}/image/upload/${CLOUDINARY_CONFIG.transformations}/${CLOUDINARY_CONFIG.folderName}/${publicId}`;
+        }
+
+        // 从文件名列表生成图片库的函数
+        function generateImageLibraryFromFilenames(filenames) {
+            return filenames.map((filename, index) => ({
+                id: index + 1,
+                url: buildCloudinaryUrl(filename),
+                name: filename.replace(/\.(jpg|jpeg|png|gif|webp)$/i, ''), // 使用文件名作为名称（去掉扩展名）
+                filename: filename
+            }));
+        }
+
+        // ====================================================================
+        // 研究者配置区域 - 请根据需要选择一种方法来设置图片列表
+        // ====================================================================
+
+        // 方案1: 直接在代码中定义图片名数组（推荐用于固定的图片列表）
+        const PREDEFINED_IMAGE_LIST = [
+            // 在这里粘贴你的5000个图片文件名
+            // 示例格式：
+            'street_001.jpg',
+            'street_002.jpg',
+            'building_001.png',
+            'landscape_001.jpg',
+            'urban_view_001.webp',
+            // ... 继续添加你的5000个图片名
+            // 你可以从txt文件复制粘贴到这里
+        ];
+
+        // 方案2: 从外部JSON文件加载（推荐用于需要经常更换图片列表的情况）
+        const IMAGE_LIST_JSON_URL = 'image_list.json';  // 设置你的JSON文件URL
+
+        // 方案3: 从外部文本文件加载（最灵活）
+        const IMAGE_LIST_TXT_URL = 'image_list.txt';    // 设置你的TXT文件URL
+
+        // ====================================================================
+
+        // 全局变量存储图片库
+        let imageLibrary = [];
+        let isImageLibraryLoaded = false;
+
+        // 从预定义数组加载图片名
+        async function loadFromPredefinedArray() {
+            if (PREDEFINED_IMAGE_LIST.length > 0) {
+                console.log(`Loading ${PREDEFINED_IMAGE_LIST.length} images from predefined array`);
+                return PREDEFINED_IMAGE_LIST;
+            }
+            return null;
+        }
+
+        // 从JSON文件加载图片名
+        async function loadFromJSONFile() {
+            try {
+                const response = await fetch(IMAGE_LIST_JSON_URL);
+                const data = await response.json();
+                console.log(`Loaded ${data.images.length} images from JSON file`);
+                return data.images;
+            } catch (error) {
+                console.error('Error loading from JSON file:', error);
+                return null;
+            }
+        }
+
+        // 从文本文件加载图片名
+        async function loadFromTextFile() {
+            try {
+                const response = await fetch(IMAGE_LIST_TXT_URL);
+                const text = await response.text();
+                const filenames = text
+                    .split('\n')
+                    .map(line => line.trim())
+                    .filter(line => line.length > 0 && !line.startsWith('#'));
+                console.log(`Loaded ${filenames.length} images from text file`);
+                return filenames;
+            } catch (error) {
+                console.error('Error loading from text file:', error);
+                return null;
+            }
+        }
+
+        // 程序化生成图片名（如果图片名有规律）
+        function generateImageNames(count = 5000, prefix = 'image_', extension = '.jpg', startNumber = 1) {
+            const filenames = [];
+            for (let i = startNumber; i < startNumber + count; i++) {
+                // 生成格式如: image_0001.jpg, image_0002.jpg 等
+                const paddedNumber = i.toString().padStart(4, '0');
+                filenames.push(`${prefix}${paddedNumber}${extension}`);
+            }
+            console.log(`Generated ${filenames.length} image names programmatically`);
+            return filenames;
+        }
+
+        // 方法3: 如果图片名有规律，可以程序化生成
+        function generateImageNames(count = 5000, prefix = 'image_', extension = '.jpg') {
+            const filenames = [];
+            for (let i = 1; i <= count; i++) {
+                // 生成格式如: image_0001.jpg, image_0002.jpg 等
+                const paddedNumber = i.toString().padStart(4, '0');
+                filenames.push(`${prefix}${paddedNumber}${extension}`);
+            }
+            return filenames;
+        }
+
+        // 从可用的图片中随机选择指定数量进行对比
+        function selectRandomImagesForComparison(totalImages, comparisonCount = 100) {
+            const selectedImages = [];
+            const imageCount = totalImages.length;
+            
+            // 确保我们有足够的图片进行对比
+            const maxPossibleComparisons = Math.min(comparisonCount, imageCount);
+            
+            // 随机选择图片用于对比
+            const shuffledIndices = Array.from({length: imageCount}, (_, i) => i)
+                .sort(() => 0.5 - Math.random())
+                .slice(0, maxPossibleComparisons);
+            
+            shuffledIndices.forEach(index => {
+                selectedImages.push(totalImages[index]);
+            });
+            
+            return selectedImages;
+        }
+
+        // 初始化图片库的主函数
+        async function initializeImageLibrary() {
+            let filenames = null;
+            
+            console.log(`Attempting to load image names using method ${LOADING_METHOD}...`);
+            
+            try {
+                // 根据选择的方案加载图片名
+                switch (LOADING_METHOD) {
+                    case 1:
+                        filenames = await loadFromPredefinedArray();
+                        break;
+                    case 2:
+                        filenames = await loadFromJSONFile();
+                        break;
+                    case 3:
+                        filenames = await loadFromTextFile();
+                        break;
+                    default:
+                        console.error('Invalid loading method specified');
+                        break;
+                }
+
+                // 如果主要方案失败，尝试备用方案
+                if (!filenames || filenames.length === 0) {
+                    console.log('Primary method failed, trying predefined array...');
+                    filenames = await loadFromPredefinedArray();
+                }
+
+                // 如果仍然失败，尝试程序化生成（假设有规律的命名）
+                if (!filenames || filenames.length === 0) {
+                    console.log('All methods failed, generating names programmatically...');
+                    // 根据你的实际命名规律调整这些参数
+                    filenames = generateImageNames(5000, 'street_', '.jpg', 1);
+                }
+
+                if (filenames && filenames.length > 0) {
+                    const fullImageLibrary = generateImageLibraryFromFilenames(filenames);
+                    // 从所有图片中随机选择100张用于对比，确保50组对比
+                    imageLibrary = selectRandomImagesForComparison(fullImageLibrary, 100);
+                    isImageLibraryLoaded = true;
+                    console.log(`Image library initialized with ${imageLibrary.length} images for comparison (from ${filenames.length} total images)`);
+                } else {
+                    console.error('Failed to load any image names');
+                    // 提供默认的少量图片作为后备
+                    imageLibrary = generateImageLibraryFromFilenames([
+                        'sample1.jpg', 'sample2.jpg', 'sample3.jpg', 'sample4.jpg'
+                    ]);
+                    console.log('Using fallback sample images');
+                }
+            } catch (error) {
+                console.error('Error during image library initialization:', error);
+                isImageLibraryLoaded = false;
+            }
+        }
+
         // 全局变量
         let currentLanguage = 'zh';
         let userData = { gender: '', age: '', isProfessional: '' };
@@ -179,40 +389,6 @@
         let imageRankings = {};
         let currentPair = { imageA: null, imageB: null };
         let selectedOption = null;
-
-        // 图片库
-        const imageLibrary = [
-            {
-                id: 1,
-                url: 'https://images.unsplash.com/photo-1449824913935-59a10b8d2000?w=600&h=400&fit=crop',
-                name: '城市景观1'
-            },
-            {
-                id: 2,
-                url: 'https://images.unsplash.com/photo-1486406146926-c627a92ad1ab?w=600&h=400&fit=crop',
-                name: '城市景观2'
-            },
-            {
-                id: 3,
-                url: 'https://images.unsplash.com/photo-1444927714506-8492d94b5ba0?w=600&h=400&fit=crop',
-                name: '自然景观1'
-            },
-            {
-                id: 4,
-                url: 'https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=600&h=400&fit=crop',
-                name: '自然景观2'
-            },
-            {
-                id: 5,
-                url: 'https://images.unsplash.com/photo-1519501025264-65ba15a82390?w=600&h=400&fit=crop',
-                name: '混合景观1'
-            },
-            {
-                id: 6,
-                url: 'https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=600&h=400&fit=crop',
-                name: '混合景观2'
-            }
-        ];
 
         // 文本内容
         const texts = {
@@ -226,7 +402,7 @@
                 yesLabel: '是',
                 noLabel: '否',
                 nextButton: '下一部分',
-                compareTitle: '以下两张街景中，您认为哪张更加适合“坐”：',
+                compareTitle: '以下两张街景中，您认为哪张更加适合"坐"：',
                 timerLabel: '自动跳转：',
                 hintTitle: '提示',
                 instructions: '在此调研中，您需要在成对的图片中做出选择。请根据您的直觉选择您认为更加适合特定行为的街景。',
@@ -301,14 +477,14 @@
         }
 
         // 开始对比
-        function startComparisons() {
+        async function startComparisons() {
             // 验证表单
             const gender = document.querySelector('input[name="gender"]:checked');
             const age = document.getElementById('ageInput').value;
             const professional = document.querySelector('input[name="professional"]:checked');
 
             if (!gender || !age || !professional) {
-                alert('请完整填写所有必填项！');
+                alert(currentLanguage === 'zh' ? '请完整填写所有必填项！' : 'Please fill in all required fields!');
                 return;
             }
 
@@ -317,6 +493,22 @@
                 age: age,
                 isProfessional: professional.value
             };
+
+            // 确保图片库已加载
+            if (!isImageLibraryLoaded) {
+                const loadingMessage = currentLanguage === 'zh' ? '正在准备图片对比...' : 'Preparing image comparisons...';
+                alert(loadingMessage);
+                
+                await initializeImageLibrary();
+                
+                if (!isImageLibraryLoaded || imageLibrary.length < 2) {
+                    const errorMessage = currentLanguage === 'zh' ? 
+                        '图片库加载失败，请检查配置或联系管理员。' : 
+                        'Failed to load image library. Please check configuration or contact administrator.';
+                    alert(errorMessage);
+                    return;
+                }
+            }
 
             initializeRankings();
             generateNewComparison();
@@ -336,7 +528,7 @@
             document.getElementById('imageB_img').src = currentPair.imageB.url;
             document.getElementById('imageB_img').alt = currentPair.imageB.name;
 
-            document.getElementById('progressCounter').textContent = `${comparisons.length + 1}/10`;
+            document.getElementById('progressCounter').textContent = `${comparisons.length + 1}/50`;
             
             // 重置选择状态
             resetSelection();
@@ -424,7 +616,7 @@
             });
 
             // 检查是否完成所有对比
-            if (comparisons.length >= 10) {
+            if (comparisons.length >= 50) {
                 showResults();
             } else {
                 generateNewComparison();
@@ -486,8 +678,19 @@
         }
 
         // 页面加载完成后初始化
-        document.addEventListener('DOMContentLoaded', function() {
-            initializeRankings();
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('Survey application loaded');
+            console.log('Initializing image library...');
+            
+            // 预先加载图片库
+            await initializeImageLibrary();
+            
+            if (isImageLibraryLoaded && imageLibrary.length > 0) {
+                console.log(`Image library ready with ${imageLibrary.length} images for comparison`);
+                console.log('Sample URLs:', imageLibrary.slice(0, 2).map(img => img.url));
+            } else {
+                console.warn('Image library initialization failed or incomplete');
+            }
         });
     </script>
 </body>
