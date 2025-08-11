@@ -176,27 +176,73 @@
         // ====================================================================
         const LOADING_METHOD = 3; // 1=预定义数组, 2=JSON文件, 3=文本文件
 
-        // Cloudinary配置
+        // Cloudinary配置 - 请根据你的实际情况调整
         const CLOUDINARY_CONFIG = {
             cloudName: 'dw3huanrk',
             folderName: 'my_website_images',
-            transformations: 'w_666,h_500,c_fill,q_auto,f_auto'
+            // 尝试不同的变换参数，如果图片还是不显示，请依次尝试下面的选项：
+            transformations: 'w_666,h_500,c_fill,q_auto,f_auto'  // 选项1：当前设置
+            // transformations: 'c_fill,w_666,h_500'             // 选项2：简化版本
+            // transformations: 'w_666,h_500,c_scale'            // 选项3：缩放版本
+            // transformations: ''                               // 选项4：无变换（原图）
         };
 
-        // 构建Cloudinary URL的函数
+        // 🔧 调试模式 - 设置为 true 来启用详细的调试信息
+        const DEBUG_MODE = true;
+
+        // 构建Cloudinary URL的函数（支持多种格式尝试）
         function buildCloudinaryUrl(filename) {
+            // 移除文件扩展名（如果有的话）
             const publicId = filename.replace(/\.(jpg|jpeg|png|gif|webp)$/i, '');
-            return `https://res.cloudinary.com/${CLOUDINARY_CONFIG.cloudName}/image/upload/${CLOUDINARY_CONFIG.transformations}/${CLOUDINARY_CONFIG.folderName}/${publicId}`;
+            
+            // 构建不同格式的URL进行尝试
+            const urls = [];
+            
+            if (CLOUDINARY_CONFIG.folderName) {
+                // 格式1：带文件夹和变换
+                urls.push(`https://res.cloudinary.com/${CLOUDINARY_CONFIG.cloudName}/image/upload/${CLOUDINARY_CONFIG.transformations}/${CLOUDINARY_CONFIG.folderName}/${publicId}`);
+                
+                // 格式2：带文件夹，简化变换
+                urls.push(`https://res.cloudinary.com/${CLOUDINARY_CONFIG.cloudName}/image/upload/c_fill,w_666,h_500/${CLOUDINARY_CONFIG.folderName}/${publicId}`);
+                
+                // 格式3：带文件夹，无变换
+                urls.push(`https://res.cloudinary.com/${CLOUDINARY_CONFIG.cloudName}/image/upload/${CLOUDINARY_CONFIG.folderName}/${publicId}`);
+                
+                // 格式4：带文件夹，使用完整文件名
+                urls.push(`https://res.cloudinary.com/${CLOUDINARY_CONFIG.cloudName}/image/upload/${CLOUDINARY_CONFIG.transformations}/${CLOUDINARY_CONFIG.folderName}/${filename}`);
+            }
+            
+            // 格式5：无文件夹
+            urls.push(`https://res.cloudinary.com/${CLOUDINARY_CONFIG.cloudName}/image/upload/${CLOUDINARY_CONFIG.transformations}/${publicId}`);
+            
+            // 格式6：无文件夹，使用完整文件名
+            urls.push(`https://res.cloudinary.com/${CLOUDINARY_CONFIG.cloudName}/image/upload/${CLOUDINARY_CONFIG.transformations}/${filename}`);
+            
+            if (DEBUG_MODE) {
+                console.log(`🔗 Building URLs for ${filename}:`);
+                urls.forEach((url, index) => {
+                    console.log(`  ${index + 1}. ${url}`);
+                });
+            }
+            
+            return {
+                primary: urls[0],
+                alternatives: urls.slice(1)
+            };
         }
 
         // 从文件名列表生成图片库的函数
         function generateImageLibraryFromFilenames(filenames) {
-            return filenames.map((filename, index) => ({
-                id: index + 1,
-                url: buildCloudinaryUrl(filename),
-                name: filename.replace(/\.(jpg|jpeg|png|gif|webp)$/i, ''),
-                filename: filename
-            }));
+            return filenames.map((filename, index) => {
+                const urlData = buildCloudinaryUrl(filename);
+                return {
+                    id: index + 1,
+                    url: urlData.primary,
+                    alternativeUrls: urlData.alternatives,
+                    name: filename.replace(/\.(jpg|jpeg|png|gif|webp)$/i, ''),
+                    filename: filename
+                };
+            });
         }
 
         // 预定义图片列表（如果使用方法1）
@@ -359,7 +405,7 @@
         // 文本内容
         const texts = {
             zh: {
-                surveyTitle: '街景行为感知问卷：第一部分',
+                surveyTitle: '窗景感知问卷：第一部分',
                 genderLabel: '您的性别是：',
                 maleLabel: '男',
                 femaleLabel: '女',
@@ -377,7 +423,7 @@
                 restartButton: '重新开始'
             },
             en: {
-                surveyTitle: 'Behaviours Perception Questionnaire: Part 1',
+                surveyTitle: 'Window View Perception Questionnaire: Part 1',
                 genderLabel: 'Your gender is:',
                 maleLabel: 'Male',
                 femaleLabel: 'Female',
@@ -496,6 +542,44 @@
             showPage('comparisonPage');
         }
 
+        // 尝试加载图片的函数（支持多个URL备选）
+        function loadImageWithFallback(imgElement, imageData, imageLabel) {
+            let currentUrlIndex = 0;
+            const allUrls = [imageData.url, ...imageData.alternativeUrls];
+            
+            function tryNextUrl() {
+                if (currentUrlIndex >= allUrls.length) {
+                    console.error(`❌ All URLs failed for ${imageLabel}:`, imageData.filename);
+                    // 显示占位图
+                    imgElement.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjY2IiBoZWlnaHQ9IjUwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZGRkIi8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNCIgZmlsbD0iIzk5OSIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPkltYWdlIE5vdCBGb3VuZDwvdGV4dD48L3N2Zz4=';
+                    return;
+                }
+                
+                const currentUrl = allUrls[currentUrlIndex];
+                if (DEBUG_MODE) {
+                    console.log(`🔄 Trying URL ${currentUrlIndex + 1}/${allUrls.length} for ${imageLabel}:`, currentUrl);
+                }
+                
+                imgElement.onload = function() {
+                    if (DEBUG_MODE) {
+                        console.log(`✅ Successfully loaded ${imageLabel} with URL ${currentUrlIndex + 1}:`, currentUrl);
+                    }
+                };
+                
+                imgElement.onerror = function() {
+                    if (DEBUG_MODE) {
+                        console.log(`❌ Failed to load ${imageLabel} with URL ${currentUrlIndex + 1}:`, currentUrl);
+                    }
+                    currentUrlIndex++;
+                    tryNextUrl();
+                };
+                
+                imgElement.src = currentUrl;
+            }
+            
+            tryNextUrl();
+        }
+
         // 生成新的对比
         function generateNewComparison() {
             const shuffled = [...imageLibrary].sort(() => 0.5 - Math.random());
@@ -504,10 +588,16 @@
                 imageB: shuffled[1]
             };
 
-            document.getElementById('imageA_img').src = currentPair.imageA.url;
-            document.getElementById('imageA_img').alt = currentPair.imageA.name;
-            document.getElementById('imageB_img').src = currentPair.imageB.url;
-            document.getElementById('imageB_img').alt = currentPair.imageB.name;
+            const imageA_img = document.getElementById('imageA_img');
+            const imageB_img = document.getElementById('imageB_img');
+
+            // 设置图片alt属性
+            imageA_img.alt = currentPair.imageA.name;
+            imageB_img.alt = currentPair.imageB.name;
+
+            // 使用新的图片加载函数
+            loadImageWithFallback(imageA_img, currentPair.imageA, 'Image A');
+            loadImageWithFallback(imageB_img, currentPair.imageB, 'Image B');
 
             document.getElementById('progressCounter').textContent = `${comparisons.length + 1}/50`;
             
@@ -654,18 +744,47 @@
 
         // 页面加载完成后初始化
         document.addEventListener('DOMContentLoaded', async function() {
-            console.log('Survey application loaded');
-            console.log('Initializing image library...');
+            console.log('🚀 Survey application loaded');
+            console.log('📋 Configuration:', CLOUDINARY_CONFIG);
+            console.log('🔧 Debug mode:', DEBUG_MODE ? 'ON' : 'OFF');
+            console.log('📁 Loading method:', LOADING_METHOD);
             
             // 预先加载图片库
             await initializeImageLibrary();
             
             if (isImageLibraryLoaded && imageLibrary.length > 0) {
-                console.log(`Image library ready with ${imageLibrary.length} images for comparison`);
-                console.log('Sample URLs:', imageLibrary.slice(0, 2).map(img => img.url));
+                console.log(`✅ Image library ready with ${imageLibrary.length} images for comparison`);
+                
+                if (DEBUG_MODE && imageLibrary.length > 0) {
+                    console.log('🧪 Testing first image URL...');
+                    const testImage = imageLibrary[0];
+                    console.log('📄 Test image filename:', testImage.filename);
+                    console.log('🔗 Primary URL:', testImage.url);
+                    console.log('🔗 Alternative URLs:', testImage.alternativeUrls);
+                    
+                    // 为了方便调试，在控制台提供一些手动测试的URL
+                    console.log('🔧 Manual test URLs (copy and paste in browser):');
+                    [testImage.url, ...testImage.alternativeUrls].forEach((url, index) => {
+                        console.log(`   ${index + 1}. ${url}`);
+                    });
+                    
+                    // 创建一个测试图片元素来验证URL
+                    const testImg = document.createElement('img');
+                    testImg.style.display = 'none';
+                    document.body.appendChild(testImg);
+                    
+                    loadImageWithFallback(testImg, testImage, 'Test Image');
+                    
+                    // 5秒后移除测试图片
+                    setTimeout(() => {
+                        if (testImg.parentNode) {
+                            testImg.parentNode.removeChild(testImg);
+                        }
+                    }, 5000);
+                }
             } else {
-                console.warn('Image library initialization failed or incomplete');
-                console.log('Please check that image_list.txt exists and contains image filenames');
+                console.warn('⚠️ Image library initialization failed or incomplete');
+                console.log('💡 Please check that image_list.txt exists and contains image filenames');
             }
         });
     </script>
