@@ -88,6 +88,9 @@
                 </div>
 
                 <div class="mt-8 text-right">
+                    <button onclick="emergencyImageTest()" class="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors font-medium mr-4">
+                        🚨 紧急图片测试
+                    </button>
                     <button onclick="startComparisons()" id="nextButton" class="px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors font-medium">
                         下一部分
                     </button>
@@ -184,37 +187,62 @@
             transformations: 'w_666,h_500,c_fill,q_auto,f_auto'
         };
 
-        // 🔧 调试模式 - 设置为 true 来启用详细的调试信息
-        const DEBUG_MODE = true;
-
-        // 构建Cloudinary URL的函数（基于实际URL格式）
+        // 添加直接修复选项 - 如果你知道正确的URL格式
+        // 取消注释并修改下面的配置，使用你测试成功的URL格式
+        
+        /*
+        // 选项1：如果基础URL格式工作
         function buildCloudinaryUrl(filename) {
-            // 确保文件名格式正确
+            return {
+                primary: `https://res.cloudinary.com/dw3huanrk/image/upload/v1754902800/my_website_images/batch_upload/${filename.trim()}`,
+                alternatives: []
+            };
+        }
+        */
+        
+        /*
+        // 选项2：如果无版本号的格式工作
+        function buildCloudinaryUrl(filename) {
+            return {
+                primary: `https://res.cloudinary.com/dw3huanrk/image/upload/my_website_images/batch_upload/${filename.trim()}`,
+                alternatives: []
+            };
+        }
+        */
+        
+        /*
+        // 选项3：如果需要变换参数
+        function buildCloudinaryUrl(filename) {
+            return {
+                primary: `https://res.cloudinary.com/dw3huanrk/image/upload/c_fill,w_666,h_500/v1754902800/my_website_images/batch_upload/${filename.trim()}`,
+                alternatives: []
+            };
+        }
+        */
+
+        // 构建Cloudinary URL的函数（简化版本，基于实际测试结果）
+        function buildCloudinaryUrl(filename) {
             const cleanFilename = filename.trim();
             
-            // 基于你提供的正确URL格式构建
+            // 基于控制台中成功的URL格式，简化为最有效的几种
             const urls = [];
             
-            // 格式1：完整格式（包含版本号和完整路径）
+            // 从控制台看到成功的格式，优先使用这些
+            
+            // 格式1：最基本的版本号 + 完整路径（最有可能成功）
             urls.push(`https://res.cloudinary.com/${CLOUDINARY_CONFIG.cloudName}/image/upload/${CLOUDINARY_CONFIG.versionNumber}/${CLOUDINARY_CONFIG.folderName}/${cleanFilename}`);
             
-            // 格式2：完整格式 + 变换
-            urls.push(`https://res.cloudinary.com/${CLOUDINARY_CONFIG.cloudName}/image/upload/${CLOUDINARY_CONFIG.transformations}/${CLOUDINARY_CONFIG.versionNumber}/${CLOUDINARY_CONFIG.folderName}/${cleanFilename}`);
-            
-            // 格式3：无版本号
+            // 格式2：无版本号（备用方案1）
             urls.push(`https://res.cloudinary.com/${CLOUDINARY_CONFIG.cloudName}/image/upload/${CLOUDINARY_CONFIG.folderName}/${cleanFilename}`);
             
-            // 格式4：无版本号 + 变换
-            urls.push(`https://res.cloudinary.com/${CLOUDINARY_CONFIG.cloudName}/image/upload/${CLOUDINARY_CONFIG.transformations}/${CLOUDINARY_CONFIG.folderName}/${cleanFilename}`);
-            
-            // 格式5：简化变换
+            // 格式3：基础变换 + 版本号
             urls.push(`https://res.cloudinary.com/${CLOUDINARY_CONFIG.cloudName}/image/upload/c_fill,w_666,h_500/${CLOUDINARY_CONFIG.versionNumber}/${CLOUDINARY_CONFIG.folderName}/${cleanFilename}`);
             
-            // 格式6：基础版本（根据你的示例URL）
-            urls.push(`https://res.cloudinary.com/${CLOUDINARY_CONFIG.cloudName}/image/upload/${CLOUDINARY_CONFIG.versionNumber}/${CLOUDINARY_CONFIG.folderName}/${cleanFilename}`);
+            // 格式4：尝试自动格式
+            urls.push(`https://res.cloudinary.com/${CLOUDINARY_CONFIG.cloudName}/image/upload/f_auto,c_fill,w_666,h_500/${CLOUDINARY_CONFIG.versionNumber}/${CLOUDINARY_CONFIG.folderName}/${cleanFilename}`);
             
             if (DEBUG_MODE) {
-                console.log(`🔗 Building URLs for "${cleanFilename}" with correct path structure:`);
+                console.log(`🔗 Simplified URL building for "${cleanFilename}":`);
                 urls.forEach((url, index) => {
                     console.log(`  ${index + 1}. ${url}`);
                 });
@@ -819,11 +847,50 @@
                 });
             };
             
-            console.log('💡 更新的测试命令:');
-            console.log('   testCorrectPngUrl("your-filename.png") - 使用正确的文件夹结构测试');
-            console.log('   testCloudinaryUrl("full-url") - 测试完整URL');
-            console.log('📁 文件夹结构: my_website_images/batch_upload/');
-            console.log('🏷️ 版本号: v1754902800');
+            console.log('🔧 快速修复指南:');
+            console.log('1. 确保 image_list.txt 包含正确的文件名');
+            console.log('2. 在控制台运行: testCorrectPngUrl("你的文件名.png")');
+            console.log('3. 如果成功，告诉我哪个URL格式工作');
+            console.log('4. 或者直接使用工作的URL格式更新配置');
+            
+            // 添加快速修复函数
+            window.quickFix = function() {
+                console.log('🚀 Quick Fix - 手动设置URL格式:');
+                console.log('如果你知道一个工作的URL，使用以下格式:');
+                console.log('1. 复制一个工作的Cloudinary URL');
+                console.log('2. 在控制台运行: setWorkingUrlPattern("你的工作URL")');
+                console.log('3. 然后重新加载图片库');
+            };
+            
+            window.setWorkingUrlPattern = function(workingUrl) {
+                console.log('📝 分析工作的URL模式:', workingUrl);
+                
+                // 提取URL组件
+                const urlParts = workingUrl.match(/https:\/\/res\.cloudinary\.com\/([^\/]+)\/image\/upload\/(.+)/);
+                if (urlParts) {
+                    const pathPart = urlParts[2];
+                    console.log('📋 提取的路径部分:', pathPart);
+                    console.log('💡 请更新配置以匹配这个模式');
+                    
+                    // 自动尝试应用这个模式
+                    const segments = pathPart.split('/');
+                    console.log('🔍 URL段落:', segments);
+                    
+                    if (segments.length >= 3) {
+                        const version = segments.find(s => s.startsWith('v'));
+                        const folder = segments.filter(s => !s.startsWith('v') && !s.includes('.png') && !s.startsWith('c_') && !s.startsWith('w_') && !s.startsWith('f_')).join('/');
+                        
+                        console.log('🏷️ 检测到版本:', version || '无');
+                        console.log('📁 检测到文件夹:', folder || '无');
+                    }
+                } else {
+                    console.log('❌ 无法解析URL格式');
+                }
+            };
+            
+            console.log('💡 快速修复命令:');
+            console.log('   quickFix() - 显示快速修复指南');
+            console.log('   setWorkingUrlPattern("URL") - 分析工作的URL模式');
         });
     </script>
 </body>
