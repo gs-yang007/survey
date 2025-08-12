@@ -175,26 +175,107 @@
 
     <script>
         // ====================================================================
-        // 配置区域 - 选择加载方法
+        // 全局配置 - 放在最前面避免未定义错误
         // ====================================================================
         const LOADING_METHOD = 3; // 1=预定义数组, 2=JSON文件, 3=文本文件
-        
-        // 🔧 调试模式 - 设置为 true 来启用详细的调试信息
-        const DEBUG_MODE = true;
+        const DEBUG_MODE = true;   // 调试模式
 
-        // Cloudinary配置 - 根据实际URL结构更新
+        // Cloudinary配置
         const CLOUDINARY_CONFIG = {
             cloudName: 'dw3huanrk',
-            folderName: 'my_website_images/batch_upload',  // 更新为正确的文件夹路径
-            versionNumber: 'v1754902800',  // 添加版本号
+            folderName: 'my_website_images/batch_upload',
+            versionNumber: 'v1754902800',
             transformations: 'w_666,h_500,c_fill,q_auto,f_auto'
         };
 
-        // 添加直接修复选项 - 如果你知道正确的URL格式
-        // 取消注释并修改下面的配置，使用你测试成功的URL格式
+        // 全局变量
+        let imageLibrary = [];
+        let isImageLibraryLoaded = false;
+        let currentLanguage = 'zh';
+        let userData = { gender: '', age: '', isProfessional: '' };
+        let comparisons = [];
+        let currentComparison = null;
+        let imageRankings = {};
+        let currentPair = { imageA: null, imageB: null };
+        let selectedOption = null;
+
+        // ====================================================================
+        // 核心函数定义
+        // ====================================================================
         
+        // 紧急图片测试函数
+        function emergencyImageTest() {
+            console.log('🚨 紧急图片测试开始...');
+            
+            if (!isImageLibraryLoaded || imageLibrary.length === 0) {
+                alert('图片库未加载！请检查 image_list.txt 文件是否存在且包含PNG文件名');
+                return;
+            }
+            
+            const testImage = imageLibrary[0];
+            console.log('🧪 测试图片:', testImage.filename);
+            
+            // 移除已存在的测试窗口
+            const existingTest = document.getElementById('emergencyTest');
+            if (existingTest) {
+                existingTest.remove();
+            }
+            
+            // 创建测试区域
+            const testArea = document.createElement('div');
+            testArea.id = 'emergencyTest';
+            testArea.style.cssText = `
+                position: fixed; top: 50px; right: 10px; width: 350px; height: 450px; 
+                background: white; border: 3px solid #ff0000; padding: 15px; z-index: 9999;
+                overflow-y: auto; font-size: 13px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+            `;
+            testArea.innerHTML = `
+                <h3 style="margin:0 0 10px 0;">🚨 紧急图片测试</h3>
+                <button onclick="document.getElementById('emergencyTest').remove()" style="float:right; margin-top:-30px;">❌ 关闭</button>
+                <p style="font-size:12px; color:#666;">测试第一张图片: <br><code>${testImage.filename}</code></p>
+                <hr>
+            `;
+            
+            // 测试多种URL格式
+            const testUrls = [
+                `https://res.cloudinary.com/dw3huanrk/image/upload/v1754902800/my_website_images/batch_upload/${testImage.filename}`,
+                `https://res.cloudinary.com/dw3huanrk/image/upload/my_website_images/batch_upload/${testImage.filename}`,
+                `https://res.cloudinary.com/dw3huanrk/image/upload/c_fill,w_200,h_150/v1754902800/my_website_images/batch_upload/${testImage.filename}`,
+                `https://res.cloudinary.com/dw3huanrk/image/upload/f_auto,c_scale,w_200/my_website_images/batch_upload/${testImage.filename}`
+            ];
+            
+            testUrls.forEach((url, index) => {
+                const imgContainer = document.createElement('div');
+                imgContainer.style.cssText = 'margin: 10px 0; padding: 8px; border: 1px solid #eee;';
+                imgContainer.innerHTML = `
+                    <p style="margin:0 0 5px 0;"><strong>格式 ${index + 1}:</strong></p>
+                    <img src="${url}" style="width: 100%; max-height: 60px; object-fit: cover; border: 1px solid #ccc;" 
+                         onload="console.log('✅ 格式 ${index + 1} 成功!', '${url}'); this.nextElementSibling.innerHTML = '✅ 成功！'; this.nextElementSibling.style.color = 'green';"
+                         onerror="console.log('❌ 格式 ${index + 1} 失败', '${url}'); this.nextElementSibling.innerHTML = '❌ 失败'; this.nextElementSibling.style.color = 'red';">
+                    <p style="margin:5px 0 0 0; font-weight:bold;">⏳ 加载中...</p>
+                `;
+                testArea.appendChild(imgContainer);
+            });
+            
+            const instruction = document.createElement('div');
+            instruction.innerHTML = `
+                <hr>
+                <div style="background:#f0f8ff; padding:8px; border-radius:4px; font-size:12px;">
+                    <strong>📝 使用说明:</strong><br>
+                    1. 等待图片加载完成<br>
+                    2. 找到显示"✅ 成功！"的格式<br>
+                    3. 记下成功的格式编号<br>
+                    4. 告诉我哪个格式成功了
+                </div>
+            `;
+            testArea.appendChild(instruction);
+            
+            document.body.appendChild(testArea);
+        }
+
+        // 添加直接修复选项 - 如果测试成功，可以取消注释使用
         /*
-        // 选项1：如果基础URL格式工作
+        // 选项1：如果基础URL格式工作 (格式1成功时使用)
         function buildCloudinaryUrl(filename) {
             return {
                 primary: `https://res.cloudinary.com/dw3huanrk/image/upload/v1754902800/my_website_images/batch_upload/${filename.trim()}`,
@@ -204,7 +285,7 @@
         */
         
         /*
-        // 选项2：如果无版本号的格式工作
+        // 选项2：如果无版本号格式工作 (格式2成功时使用)
         function buildCloudinaryUrl(filename) {
             return {
                 primary: `https://res.cloudinary.com/dw3huanrk/image/upload/my_website_images/batch_upload/${filename.trim()}`,
@@ -212,40 +293,20 @@
             };
         }
         */
-        
-        /*
-        // 选项3：如果需要变换参数
-        function buildCloudinaryUrl(filename) {
-            return {
-                primary: `https://res.cloudinary.com/dw3huanrk/image/upload/c_fill,w_666,h_500/v1754902800/my_website_images/batch_upload/${filename.trim()}`,
-                alternatives: []
-            };
-        }
-        */
 
-        // 构建Cloudinary URL的函数（简化版本，基于实际测试结果）
+        // 构建Cloudinary URL的函数
         function buildCloudinaryUrl(filename) {
             const cleanFilename = filename.trim();
-            
-            // 基于控制台中成功的URL格式，简化为最有效的几种
             const urls = [];
             
-            // 从控制台看到成功的格式，优先使用这些
-            
-            // 格式1：最基本的版本号 + 完整路径（最有可能成功）
+            // 基于实际测试结果，按成功率排序的URL格式
             urls.push(`https://res.cloudinary.com/${CLOUDINARY_CONFIG.cloudName}/image/upload/${CLOUDINARY_CONFIG.versionNumber}/${CLOUDINARY_CONFIG.folderName}/${cleanFilename}`);
-            
-            // 格式2：无版本号（备用方案1）
             urls.push(`https://res.cloudinary.com/${CLOUDINARY_CONFIG.cloudName}/image/upload/${CLOUDINARY_CONFIG.folderName}/${cleanFilename}`);
-            
-            // 格式3：基础变换 + 版本号
             urls.push(`https://res.cloudinary.com/${CLOUDINARY_CONFIG.cloudName}/image/upload/c_fill,w_666,h_500/${CLOUDINARY_CONFIG.versionNumber}/${CLOUDINARY_CONFIG.folderName}/${cleanFilename}`);
-            
-            // 格式4：尝试自动格式
             urls.push(`https://res.cloudinary.com/${CLOUDINARY_CONFIG.cloudName}/image/upload/f_auto,c_fill,w_666,h_500/${CLOUDINARY_CONFIG.versionNumber}/${CLOUDINARY_CONFIG.folderName}/${cleanFilename}`);
             
             if (DEBUG_MODE) {
-                console.log(`🔗 Simplified URL building for "${cleanFilename}":`);
+                console.log(`🔗 Building URLs for "${cleanFilename}":`);
                 urls.forEach((url, index) => {
                     console.log(`  ${index + 1}. ${url}`);
                 });
@@ -257,7 +318,7 @@
             };
         }
 
-        // 从文件名列表生成图片库的函数
+        // 从文件名列表生成图片库
         function generateImageLibraryFromFilenames(filenames) {
             return filenames.map((filename, index) => {
                 const urlData = buildCloudinaryUrl(filename);
@@ -271,22 +332,16 @@
             });
         }
 
-        // 预定义图片列表（基于实际文件名格式的示例）
+        // 预定义图片列表
         const PREDEFINED_IMAGE_LIST = [
             'fff7d0a1-08b4-4bb4-8e89-50936e51f395_5345.png',
             'b7d2da36-4d32-41ae-b9b7-e1be90cc1c49.png',
-            '022fed74-9510-40e2-bc92-cd237677a4fb.png',
-            // 添加更多实际的PNG文件名...
-            // 确保所有文件名都包含.png扩展名，格式如：xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx_xxxx.png
+            '022fed74-9510-40e2-bc92-cd237677a4fb.png'
         ];
 
         // 外部文件URLs
         const IMAGE_LIST_JSON_URL = 'image_list.json';
         const IMAGE_LIST_TXT_URL = 'image_list.txt';
-
-        // 全局变量存储图片库
-        let imageLibrary = [];
-        let isImageLibraryLoaded = false;
 
         // 从预定义数组加载图片名
         async function loadFromPredefinedArray() {
@@ -428,32 +483,38 @@
         let currentPair = { imageA: null, imageB: null };
         let selectedOption = null;
 
-        // 紧急图片测试函数 - 移到前面确保可以使用
+        // 紧急图片测试函数
         function emergencyImageTest() {
             console.log('🚨 紧急图片测试开始...');
             
-            // 确保图片库已加载
-            if (!isImageLibraryLoaded) {
-                alert('图片库未加载！请先加载图片库');
-                return;
-            }
-            
-            if (imageLibrary.length === 0) {
-                alert('图片库为空！请检查 image_list.txt 文件');
+            if (!isImageLibraryLoaded || imageLibrary.length === 0) {
+                alert('图片库未加载！请检查 image_list.txt 文件是否存在且包含PNG文件名');
                 return;
             }
             
             const testImage = imageLibrary[0];
             console.log('🧪 测试图片:', testImage.filename);
             
+            // 移除已存在的测试窗口
+            const existingTest = document.getElementById('emergencyTest');
+            if (existingTest) {
+                existingTest.remove();
+            }
+            
             // 创建测试区域
             const testArea = document.createElement('div');
+            testArea.id = 'emergencyTest';
             testArea.style.cssText = `
-                position: fixed; top: 10px; right: 10px; width: 300px; height: 400px; 
-                background: white; border: 2px solid #000; padding: 10px; z-index: 9999;
-                overflow-y: scroll; font-size: 12px;
+                position: fixed; top: 50px; right: 10px; width: 350px; height: 450px; 
+                background: white; border: 3px solid #ff0000; padding: 15px; z-index: 9999;
+                overflow-y: auto; font-size: 13px; box-shadow: 0 4px 20px rgba(0,0,0,0.3);
             `;
-            testArea.innerHTML = '<h3>🚨 紧急图片测试</h3><button onclick="this.parentNode.remove()">关闭</button><br><br>';
+            testArea.innerHTML = `
+                <h3 style="margin:0 0 10px 0;">🚨 紧急图片测试</h3>
+                <button onclick="document.getElementById('emergencyTest').remove()" style="float:right; margin-top:-30px;">❌ 关闭</button>
+                <p style="font-size:12px; color:#666;">测试第一张图片: <br><code>${testImage.filename}</code></p>
+                <hr>
+            `;
             
             // 测试多种URL格式
             const testUrls = [
@@ -465,12 +526,13 @@
             
             testUrls.forEach((url, index) => {
                 const imgContainer = document.createElement('div');
+                imgContainer.style.cssText = 'margin: 10px 0; padding: 8px; border: 1px solid #eee;';
                 imgContainer.innerHTML = `
-                    <p><strong>格式 ${index + 1}:</strong></p>
-                    <img src="${url}" style="width: 100%; max-height: 80px; object-fit: cover; border: 1px solid #ccc;" 
-                         onload="console.log('✅ 格式 ${index + 1} 成功!', '${url}'); this.nextSibling.textContent = '✅ 成功!'"
-                         onerror="console.log('❌ 格式 ${index + 1} 失败', '${url}'); this.nextSibling.textContent = '❌ 失败'">
-                    <p>加载中...</p>
+                    <p style="margin:0 0 5px 0;"><strong>格式 ${index + 1}:</strong></p>
+                    <img src="${url}" style="width: 100%; max-height: 60px; object-fit: cover; border: 1px solid #ccc;" 
+                         onload="console.log('✅ 格式 ${index + 1} 成功!', '${url}'); this.nextElementSibling.innerHTML = '✅ 成功！'; this.nextElementSibling.style.color = 'green';"
+                         onerror="console.log('❌ 格式 ${index + 1} 失败', '${url}'); this.nextElementSibling.innerHTML = '❌ 失败'; this.nextElementSibling.style.color = 'red';">
+                    <p style="margin:5px 0 0 0; font-weight:bold;">⏳ 加载中...</p>
                 `;
                 testArea.appendChild(imgContainer);
             });
@@ -478,10 +540,13 @@
             const instruction = document.createElement('div');
             instruction.innerHTML = `
                 <hr>
-                <p><strong>说明:</strong></p>
-                <p>1. 如果某个格式显示图片，记下格式编号</p>
-                <p>2. 在控制台查看成功的URL</p>
-                <p>3. 使用成功的格式更新配置</p>
+                <div style="background:#f0f8ff; padding:8px; border-radius:4px; font-size:12px;">
+                    <strong>📝 使用说明:</strong><br>
+                    1. 等待图片加载完成<br>
+                    2. 找到显示"✅ 成功！"的格式<br>
+                    3. 记下成功的格式编号<br>
+                    4. 告诉我哪个格式成功了
+                </div>
             `;
             testArea.appendChild(instruction);
             
