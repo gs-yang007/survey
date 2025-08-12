@@ -178,6 +178,9 @@
         // 配置区域 - 选择加载方法
         // ====================================================================
         const LOADING_METHOD = 3; // 1=预定义数组, 2=JSON文件, 3=文本文件
+        
+        // 🔧 调试模式 - 设置为 true 来启用详细的调试信息
+        const DEBUG_MODE = true;
 
         // Cloudinary配置 - 根据实际URL结构更新
         const CLOUDINARY_CONFIG = {
@@ -424,6 +427,66 @@
         let imageRankings = {};
         let currentPair = { imageA: null, imageB: null };
         let selectedOption = null;
+
+        // 紧急图片测试函数 - 移到前面确保可以使用
+        function emergencyImageTest() {
+            console.log('🚨 紧急图片测试开始...');
+            
+            // 确保图片库已加载
+            if (!isImageLibraryLoaded) {
+                alert('图片库未加载！请先加载图片库');
+                return;
+            }
+            
+            if (imageLibrary.length === 0) {
+                alert('图片库为空！请检查 image_list.txt 文件');
+                return;
+            }
+            
+            const testImage = imageLibrary[0];
+            console.log('🧪 测试图片:', testImage.filename);
+            
+            // 创建测试区域
+            const testArea = document.createElement('div');
+            testArea.style.cssText = `
+                position: fixed; top: 10px; right: 10px; width: 300px; height: 400px; 
+                background: white; border: 2px solid #000; padding: 10px; z-index: 9999;
+                overflow-y: scroll; font-size: 12px;
+            `;
+            testArea.innerHTML = '<h3>🚨 紧急图片测试</h3><button onclick="this.parentNode.remove()">关闭</button><br><br>';
+            
+            // 测试多种URL格式
+            const testUrls = [
+                `https://res.cloudinary.com/dw3huanrk/image/upload/v1754902800/my_website_images/batch_upload/${testImage.filename}`,
+                `https://res.cloudinary.com/dw3huanrk/image/upload/my_website_images/batch_upload/${testImage.filename}`,
+                `https://res.cloudinary.com/dw3huanrk/image/upload/c_fill,w_200,h_150/v1754902800/my_website_images/batch_upload/${testImage.filename}`,
+                `https://res.cloudinary.com/dw3huanrk/image/upload/f_auto,c_scale,w_200/my_website_images/batch_upload/${testImage.filename}`
+            ];
+            
+            testUrls.forEach((url, index) => {
+                const imgContainer = document.createElement('div');
+                imgContainer.innerHTML = `
+                    <p><strong>格式 ${index + 1}:</strong></p>
+                    <img src="${url}" style="width: 100%; max-height: 80px; object-fit: cover; border: 1px solid #ccc;" 
+                         onload="console.log('✅ 格式 ${index + 1} 成功!', '${url}'); this.nextSibling.textContent = '✅ 成功!'"
+                         onerror="console.log('❌ 格式 ${index + 1} 失败', '${url}'); this.nextSibling.textContent = '❌ 失败'">
+                    <p>加载中...</p>
+                `;
+                testArea.appendChild(imgContainer);
+            });
+            
+            const instruction = document.createElement('div');
+            instruction.innerHTML = `
+                <hr>
+                <p><strong>说明:</strong></p>
+                <p>1. 如果某个格式显示图片，记下格式编号</p>
+                <p>2. 在控制台查看成功的URL</p>
+                <p>3. 使用成功的格式更新配置</p>
+            `;
+            testArea.appendChild(instruction);
+            
+            document.body.appendChild(testArea);
+        }
 
         // 文本内容
         const texts = {
@@ -777,43 +840,27 @@
             await initializeImageLibrary();
             
             if (isImageLibraryLoaded && imageLibrary.length > 0) {
-                console.log(`✅ Image library ready with ${imageLibrary.length} images for comparison`);
+                console.log('📋 现在图片库已加载:', imageLibrary.length, '张图片');
                 
                 if (DEBUG_MODE && imageLibrary.length > 0) {
                     const testImage = imageLibrary[0];
-                    console.log('🧪 Testing first PNG image with correct Cloudinary structure...');
-                    console.log('📄 Test image filename:', testImage.filename);
-                    console.log('📁 Folder path: my_website_images/batch_upload/');
-                    console.log('🏷️ Version: v1754902800');
+                    console.log('🧪 测试第一张图片:', testImage.filename);
                     
-                    // 基于你提供的正确URL格式生成测试URL
-                    const correctFormatUrl = `https://res.cloudinary.com/dw3huanrk/image/upload/v1754902800/my_website_images/batch_upload/${testImage.filename}`;
-                    console.log('🎯 Expected working URL format:', correctFormatUrl);
+                    // 简化的测试URL
+                    const quickTestUrl = `https://res.cloudinary.com/dw3huanrk/image/upload/v1754902800/my_website_images/batch_upload/${testImage.filename}`;
+                    console.log('🔗 快速测试URL:', quickTestUrl);
                     
-                    // 生成其他可能的URL格式
-                    const manualTestUrls = [
-                        // 基础格式（应该工作）
-                        `https://res.cloudinary.com/${CLOUDINARY_CONFIG.cloudName}/image/upload/${CLOUDINARY_CONFIG.versionNumber}/${CLOUDINARY_CONFIG.folderName}/${testImage.filename}`,
-                        
-                        // 带变换的格式
-                        `https://res.cloudinary.com/${CLOUDINARY_CONFIG.cloudName}/image/upload/c_fill,w_400,h_300/${CLOUDINARY_CONFIG.versionNumber}/${CLOUDINARY_CONFIG.folderName}/${testImage.filename}`,
-                        
-                        // 无版本号的格式
-                        `https://res.cloudinary.com/${CLOUDINARY_CONFIG.cloudName}/image/upload/${CLOUDINARY_CONFIG.folderName}/${testImage.filename}`,
-                    ];
-                    
-                    console.log('🔧 手动测试这些URL (第一个应该能工作):');
-                    manualTestUrls.forEach((url, index) => {
-                        console.log(`   ${index + 1}. ${url}`);
-                    });
-                    
-                    // 自动测试
-                    console.log('🤖 Auto-testing with correct structure...');
-                    loadImageWithFallback(
-                        document.createElement('img'), 
-                        testImage, 
-                        'PNG Test Image (Correct Structure)'
-                    );
+                    // 添加简单的测试
+                    const testImg = new Image();
+                    testImg.onload = function() {
+                        console.log('✅ 第一张图片加载成功！URL格式正确');
+                        console.log('💡 如果这个成功了，问卷应该可以正常工作');
+                    };
+                    testImg.onerror = function() {
+                        console.log('❌ 第一张图片加载失败');
+                        console.log('🚨 请使用紧急测试按钮找到正确格式');
+                    };
+                    testImg.src = quickTestUrl;
                 }
             } else {
                 console.warn('⚠️ Image library initialization failed or incomplete');
