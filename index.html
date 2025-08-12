@@ -190,36 +190,42 @@
         // 🔧 调试模式 - 设置为 true 来启用详细的调试信息
         const DEBUG_MODE = true;
 
-        // 构建Cloudinary URL的函数（支持多种格式尝试）
+        // 构建Cloudinary URL的函数（针对PNG文件优化）
         function buildCloudinaryUrl(filename) {
-            // 移除文件扩展名（如果有的话）
-            const publicId = filename.replace(/\.(jpg|jpeg|png|gif|webp)$/i, '');
+            // 确保文件名格式正确，特别处理PNG文件
+            const cleanFilename = filename.trim();
             
-            // 构建不同格式的URL进行尝试
-            const urls = [];
-            
-            if (CLOUDINARY_CONFIG.folderName) {
-                // 格式1：带文件夹和变换
-                urls.push(`https://res.cloudinary.com/${CLOUDINARY_CONFIG.cloudName}/image/upload/${CLOUDINARY_CONFIG.transformations}/${CLOUDINARY_CONFIG.folderName}/${publicId}`);
-                
-                // 格式2：带文件夹，简化变换
-                urls.push(`https://res.cloudinary.com/${CLOUDINARY_CONFIG.cloudName}/image/upload/c_fill,w_666,h_500/${CLOUDINARY_CONFIG.folderName}/${publicId}`);
-                
-                // 格式3：带文件夹，无变换
-                urls.push(`https://res.cloudinary.com/${CLOUDINARY_CONFIG.cloudName}/image/upload/${CLOUDINARY_CONFIG.folderName}/${publicId}`);
-                
-                // 格式4：带文件夹，使用完整文件名
-                urls.push(`https://res.cloudinary.com/${CLOUDINARY_CONFIG.cloudName}/image/upload/${CLOUDINARY_CONFIG.transformations}/${CLOUDINARY_CONFIG.folderName}/${filename}`);
+            // 验证是否为PNG文件
+            if (!cleanFilename.toLowerCase().endsWith('.png')) {
+                console.warn(`⚠️ Warning: Expected PNG file, got: ${cleanFilename}`);
             }
             
-            // 格式5：无文件夹
-            urls.push(`https://res.cloudinary.com/${CLOUDINARY_CONFIG.cloudName}/image/upload/${CLOUDINARY_CONFIG.transformations}/${publicId}`);
+            // 构建不同格式的URL进行尝试（专门为PNG优化）
+            const urls = [];
             
-            // 格式6：无文件夹，使用完整文件名
-            urls.push(`https://res.cloudinary.com/${CLOUDINARY_CONFIG.cloudName}/image/upload/${CLOUDINARY_CONFIG.transformations}/${filename}`);
+            // PNG文件的推荐URL格式
+            
+            // 格式1：基本格式，保持PNG格式
+            urls.push(`https://res.cloudinary.com/${CLOUDINARY_CONFIG.cloudName}/image/upload/${CLOUDINARY_CONFIG.folderName}/${cleanFilename}`);
+            
+            // 格式2：带变换，保持PNG格式
+            urls.push(`https://res.cloudinary.com/${CLOUDINARY_CONFIG.cloudName}/image/upload/c_fill,w_666,h_500,f_png/${CLOUDINARY_CONFIG.folderName}/${cleanFilename}`);
+            
+            // 格式3：自动格式转换
+            urls.push(`https://res.cloudinary.com/${CLOUDINARY_CONFIG.cloudName}/image/upload/c_fill,w_666,h_500,f_auto/${CLOUDINARY_CONFIG.folderName}/${cleanFilename}`);
+            
+            // 格式4：无文件夹路径
+            urls.push(`https://res.cloudinary.com/${CLOUDINARY_CONFIG.cloudName}/image/upload/${cleanFilename}`);
+            
+            // 格式5：无文件夹，带PNG优化
+            urls.push(`https://res.cloudinary.com/${CLOUDINARY_CONFIG.cloudName}/image/upload/c_fill,w_666,h_500,f_png/${cleanFilename}`);
+            
+            // 格式6：移除扩展名版本（有时Cloudinary这样工作）
+            const publicId = cleanFilename.replace(/\.png$/i, '');
+            urls.push(`https://res.cloudinary.com/${CLOUDINARY_CONFIG.cloudName}/image/upload/${CLOUDINARY_CONFIG.folderName}/${publicId}`);
             
             if (DEBUG_MODE) {
-                console.log(`🔗 Building URLs for ${filename}:`);
+                console.log(`🔗 Building PNG URLs for "${cleanFilename}":`);
                 urls.forEach((url, index) => {
                     console.log(`  ${index + 1}. ${url}`);
                 });
@@ -245,13 +251,12 @@
             });
         }
 
-        // 预定义图片列表（如果使用方法1）
+        // 预定义图片列表（PNG示例，请替换为你的实际文件名）
         const PREDEFINED_IMAGE_LIST = [
-            'street_001.jpg',
-            'street_002.jpg',
-            'building_001.png',
-            'landscape_001.jpg',
-            'urban_view_001.webp'
+            'b7d2da36-4d32-41ae-b9b7-e1be90cc1c49.png',
+            '022fed74-9510-40e2-bc92-cd237677a4fb.png',
+            // 添加更多PNG文件名...
+            // 确保所有文件名都包含.png扩展名
         ];
 
         // 外部文件URLs
@@ -748,6 +753,7 @@
             console.log('📋 Configuration:', CLOUDINARY_CONFIG);
             console.log('🔧 Debug mode:', DEBUG_MODE ? 'ON' : 'OFF');
             console.log('📁 Loading method:', LOADING_METHOD);
+            console.log('🖼️ Expected image format: PNG');
             
             // 预先加载图片库
             await initializeImageLibrary();
@@ -756,36 +762,81 @@
                 console.log(`✅ Image library ready with ${imageLibrary.length} images for comparison`);
                 
                 if (DEBUG_MODE && imageLibrary.length > 0) {
-                    console.log('🧪 Testing first image URL...');
                     const testImage = imageLibrary[0];
+                    console.log('🧪 Testing first PNG image...');
                     console.log('📄 Test image filename:', testImage.filename);
-                    console.log('🔗 Primary URL:', testImage.url);
-                    console.log('🔗 Alternative URLs:', testImage.alternativeUrls);
                     
-                    // 为了方便调试，在控制台提供一些手动测试的URL
-                    console.log('🔧 Manual test URLs (copy and paste in browser):');
-                    [testImage.url, ...testImage.alternativeUrls].forEach((url, index) => {
+                    // 确保是PNG文件
+                    if (!testImage.filename.toLowerCase().includes('.png')) {
+                        console.warn('⚠️ WARNING: Expected PNG files! Check your image_list.txt');
+                        console.log('💡 Your image_list.txt should contain lines like:');
+                        console.log('   b7d2da36-4d32-41ae-b9b7-e1be90cc1c49.png');
+                        console.log('   022fed74-9510-40e2-bc92-cd237677a4fb.png');
+                    }
+                    
+                    // 生成PNG专用的手动测试URL
+                    const manualTestUrls = [
+                        // 最简单的格式
+                        `https://res.cloudinary.com/${CLOUDINARY_CONFIG.cloudName}/image/upload/${CLOUDINARY_CONFIG.folderName}/${testImage.filename}`,
+                        
+                        // 带PNG优化的格式
+                        `https://res.cloudinary.com/${CLOUDINARY_CONFIG.cloudName}/image/upload/f_png,w_400,h_300/${CLOUDINARY_CONFIG.folderName}/${testImage.filename}`,
+                        
+                        // 无文件夹的格式
+                        `https://res.cloudinary.com/${CLOUDINARY_CONFIG.cloudName}/image/upload/${testImage.filename}`,
+                        
+                        // 自动格式转换
+                        `https://res.cloudinary.com/${CLOUDINARY_CONFIG.cloudName}/image/upload/f_auto,w_400,h_300/${CLOUDINARY_CONFIG.folderName}/${testImage.filename}`,
+                    ];
+                    
+                    console.log('🔧 请手动测试这些PNG URL (复制到浏览器地址栏):');
+                    manualTestUrls.forEach((url, index) => {
                         console.log(`   ${index + 1}. ${url}`);
                     });
                     
-                    // 创建一个测试图片元素来验证URL
-                    const testImg = document.createElement('img');
-                    testImg.style.display = 'none';
-                    document.body.appendChild(testImg);
+                    console.log('📝 如果某个URL能显示图片，请告诉我是第几个！');
                     
-                    loadImageWithFallback(testImg, testImage, 'Test Image');
-                    
-                    // 5秒后移除测试图片
-                    setTimeout(() => {
-                        if (testImg.parentNode) {
-                            testImg.parentNode.removeChild(testImg);
-                        }
-                    }, 5000);
+                    // 自动测试
+                    console.log('🤖 Auto-testing PNG URLs...');
+                    loadImageWithFallback(
+                        document.createElement('img'), 
+                        testImage, 
+                        'PNG Test Image'
+                    );
                 }
             } else {
                 console.warn('⚠️ Image library initialization failed or incomplete');
-                console.log('💡 Please check that image_list.txt exists and contains image filenames');
+                console.log('💡 Please check that image_list.txt exists and contains PNG filenames');
+                console.log('📝 Example image_list.txt content:');
+                console.log('   b7d2da36-4d32-41ae-b9b7-e1be90cc1c49.png');
+                console.log('   022fed74-9510-40e2-bc92-cd237677a4fb.png');
             }
+            
+            // 添加PNG专用的测试函数
+            window.testPngUrl = function(filename) {
+                const testUrls = [
+                    `https://res.cloudinary.com/${CLOUDINARY_CONFIG.cloudName}/image/upload/${CLOUDINARY_CONFIG.folderName}/${filename}`,
+                    `https://res.cloudinary.com/${CLOUDINARY_CONFIG.cloudName}/image/upload/${filename}`,
+                    `https://res.cloudinary.com/${CLOUDINARY_CONFIG.cloudName}/image/upload/f_auto/${CLOUDINARY_CONFIG.folderName}/${filename}`,
+                ];
+                
+                console.log(`🧪 Testing PNG file: ${filename}`);
+                testUrls.forEach((url, index) => {
+                    console.log(`  ${index + 1}. Testing: ${url}`);
+                    const img = new Image();
+                    img.onload = function() {
+                        console.log(`  ✅ SUCCESS! URL ${index + 1} works: ${url}`);
+                    };
+                    img.onerror = function() {
+                        console.log(`  ❌ FAILED! URL ${index + 1}: ${url}`);
+                    };
+                    img.src = url;
+                });
+            };
+            
+            console.log('💡 PNG Testing commands:');
+            console.log('   testPngUrl("your-filename.png") - Test a specific PNG file');
+            console.log('   testCloudinaryUrl("full-url") - Test a complete URL');
         });
     </script>
 </body>
