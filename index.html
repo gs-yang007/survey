@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>街景行为问卷调研 - 修复版</title>
+    <title>街景行为问卷调研 - Cloudinary版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .hidden { display: none; }
@@ -54,16 +54,6 @@
                 </button>
                 <button onclick="selectLanguage('en')" class="px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors font-medium">
                     English
-                </button>
-            </div>
-            
-            <!-- 测试按钮 -->
-            <div class="mt-6 pt-4 border-t">
-                <button onclick="testImageLoading()" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 mr-2">
-                    🧪 测试图片加载
-                </button>
-                <button onclick="createSampleImageList()" class="px-4 py-2 bg-purple-500 text-white rounded hover:bg-purple-600">
-                    📝 创建示例图片列表
                 </button>
             </div>
         </div>
@@ -209,7 +199,7 @@
         const DEBUG_MODE = true;
         let debugVisible = true;
         
-        // Cloudinary配置 - 你的实际配置
+        // Cloudinary配置
         const CLOUDINARY_CONFIG = {
             cloudName: 'dw3huanrk',
             folderPath: 'my_website_images/batch_upload'
@@ -218,15 +208,7 @@
         // 示例图片列表（作为后备）
         const DEMO_IMAGES = [
             'fff7d0a1-08b4-4bb4-8e89-50936e51f395_5345.png',
-            'fff11158-a3d5-4e96-9c02-92dd8a42566a_5344.png',
-            'street_scene_01.jpg',
-            'street_scene_02.jpg', 
-            'street_scene_03.jpg',
-            'street_scene_04.jpg',
-            'street_scene_05.jpg',
-            'urban_view_01.jpg',
-            'urban_view_02.jpg',
-            'park_bench_01.jpg'
+            'fff11158-a3d5-4e96-9c02-92dd8a42566a_5344.png'
         ];
 
         let imageLibrary = [];
@@ -258,53 +240,13 @@
             panel.style.display = debugVisible ? 'block' : 'none';
         }
 
-        // 测试图片加载功能
-        function testImageLoading() {
-            debugLog('🧪 开始测试Cloudinary图片加载...');
-            
-            const testFilenames = [
-                'fff7d0a1-08b4-4bb4-8e89-50936e51f395_5345.png',
-                'fff11158-a3d5-4e96-9c02-92dd8a42566a_5344.png'
-            ];
-
-            testFilenames.forEach((filename, index) => {
-                const url = buildCloudinaryUrl(filename);
-                debugLog(`测试图片 ${index + 1}: ${filename}`);
-                debugLog(`URL: ${url}`);
-                
-                const img = new Image();
-                img.onload = function() {
-                    debugLog(`✅ 图片 ${filename} 加载成功`);
-                };
-                img.onerror = function() {
-                    debugLog(`❌ 图片 ${filename} 加载失败`);
-                };
-                img.src = url;
-            });
-        }
-
-        // 创建示例图片列表文件内容
-        function createSampleImageList() {
-            const content = DEMO_IMAGES.join('\n');
-            
-            // 创建并下载文件
-            const blob = new Blob([content], { type: 'text/plain' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = 'image_list.txt';
-            a.click();
-            URL.revokeObjectURL(url);
-            
-            debugLog('📝 已生成示例图片列表文件，请下载并放置在HTML文件同目录下');
-            alert('已生成示例图片列表文件 image_list.txt，请下载并放置在HTML文件同目录下');
-        }
-
         // ====================================================================
-        // Cloudinary URL构建函数 - 核心修改部分
+        // Cloudinary URL构建函数
         // ====================================================================
         function buildCloudinaryUrl(filename) {
-            // 不使用版本号的Cloudinary URL格式
+            // 不使用版本号的Cloudinary URL格式，让Cloudinary自动使用最新版本
+            // 如果需要指定版本号，格式为：/v{version_number}/
+            // 示例：https://res.cloudinary.com/dw3huanrk/image/upload/v1754902800/my_website_images/batch_upload/filename.png
             return `https://res.cloudinary.com/${CLOUDINARY_CONFIG.cloudName}/image/upload/${CLOUDINARY_CONFIG.folderPath}/${filename}`;
         }
 
@@ -359,9 +301,9 @@
             isImageLibraryLoaded = true;
             debugLog(`✅ 图片库初始化完成，共 ${imageLibrary.length} 张图片`);
             
-            // 测试第一张图片的加载
+            // 输出示例URL用于调试
             if (imageLibrary.length > 0) {
-                testFirstImage();
+                debugLog(`🔗 第一张图片URL: ${imageLibrary[0].cloudinaryUrl}`);
             }
         }
 
@@ -383,26 +325,12 @@
             }
         }
 
-        function testFirstImage() {
-            const testImage = imageLibrary[0];
-            debugLog(`🧪 测试第一张图片: ${testImage.filename}`);
-            debugLog(`🔗 Cloudinary URL: ${testImage.cloudinaryUrl}`);
-            
-            const img = new Image();
-            img.onload = function() {
-                debugLog(`✅ Cloudinary图片加载成功！`);
-            };
-            img.onerror = function() {
-                debugLog(`❌ Cloudinary图片加载失败，将使用备用图片`);
-            };
-            img.src = testImage.cloudinaryUrl;
-        }
-
         // ====================================================================
         // 图片加载函数（带容错机制）
         // ====================================================================
         function loadImageWithFallback(imgElement, imageData, callback) {
             debugLog(`🖼️ 加载图片: ${imageData.filename}`);
+            debugLog(`🔗 URL: ${imageData.cloudinaryUrl}`);
             
             // 首先尝试Cloudinary
             imgElement.onload = function() {
@@ -707,11 +635,6 @@
             } else {
                 debugLog('⚠️ 图片库初始化有问题，但系统仍可运行');
             }
-            
-            debugLog('💡 使用说明:');
-            debugLog('1. 点击"测试图片加载"检查Cloudinary连接');
-            debugLog('2. 确保image_list.txt文件在同目录下');
-            debugLog('3. 图片将优先从Cloudinary加载，失败时使用备用图片');
         });
     </script>
 </body>
