@@ -251,7 +251,7 @@
                         <p id="totalComparisons" class="text-2xl font-bold text-green-600">0</p>
                     </div>
                     <div class="bg-purple-100 p-4 rounded-lg">
-                        <h3 class="font-semibold text-purple-800">平均每人对比组数</h3>
+                        <h3 class="font-semibold text-purple-800">平均每人对比次数</h3>
                         <p id="avgGroups" class="text-2xl font-bold text-purple-600">0</p>
                     </div>
                 </div>
@@ -289,7 +289,7 @@
         // ====================================================================
         // 配置和全局变量
         // ====================================================================
-        const DEBUG_MODE = false;
+        const DEBUG_MODE = false; // 关闭调试模式
         let debugVisible = false;
 
         // 示例图片URL列表
@@ -473,11 +473,27 @@
                 fallbackUrl: buildFallbackUrl(url)
             }));
             
-            const maxImages = Math.min(50, imageLibrary.length);
-            imageLibrary = imageLibrary.sort(() => 0.5 - Math.random()).slice(0, maxImages);
+            // 确保有足够的图片进行50组对比
+            // 需要50张图片，每张出现2次 = 100次出现 = 50对比
+            const minImagesNeeded = 50; // 50张图片每张出现2次 = 100次出现 = 50对比
+            
+            if (imageLibrary.length < minImagesNeeded) {
+                debugLog(`⚠️ 图片数量不足(${imageLibrary.length}张)，需要至少${minImagesNeeded}张`);
+                // 重复图片库直到达到最少要求
+                const originalLibrary = [...imageLibrary];
+                while (imageLibrary.length < minImagesNeeded) {
+                    imageLibrary.push(...originalLibrary);
+                }
+                // 截取到恰好50张
+                imageLibrary = imageLibrary.slice(0, minImagesNeeded);
+                debugLog(`✅ 已调整图片库到${imageLibrary.length}张图片`);
+            } else {
+                // 随机选择50张图片用于对比
+                imageLibrary = imageLibrary.sort(() => 0.5 - Math.random()).slice(0, minImagesNeeded);
+            }
             
             isImageLibraryLoaded = true;
-            debugLog(`✅ 图片库初始化完成，共 ${imageLibrary.length} 张图片`);
+            debugLog(`✅ 图片库初始化完成，共 ${imageLibrary.length} 张图片，每组将产生 ${Math.floor(imageLibrary.length)} 对比`);
         }
 
         async function loadImageUrlsFromFile() {
@@ -649,23 +665,73 @@
         function generateComparisonPairs() {
             comparisonPairs = [];
             
-            // 重新随机化图片库用于当前组
-            const shuffledLibrary = [...imageLibrary].sort(() => 0.5 - Math.random());
+            // 创建一个数组，每张图片的ID出现恰好2次
+            let imagePool = [];
+            imageLibrary.forEach(img => {
+                imagePool.push(img.id);
+                imagePool.push(img.id);
+            });
             
-            // 创建50对随机对比
-            for (let i = 0; i < 50; i++) {
-                const imageA = shuffledLibrary[Math.floor(Math.random() * shuffledLibrary.length)];
-                let imageB = shuffledLibrary[Math.floor(Math.random() * shuffledLibrary.length)];
+            // 随机打乱图片池
+            for (let i = imagePool.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [imagePool[i], imagePool[j]] = [imagePool[j], imagePool[i]];
+            }
+            
+            debugLog(`📊 图片池创建完成，共 ${imagePool.length} 个图片实例 (${imageLibrary.length} 张图片 × 2)`);
+            
+            // 成对组合，确保每对不是同一张图片
+            for (let i = 0; i < imagePool.length - 1; i += 2) {
+                let imageAId = imagePool[i];
+                let imageBId = imagePool[i + 1];
                 
-                // 确保不是同一张图片
-                while (imageB.id === imageA.id) {
-                    imageB = shuffledLibrary[Math.floor(Math.random() * shuffledLibrary.length)];
+                // 如果是同一张图片，尝试与后面的图片交换
+                if (imageAId === imageBId && i + 2 < imagePool.length) {
+                    // 寻找下一个不同的图片进行交换
+                    for (let k = i + 2; k < imagePool.length; k++) {
+                        if (imagePool[k] !== imageAId) {
+                            [imagePool[i + 1], imagePool[k]] = [imagePool[k], imagePool[i + 1]];
+                            imageBId = imagePool[i + 1];
+                            break;
+                        }
+                    }
                 }
                 
-                comparisonPairs.push({ imageA, imageB });
+                // 如果仍然是同一张图片，跳过这一对（理论上很少发生）
+                if (imageAId !== imageBId) {
+                    const imageA = imageLibrary.find(img => img.id === imageAId);
+                    const imageB = imageLibrary.find(img => img.id === imageBId);
+                    
+                    if (imageA && imageB) {
+                        comparisonPairs.push({ imageA, imageB });
+                    }
+                }
+                
+                // 确保不超过50组对比
+                if (comparisonPairs.length >= 50) {
+                    break;
+                }
             }
             
             debugLog(`✅ 第${currentGroupNumber}组生成了 ${comparisonPairs.length} 组配对`);
+            
+            // 验证每张图片的出现次数
+            if (DEBUG_MODE) {
+                const imageCount = {};
+                comparisonPairs.forEach(pair => {
+                    imageCount[pair.imageA.id] = (imageCount[pair.imageA.id] || 0) + 1;
+                    imageCount[pair.imageB.id] = (imageCount[pair.imageB.id] || 0) + 1;
+                });
+                
+                debugLog('📋 图片出现次数统计:');
+                Object.entries(imageCount).forEach(([id, count]) => {
+                    const imageName = imageLibrary.find(img => img.id == id)?.name || id;
+                    debugLog(`  图片 ${imageName}: ${count} 次`);
+                    if (count !== 2) {
+                        debugLog(`  ⚠️ 警告: 图片 ${imageName} 出现 ${count} 次，不符合预期的2次`);
+                    }
+                });
+            }
         }
 
         function initializeRankings() {
@@ -676,7 +742,7 @@
         }
 
         function generateNewComparison() {
-            if (currentComparisonIndex >= comparisonPairs.length) {
+            if (currentComparisonIndex >= 50) { // 确保恰好50组对比
                 completeCurrentGroup();
                 return;
             }
@@ -850,8 +916,8 @@
             document.getElementById('totalUsers').textContent = stats.totalUsers || 0;
             document.getElementById('totalComparisons').textContent = stats.totalComparisons || 0;
             
-            const avgGroups = stats.totalUsers > 0 ? (stats.totalComparisons / stats.totalUsers / 50).toFixed(1) : '0';
-            document.getElementById('avgGroups').textContent = avgGroups;
+            const avgComparisonsPerUser = stats.totalUsers > 0 ? (stats.totalComparisons / stats.totalUsers).toFixed(1) : '0';
+            document.getElementById('avgGroups').textContent = avgComparisonsPerUser;
             
             // 更新图片统计
             displayImageStats(stats);
@@ -943,7 +1009,7 @@
                 summary: {
                     totalUsers: stats.totalUsers || 0,
                     totalComparisons: stats.totalComparisons || 0,
-                    averageGroupsPerUser: stats.totalUsers > 0 ? (stats.totalComparisons / stats.totalUsers / 50) : 0
+                    averageComparisonsPerUser: stats.totalUsers > 0 ? (stats.totalComparisons / stats.totalUsers) : 0
                 }
             };
             
