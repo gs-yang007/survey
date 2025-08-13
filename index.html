@@ -935,29 +935,35 @@
             }
             
             const sortedImages = Object.entries(stats.imageRankings)
-                .sort(([,a], [,b]) => b.score - a.score)
+                .sort(([,a], [,b]) => b.winRate - a.winRate) // 直接按胜率排序
                 .slice(0, 20); // 显示前20名
+            
+            // 获取图片名称的辅助函数
+            function getImageName(imageId) {
+                const image = imageLibrary.find(img => img.id == imageId);
+                return image ? image.name : `图片${imageId}`;
+            }
             
             const html = `
                 <div class="space-y-2">
-                    <div class="grid grid-cols-6 gap-2 text-sm font-semibold text-gray-700 border-b pb-2">
+                    <div class="grid grid-cols-5 gap-2 text-sm font-semibold text-gray-700 border-b pb-2">
                         <div>排名</div>
-                        <div>图片ID</div>
-                        <div>得分</div>
+                        <div>图片名称</div>
+                        <div>胜率</div>
                         <div>胜场</div>
                         <div>负场</div>
-                        <div>胜率</div>
                     </div>
-                    ${sortedImages.map(([imageId, data], index) => `
-                        <div class="grid grid-cols-6 gap-2 text-sm">
+                    ${sortedImages.map(([imageId, data], index) => {
+                        const imageName = getImageName(imageId);
+                        return `
+                        <div class="grid grid-cols-5 gap-2 text-sm">
                             <div class="font-medium text-green-600">#${index + 1}</div>
-                            <div>${imageId}</div>
-                            <div>${Math.round(data.score)}</div>
+                            <div class="truncate" title="${imageName}">${imageName}</div>
+                            <div class="font-semibold text-blue-600">${(data.winRate * 100).toFixed(1)}%</div>
                             <div>${data.wins}</div>
                             <div>${data.losses}</div>
-                            <div>${(data.winRate * 100).toFixed(1)}%</div>
                         </div>
-                    `).join('')}
+                    `}).join('')}
                 </div>
             `;
             
