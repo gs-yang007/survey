@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>街景行为问卷调研 - Cloudinary版</title>
+    <title>街景行为问卷调研 - 直接URL版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .hidden { display: none; }
@@ -198,17 +198,11 @@
         // ====================================================================
         const DEBUG_MODE = true;
         let debugVisible = true;
-        
-        // Cloudinary配置
-        const CLOUDINARY_CONFIG = {
-            cloudName: 'dw3huanrk',
-            folderPath: 'my_website_images/batch_upload'
-        };
 
-        // 示例图片列表（作为后备）
+        // 示例图片URL列表（作为后备）
         const DEMO_IMAGES = [
-            'fff7d0a1-08b4-4bb4-8e89-50936e51f395_5345.png',
-            'fff11158-a3d5-4e96-9c02-92dd8a42566a_5344.png'
+            'https://res.cloudinary.com/dw3huanrk/image/upload/my_website_images/batch_upload/fff7d0a1-08b4-4bb4-8e89-50936e51f395_5345.png',
+            'https://res.cloudinary.com/dw3huanrk/image/upload/my_website_images/batch_upload/fff11158-a3d5-4e96-9c02-92dd8a42566a_5344.png'
         ];
 
         let imageLibrary = [];
@@ -241,19 +235,19 @@
         }
 
         // ====================================================================
-        // Cloudinary URL构建函数
+        // URL处理函数
         // ====================================================================
-        function buildCloudinaryUrl(filename) {
-            // 不使用版本号的Cloudinary URL格式，让Cloudinary自动使用最新版本
-            // 如果需要指定版本号，格式为：/v{version_number}/
-            // 示例：https://res.cloudinary.com/dw3huanrk/image/upload/v1754902800/my_website_images/batch_upload/filename.png
-            return `https://res.cloudinary.com/${CLOUDINARY_CONFIG.cloudName}/image/upload/${CLOUDINARY_CONFIG.folderPath}/${filename}`;
+        function extractImageName(url) {
+            // 从URL中提取图片名称，用作显示名称
+            const parts = url.split('/');
+            const filename = parts[parts.length - 1];
+            return filename.replace(/\.(jpg|jpeg|png|gif|webp)$/i, '');
         }
 
-        // 备用图片URL（如果Cloudinary失败）
-        function buildFallbackUrl(filename) {
-            // 使用文件名生成一个固定的随机数，确保同一文件总是得到同一张占位图
-            const hash = hashCode(filename);
+        // 备用图片URL（如果主URL失败）
+        function buildFallbackUrl(originalUrl) {
+            // 使用URL生成一个固定的随机数，确保同一URL总是得到同一张占位图
+            const hash = hashCode(originalUrl);
             const id = Math.abs(hash) % 1000;
             return `https://picsum.photos/seed/${id}/600/400`;
         }
@@ -274,24 +268,22 @@
         // ====================================================================
         async function initializeImageLibrary() {
             debugLog('🚀 初始化图片库...');
-            debugLog(`📁 Cloudinary配置: ${CLOUDINARY_CONFIG.cloudName}/${CLOUDINARY_CONFIG.folderPath}`);
             
-            // 尝试从文件加载
-            let filenames = await loadImageNamesFromFile();
+            // 尝试从文件加载URL列表
+            let imageUrls = await loadImageUrlsFromFile();
             
             // 如果文件加载失败，使用演示图片
-            if (!filenames || filenames.length === 0) {
+            if (!imageUrls || imageUrls.length === 0) {
                 debugLog('📁 文件加载失败，使用演示图片列表');
-                filenames = DEMO_IMAGES;
+                imageUrls = DEMO_IMAGES;
             }
             
             // 构建图片库
-            imageLibrary = filenames.map((filename, index) => ({
+            imageLibrary = imageUrls.map((url, index) => ({
                 id: index + 1,
-                name: filename.replace(/\.(jpg|jpeg|png|gif|webp)$/i, ''),
-                filename: filename,
-                cloudinaryUrl: buildCloudinaryUrl(filename),
-                fallbackUrl: buildFallbackUrl(filename)
+                name: extractImageName(url),
+                url: url.trim(),
+                fallbackUrl: buildFallbackUrl(url)
             }));
             
             // 随机选择用于对比的图片（最多20张）
@@ -303,22 +295,23 @@
             
             // 输出示例URL用于调试
             if (imageLibrary.length > 0) {
-                debugLog(`🔗 第一张图片URL: ${imageLibrary[0].cloudinaryUrl}`);
+                debugLog(`🔗 第一张图片URL: ${imageLibrary[0].url}`);
             }
         }
 
-        async function loadImageNamesFromFile() {
+        async function loadImageUrlsFromFile() {
             try {
                 const response = await fetch('image_list.txt');
                 if (!response.ok) throw new Error('文件不存在');
                 
                 const text = await response.text();
-                const filenames = text.split('\n')
+                const urls = text.split('\n')
                     .map(line => line.trim())
-                    .filter(line => line.length > 0 && !line.startsWith('#'));
+                    .filter(line => line.length > 0 && !line.startsWith('#'))
+                    .filter(line => line.startsWith('http')); // 确保是URL格式
                 
-                debugLog(`📋 从文件加载了 ${filenames.length} 个图片名称`);
-                return filenames;
+                debugLog(`📋 从文件加载了 ${urls.length} 个图片URL`);
+                return urls;
             } catch (error) {
                 debugLog(`❌ 加载图片列表文件失败: ${error.message}`);
                 return null;
@@ -329,26 +322,26 @@
         // 图片加载函数（带容错机制）
         // ====================================================================
         function loadImageWithFallback(imgElement, imageData, callback) {
-            debugLog(`🖼️ 加载图片: ${imageData.filename}`);
-            debugLog(`🔗 URL: ${imageData.cloudinaryUrl}`);
+            debugLog(`🖼️ 加载图片: ${imageData.name}`);
+            debugLog(`🔗 URL: ${imageData.url}`);
             
-            // 首先尝试Cloudinary
+            // 首先尝试原始URL
             imgElement.onload = function() {
-                debugLog(`✅ 图片 ${imageData.filename} 通过Cloudinary加载成功`);
+                debugLog(`✅ 图片 ${imageData.name} 原始URL加载成功`);
                 if (callback) callback(true);
             };
             
             imgElement.onerror = function() {
-                debugLog(`❌ 图片 ${imageData.filename} Cloudinary加载失败，尝试备用图片`);
+                debugLog(`❌ 图片 ${imageData.name} 原始URL加载失败，尝试备用图片`);
                 
-                // 如果Cloudinary失败，使用备用图片
+                // 如果原始URL失败，使用备用图片
                 imgElement.onload = function() {
-                    debugLog(`✅ 图片 ${imageData.filename} 通过备用源加载成功`);
+                    debugLog(`✅ 图片 ${imageData.name} 通过备用源加载成功`);
                     if (callback) callback(true);
                 };
                 
                 imgElement.onerror = function() {
-                    debugLog(`❌ 图片 ${imageData.filename} 所有源都无法加载`);
+                    debugLog(`❌ 图片 ${imageData.name} 所有源都无法加载`);
                     // 显示错误占位图
                     imgElement.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNiIgZmlsbD0iIzk5YTNhZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPuWbvueJh+aaguaXoOazleWKoOi9rTwvdGV4dD48L3N2Zz4=';
                     if (callback) callback(false);
@@ -357,8 +350,8 @@
                 imgElement.src = imageData.fallbackUrl;
             };
             
-            // 开始加载Cloudinary图片
-            imgElement.src = imageData.cloudinaryUrl;
+            // 开始加载原始图片
+            imgElement.src = imageData.url;
         }
 
         // ====================================================================
@@ -582,7 +575,7 @@
             const rankingHTML = sortedImages.map((img, index) => `
                 <div class="flex items-center space-x-4 p-4 border rounded-lg">
                     <div class="text-2xl font-bold text-green-600">#${index + 1}</div>
-                    <img src="${img.cloudinaryUrl}" alt="${img.name}" class="w-20 h-16 object-cover rounded" 
+                    <img src="${img.url}" alt="${img.name}" class="w-20 h-16 object-cover rounded" 
                          onerror="this.src='${img.fallbackUrl}'">
                     <div class="flex-1">
                         <h3 class="font-medium">${img.name}</h3>
@@ -624,8 +617,7 @@
         // 页面初始化
         // ====================================================================
         document.addEventListener('DOMContentLoaded', async function() {
-            debugLog('🚀 街景问卷系统启动');
-            debugLog(`📊 Cloudinary配置: ${CLOUDINARY_CONFIG.cloudName}/${CLOUDINARY_CONFIG.folderPath}`);
+            debugLog('🚀 街景问卷系统启动 - 直接URL版');
             
             // 预先初始化图片库
             await initializeImageLibrary();
