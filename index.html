@@ -229,6 +229,8 @@
         let selectedOption = null;
         let comparisonPairs = []; // 预生成的配对列表
         let currentComparisonIndex = 0;
+        let preloadedImages = new Map(); // 预加载的图片缓存
+        let isPreloading = false;
 
         // ====================================================================
         // 调试和诊断函数
@@ -335,8 +337,71 @@
         }
 
         // ====================================================================
-        // 图片加载函数（带容错机制）
+        // 图片预加载函数
         // ====================================================================
+        async function preloadImages() {
+            if (isPreloading || preloadedImages.size > 0) return;
+            
+            isPreloading = true;
+            debugLog('🔄 开始预加载图片...');
+            
+            // 显示加载提示
+            showLoadingMessage();
+            
+            const promises = imageLibrary.map(imageData => {
+                return new Promise((resolve) => {
+                    const img = new Image();
+                    
+                    img.onload = () => {
+                        preloadedImages.set(imageData.id, img.src);
+                        debugLog(`✅ 预加载成功: ${imageData.name}`);
+                        resolve(true);
+                    };
+                    
+                    img.onerror = () => {
+                        // 尝试备用图片
+                        const fallbackImg = new Image();
+                        fallbackImg.onload = () => {
+                            preloadedImages.set(imageData.id, fallbackImg.src);
+                            debugLog(`⚠️ 使用备用图片: ${imageData.name}`);
+                            resolve(true);
+                        };
+                        fallbackImg.onerror = () => {
+                            debugLog(`❌ 预加载失败: ${imageData.name}`);
+                            resolve(false);
+                        };
+                        fallbackImg.src = imageData.fallbackUrl;
+                    };
+                    
+                    img.src = imageData.url;
+                });
+            });
+            
+            await Promise.all(promises);
+            isPreloading = false;
+            debugLog(`✅ 图片预加载完成，共 ${preloadedImages.size} 张`);
+            hideLoadingMessage();
+        }
+
+        function showLoadingMessage() {
+            const loadingDiv = document.createElement('div');
+            loadingDiv.id = 'loadingMessage';
+            loadingDiv.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
+            loadingDiv.innerHTML = `
+                <div class="bg-white rounded-lg p-6 text-center">
+                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500 mx-auto mb-4"></div>
+                    <p class="text-gray-700">${currentLanguage === 'zh' ? '正在加载图片，请稍候...' : 'Loading images, please wait...'}</p>
+                </div>
+            `;
+            document.body.appendChild(loadingDiv);
+        }
+
+        function hideLoadingMessage() {
+            const loadingDiv = document.getElementById('loadingMessage');
+            if (loadingDiv) {
+                loadingDiv.remove();
+            }
+        }
         function loadImageWithFallback(imgElement, imageData, callback) {
             debugLog(`🖼️ 加载图片: ${imageData.name}`);
             debugLog(`🔗 URL: ${imageData.url}`);
