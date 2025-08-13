@@ -26,6 +26,16 @@
             max-height: 200px;
             overflow-y: auto;
             z-index: 1000;
+            display: none; /* 隐藏调试窗口 */
+        }
+        .image-container {
+            width: 666px;
+            height: 500px;
+        }
+        .survey-image {
+            width: 666px;
+            height: 500px;
+            object-fit: cover;
         }
     </style>
 </head>
@@ -120,9 +130,9 @@
 
     <!-- 图片对比页面 -->
     <div id="comparisonPage" class="hidden min-h-screen bg-green-500 p-4">
-        <div class="max-w-6xl mx-auto">
+        <div class="max-w-7xl mx-auto">
             <div class="text-right text-white mb-4">
-                <span id="progressCounter">1/20</span>
+                <span id="progressCounter">1/50</span>
             </div>
             
             <h1 id="compareTitle" class="text-white text-xl font-medium text-center mb-6">
@@ -139,16 +149,20 @@
                 </div>
                 
                 <!-- 图片对比区域 -->
-                <div class="flex-1 space-y-4">
+                <div class="flex-1 space-y-4 flex flex-col items-center">
                     <div id="imageA" class="bg-white rounded-lg p-4 hover:shadow-lg transition-shadow">
-                        <img id="imageA_img" src="" alt="" class="w-full h-64 object-cover rounded">
+                        <div class="image-container">
+                            <img id="imageA_img" src="" alt="" class="survey-image rounded">
+                        </div>
                         <div class="text-center mt-2 flex justify-end">
                             <div id="radioA" class="w-6 h-6 border-2 border-gray-300 rounded-full cursor-pointer hover:border-green-500 transition-colors" onclick="selectOption('A')"></div>
                         </div>
                     </div>
                     
                     <div id="imageB" class="bg-white rounded-lg p-4 hover:shadow-lg transition-shadow">
-                        <img id="imageB_img" src="" alt="" class="w-full h-64 object-cover rounded">
+                        <div class="image-container">
+                            <img id="imageB_img" src="" alt="" class="survey-image rounded">
+                        </div>
                         <div class="text-center mt-2 flex justify-end">
                             <div id="radioB" class="w-6 h-6 border-2 border-gray-300 rounded-full cursor-pointer hover:border-green-500 transition-colors" onclick="selectOption('B')"></div>
                         </div>
@@ -196,8 +210,8 @@
         // ====================================================================
         // 配置和全局变量
         // ====================================================================
-        const DEBUG_MODE = true;
-        let debugVisible = true;
+        const DEBUG_MODE = false; // 关闭调试模式
+        let debugVisible = false;
 
         // 示例图片URL列表（作为后备）
         const DEMO_IMAGES = [
@@ -249,7 +263,7 @@
             // 使用URL生成一个固定的随机数，确保同一URL总是得到同一张占位图
             const hash = hashCode(originalUrl);
             const id = Math.abs(hash) % 1000;
-            return `https://picsum.photos/seed/${id}/600/400`;
+            return `https://picsum.photos/seed/${id}/666/500`;
         }
 
         // 简单哈希函数
@@ -286,8 +300,8 @@
                 fallbackUrl: buildFallbackUrl(url)
             }));
             
-            // 随机选择用于对比的图片（最多20张）
-            const maxImages = Math.min(20, imageLibrary.length);
+            // 随机选择用于对比的图片（最多50张）
+            const maxImages = Math.min(50, imageLibrary.length);
             imageLibrary = imageLibrary.sort(() => 0.5 - Math.random()).slice(0, maxImages);
             
             isImageLibraryLoaded = true;
@@ -343,7 +357,7 @@
                 imgElement.onerror = function() {
                     debugLog(`❌ 图片 ${imageData.name} 所有源都无法加载`);
                     // 显示错误占位图
-                    imgElement.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNiIgZmlsbD0iIzk5YTNhZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPuWbvueJh+aaguaXoOazleWKoOi9rTwvdGV4dD48L3N2Zz4=';
+                    imgElement.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjY2IiBoZWlnaHQ9IjUwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNiIgZmlsbD0iIzk5YTNhZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPuWbvueJh+aaguaXoOazleWKoOi9rTwvdGV4dD48L3N2Zz4=';
                     if (callback) callback(false);
                 };
                 
@@ -475,7 +489,8 @@
             loadImageWithFallback(imageA_img, currentPair.imageA);
             loadImageWithFallback(imageB_img, currentPair.imageB);
 
-            const totalComparisons = Math.min(20, Math.floor(imageLibrary.length * 1.5));
+            // 修改为50组对比
+            const totalComparisons = 50;
             document.getElementById('progressCounter').textContent = `${comparisons.length + 1}/${totalComparisons}`;
             
             resetSelection();
@@ -553,7 +568,8 @@
                 timestamp: new Date().toISOString()
             });
 
-            const totalComparisons = Math.min(20, Math.floor(imageLibrary.length * 1.5));
+            // 修改为50组对比
+            const totalComparisons = 50;
             if (comparisons.length >= totalComparisons) {
                 showResults();
             } else {
