@@ -227,6 +227,8 @@
         let imageRankings = {};
         let currentPair = { imageA: null, imageB: null };
         let selectedOption = null;
+        let comparisonPairs = []; // 预生成的配对列表
+        let currentComparisonIndex = 0;
 
         // ====================================================================
         // 调试和诊断函数
@@ -461,8 +463,59 @@
             }
 
             initializeRankings();
+            generateComparisonPairs(); // 预生成所有配对
+            currentComparisonIndex = 0;
             generateNewComparison();
             showPage('comparisonPage');
+        }
+
+        // 生成配对，确保每张图片都出现恰好2次
+        function generateComparisonPairs() {
+            comparisonPairs = [];
+            
+            // 创建一个数组，每张图片的ID出现2次
+            let imagePool = [];
+            imageLibrary.forEach(img => {
+                imagePool.push(img.id);
+                imagePool.push(img.id);
+            });
+            
+            // 随机打乱
+            for (let i = imagePool.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [imagePool[i], imagePool[j]] = [imagePool[j], imagePool[i]];
+            }
+            
+            // 成对组合，确保每对不是同一张图片
+            for (let i = 0; i < imagePool.length - 1; i += 2) {
+                let imageAId = imagePool[i];
+                let imageBId = imagePool[i + 1];
+                
+                // 如果是同一张图片，与下一张交换
+                if (imageAId === imageBId && i + 2 < imagePool.length) {
+                    [imagePool[i + 1], imagePool[i + 2]] = [imagePool[i + 2], imagePool[i + 1]];
+                    imageBId = imagePool[i + 1];
+                }
+                
+                // 如果仍然是同一张（最后一对的情况），跳过这一对
+                if (imageAId !== imageBId) {
+                    const imageA = imageLibrary.find(img => img.id === imageAId);
+                    const imageB = imageLibrary.find(img => img.id === imageBId);
+                    comparisonPairs.push({ imageA, imageB });
+                }
+            }
+            
+            debugLog(`✅ 生成了 ${comparisonPairs.length} 组配对`);
+            
+            // 如果配对数量不足50，用剩余图片随机补充
+            while (comparisonPairs.length < 50 && imageLibrary.length >= 2) {
+                const shuffled = [...imageLibrary].sort(() => 0.5 - Math.random());
+                const imageA = shuffled[0];
+                const imageB = shuffled[1];
+                comparisonPairs.push({ imageA, imageB });
+            }
+            
+            debugLog(`✅ 最终配对数量: ${comparisonPairs.length}`);
         }
 
         function initializeRankings() {
@@ -473,11 +526,13 @@
         }
 
         function generateNewComparison() {
-            const shuffled = [...imageLibrary].sort(() => 0.5 - Math.random());
-            currentPair = {
-                imageA: shuffled[0],
-                imageB: shuffled[1]
-            };
+            // 使用预生成的配对
+            if (currentComparisonIndex >= comparisonPairs.length) {
+                showResults();
+                return;
+            }
+            
+            currentPair = comparisonPairs[currentComparisonIndex];
 
             const imageA_img = document.getElementById('imageA_img');
             const imageB_img = document.getElementById('imageB_img');
@@ -489,9 +544,9 @@
             loadImageWithFallback(imageA_img, currentPair.imageA);
             loadImageWithFallback(imageB_img, currentPair.imageB);
 
-            // 修改为50组对比
-            const totalComparisons = 50;
-            document.getElementById('progressCounter').textContent = `${comparisons.length + 1}/${totalComparisons}`;
+            // 显示进度
+            const totalComparisons = comparisonPairs.length;
+            document.getElementById('progressCounter').textContent = `${currentComparisonIndex + 1}/${totalComparisons}`;
             
             resetSelection();
         }
@@ -568,9 +623,10 @@
                 timestamp: new Date().toISOString()
             });
 
-            // 修改为50组对比
-            const totalComparisons = 50;
-            if (comparisons.length >= totalComparisons) {
+            // 移动到下一个配对
+            currentComparisonIndex++;
+            
+            if (currentComparisonIndex >= comparisonPairs.length) {
                 showResults();
             } else {
                 generateNewComparison();
@@ -621,6 +677,8 @@
             imageRankings = {};
             currentPair = { imageA: null, imageB: null };
             selectedOption = null;
+            comparisonPairs = [];
+            currentComparisonIndex = 0;
             
             // 清空表单
             document.querySelectorAll('input[type="radio"]').forEach(input => input.checked = false);
