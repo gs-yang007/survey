@@ -26,7 +26,7 @@
             max-height: 200px;
             overflow-y: auto;
             z-index: 1000;
-            display: none; /* 隐藏调试窗口 */
+            display: none;
         }
         .image-container {
             width: 666px;
@@ -37,9 +37,22 @@
             height: 100%;
             object-fit: cover;
         }
+        .admin-panel {
+            position: fixed;
+            bottom: 10px;
+            left: 10px;
+            z-index: 1000;
+        }
     </style>
 </head>
 <body class="bg-gray-100">
+    <!-- 管理员入口 -->
+    <div class="admin-panel">
+        <button onclick="showAdminPanel()" class="bg-gray-800 text-white px-3 py-1 rounded text-xs hover:bg-gray-700">
+            管理员
+        </button>
+    </div>
+
     <!-- 调试面板 -->
     <div id="debugPanel" class="debug-panel">
         <div>🔧 调试信息</div>
@@ -131,8 +144,13 @@
     <!-- 图片对比页面 -->
     <div id="comparisonPage" class="hidden min-h-screen bg-green-500 p-4">
         <div class="max-w-7xl mx-auto">
-            <div class="text-right text-white mb-4">
-                <span id="progressCounter">1/50</span>
+            <div class="flex justify-between text-white mb-4">
+                <div>
+                    <span id="groupCounter">第 1 组</span>
+                </div>
+                <div>
+                    <span id="progressCounter">1/50</span>
+                </div>
             </div>
             
             <h1 id="compareTitle" class="text-white text-xl font-medium text-center mb-6">
@@ -179,29 +197,90 @@
         </div>
     </div>
 
-    <!-- 结果页面 -->
-    <div id="resultsPage" class="hidden min-h-screen bg-gray-100 p-4">
-        <div class="max-w-4xl mx-auto">
-            <h1 id="resultsTitle" class="text-3xl font-bold text-center text-gray-800 mb-8">调研结果</h1>
+    <!-- 继续询问页面 -->
+    <div id="continuePage" class="hidden min-h-screen bg-gray-100 flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg shadow-lg p-8 text-center max-w-md w-full">
+            <h2 id="continueTitle" class="text-2xl font-bold text-gray-800 mb-4">本组对比已完成</h2>
+            <p id="continueMessage" class="text-gray-600 mb-8">您已完成了50组图片对比，感谢您的参与！<br>是否继续进行下一组对比？</p>
             
-            <div class="bg-white rounded-lg shadow-lg p-6 mb-6">
-                <h2 id="rankingTitle" class="text-xl font-semibold mb-4">图片排名情况：</h2>
-                <div id="rankingList" class="space-y-4">
-                    <!-- 排名列表将由JavaScript生成 -->
-                </div>
-            </div>
-            
-            <div class="bg-white rounded-lg shadow-lg p-6">
-                <h2 class="text-xl font-semibold mb-4">用户信息</h2>
-                <div id="userInfo" class="grid grid-cols-3 gap-4 text-sm">
-                    <!-- 用户信息将由JavaScript生成 -->
-                </div>
-            </div>
-            
-            <div class="text-center mt-8">
-                <button onclick="restart()" id="restartButton" class="px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors font-medium">
-                    重新开始
+            <div class="flex justify-center space-x-4">
+                <button onclick="continueNextGroup()" id="continueButton" class="px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors font-medium">
+                    继续下一组
                 </button>
+                <button onclick="finishSurvey()" id="finishButton" class="px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors font-medium">
+                    结束调研
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 感谢页面 -->
+    <div id="thankYouPage" class="hidden min-h-screen bg-gray-100 flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg shadow-lg p-8 text-center max-w-md w-full">
+            <h2 id="thankYouTitle" class="text-2xl font-bold text-gray-800 mb-4">感谢您的参与！</h2>
+            <p id="thankYouMessage" class="text-gray-600 mb-8">您的数据已成功提交，感谢您为街景感知研究做出的贡献！</p>
+            
+            <button onclick="restart()" id="restartButton" class="px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors font-medium">
+                重新开始
+            </button>
+        </div>
+    </div>
+
+    <!-- 管理员界面 -->
+    <div id="adminPanel" class="hidden fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-lg shadow-lg max-w-6xl w-full max-h-full overflow-auto">
+            <div class="p-6 border-b">
+                <div class="flex justify-between items-center">
+                    <h2 class="text-2xl font-bold text-gray-800">管理员面板</h2>
+                    <button onclick="hideAdminPanel()" class="text-gray-500 hover:text-gray-700">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="p-6">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+                    <div class="bg-blue-100 p-4 rounded-lg">
+                        <h3 class="font-semibold text-blue-800">总参与人数</h3>
+                        <p id="totalUsers" class="text-2xl font-bold text-blue-600">0</p>
+                    </div>
+                    <div class="bg-green-100 p-4 rounded-lg">
+                        <h3 class="font-semibold text-green-800">总对比次数</h3>
+                        <p id="totalComparisons" class="text-2xl font-bold text-green-600">0</p>
+                    </div>
+                    <div class="bg-purple-100 p-4 rounded-lg">
+                        <h3 class="font-semibold text-purple-800">平均每人对比组数</h3>
+                        <p id="avgGroups" class="text-2xl font-bold text-purple-600">0</p>
+                    </div>
+                </div>
+                
+                <div class="flex space-x-4 mb-6">
+                    <button onclick="exportData()" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+                        导出数据
+                    </button>
+                    <button onclick="clearData()" class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600">
+                        清空数据
+                    </button>
+                    <button onclick="refreshStats()" class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">
+                        刷新统计
+                    </button>
+                </div>
+                
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold mb-4">图片排名统计</h3>
+                    <div id="imageStats" class="overflow-auto max-h-96">
+                        <!-- 图片统计将在这里显示 -->
+                    </div>
+                </div>
+                
+                <div>
+                    <h3 class="text-lg font-semibold mb-4">用户详情</h3>
+                    <div id="userDetails" class="overflow-auto max-h-64">
+                        <!-- 用户详情将在这里显示 -->
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -210,10 +289,10 @@
         // ====================================================================
         // 配置和全局变量
         // ====================================================================
-        const DEBUG_MODE = false; // 关闭调试模式
+        const DEBUG_MODE = false;
         let debugVisible = false;
 
-        // 示例图片URL列表（作为后备）
+        // 示例图片URL列表
         const DEMO_IMAGES = [
             'https://res.cloudinary.com/dw3huanrk/image/upload/my_website_images/batch_upload/fff7d0a1-08b4-4bb4-8e89-50936e51f395_5345.png',
             'https://res.cloudinary.com/dw3huanrk/image/upload/my_website_images/batch_upload/fff11158-a3d5-4e96-9c02-92dd8a42566a_5344.png'
@@ -227,10 +306,107 @@
         let imageRankings = {};
         let currentPair = { imageA: null, imageB: null };
         let selectedOption = null;
-        let comparisonPairs = []; // 预生成的配对列表
+        let comparisonPairs = [];
         let currentComparisonIndex = 0;
-        let preloadedImages = new Map(); // 预加载的图片缓存
-        let isPreloading = false;
+        let currentGroupNumber = 1;
+        let sessionId = generateSessionId();
+
+        // ====================================================================
+        // 数据存储管理
+        // ====================================================================
+        function generateSessionId() {
+            return 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        }
+
+        function saveUserSession() {
+            const sessions = JSON.parse(localStorage.getItem('surveySessionsData') || '[]');
+            
+            const sessionData = {
+                sessionId: sessionId,
+                userData: userData,
+                groupsCompleted: currentGroupNumber - 1,
+                totalComparisons: comparisons.length,
+                comparisons: comparisons,
+                timestamp: new Date().toISOString(),
+                language: currentLanguage
+            };
+            
+            sessions.push(sessionData);
+            localStorage.setItem('surveySessionsData', JSON.stringify(sessions));
+            
+            // 更新累计统计
+            updateCumulativeStats(sessionData);
+            
+            debugLog(`💾 用户会话已保存: ${sessionId}`);
+        }
+
+        function updateCumulativeStats(sessionData) {
+            let stats = JSON.parse(localStorage.getItem('surveyCumulativeStats') || '{}');
+            
+            // 初始化统计结构
+            if (!stats.imageWinCounts) stats.imageWinCounts = {};
+            if (!stats.imageLossCounts) stats.imageLossCounts = {};
+            if (!stats.imageRankings) stats.imageRankings = {};
+            if (!stats.totalUsers) stats.totalUsers = 0;
+            if (!stats.totalComparisons) stats.totalComparisons = 0;
+            if (!stats.userDemographics) stats.userDemographics = { male: 0, female: 0, professional: 0, nonProfessional: 0 };
+            
+            // 更新基础统计
+            stats.totalUsers += 1;
+            stats.totalComparisons += sessionData.comparisons.length;
+            
+            // 更新人口统计
+            if (sessionData.userData.gender === 'male') stats.userDemographics.male += 1;
+            if (sessionData.userData.gender === 'female') stats.userDemographics.female += 1;
+            if (sessionData.userData.isProfessional === 'yes') stats.userDemographics.professional += 1;
+            if (sessionData.userData.isProfessional === 'no') stats.userDemographics.nonProfessional += 1;
+            
+            // 更新图片胜负统计
+            sessionData.comparisons.forEach(comparison => {
+                const winnerId = comparison.winner;
+                const loserId = comparison.loser;
+                
+                if (!stats.imageWinCounts[winnerId]) stats.imageWinCounts[winnerId] = 0;
+                if (!stats.imageLossCounts[winnerId]) stats.imageLossCounts[winnerId] = 0;
+                if (!stats.imageWinCounts[loserId]) stats.imageWinCounts[loserId] = 0;
+                if (!stats.imageLossCounts[loserId]) stats.imageLossCounts[loserId] = 0;
+                
+                stats.imageWinCounts[winnerId] += 1;
+                stats.imageLossCounts[loserId] += 1;
+            });
+            
+            // 重新计算所有图片的排名分数
+            Object.keys(stats.imageWinCounts).forEach(imageId => {
+                const wins = stats.imageWinCounts[imageId] || 0;
+                const losses = stats.imageLossCounts[imageId] || 0;
+                const total = wins + losses;
+                
+                // 使用胜率计算分数，加上平滑因子避免极端值
+                const winRate = total > 0 ? wins / total : 0.5;
+                const score = winRate * 1000 + (wins - losses);
+                
+                stats.imageRankings[imageId] = {
+                    score: score,
+                    wins: wins,
+                    losses: losses,
+                    total: total,
+                    winRate: winRate
+                };
+            });
+            
+            stats.lastUpdated = new Date().toISOString();
+            localStorage.setItem('surveyCumulativeStats', JSON.stringify(stats));
+            
+            debugLog(`📊 累计统计已更新`);
+        }
+
+        function getCumulativeStats() {
+            return JSON.parse(localStorage.getItem('surveyCumulativeStats') || '{}');
+        }
+
+        function getAllSessions() {
+            return JSON.parse(localStorage.getItem('surveySessionsData') || '[]');
+        }
 
         // ====================================================================
         // 调试和诊断函数
@@ -256,21 +432,17 @@
         // URL处理函数
         // ====================================================================
         function extractImageName(url) {
-            // 从URL中提取图片名称，用作显示名称
             const parts = url.split('/');
             const filename = parts[parts.length - 1];
             return filename.replace(/\.(jpg|jpeg|png|gif|webp)$/i, '');
         }
 
-        // 备用图片URL（如果主URL失败）
         function buildFallbackUrl(originalUrl) {
-            // 使用URL生成一个固定的随机数，确保同一URL总是得到同一张占位图
             const hash = hashCode(originalUrl);
             const id = Math.abs(hash) % 1000;
             return `https://picsum.photos/seed/${id}/666/500`;
         }
 
-        // 简单哈希函数
         function hashCode(str) {
             let hash = 0;
             for (let i = 0; i < str.length; i++) {
@@ -287,16 +459,13 @@
         async function initializeImageLibrary() {
             debugLog('🚀 初始化图片库...');
             
-            // 尝试从文件加载URL列表
             let imageUrls = await loadImageUrlsFromFile();
             
-            // 如果文件加载失败，使用演示图片
             if (!imageUrls || imageUrls.length === 0) {
                 debugLog('📁 文件加载失败，使用演示图片列表');
                 imageUrls = DEMO_IMAGES;
             }
             
-            // 构建图片库
             imageLibrary = imageUrls.map((url, index) => ({
                 id: index + 1,
                 name: extractImageName(url),
@@ -304,17 +473,11 @@
                 fallbackUrl: buildFallbackUrl(url)
             }));
             
-            // 随机选择用于对比的图片（最多50张）
             const maxImages = Math.min(50, imageLibrary.length);
             imageLibrary = imageLibrary.sort(() => 0.5 - Math.random()).slice(0, maxImages);
             
             isImageLibraryLoaded = true;
             debugLog(`✅ 图片库初始化完成，共 ${imageLibrary.length} 张图片`);
-            
-            // 输出示例URL用于调试
-            if (imageLibrary.length > 0) {
-                debugLog(`🔗 第一张图片URL: ${imageLibrary[0].url}`);
-            }
         }
 
         async function loadImageUrlsFromFile() {
@@ -326,7 +489,7 @@
                 const urls = text.split('\n')
                     .map(line => line.trim())
                     .filter(line => line.length > 0 && !line.startsWith('#'))
-                    .filter(line => line.startsWith('http')); // 确保是URL格式
+                    .filter(line => line.startsWith('http'));
                 
                 debugLog(`📋 从文件加载了 ${urls.length} 个图片URL`);
                 return urls;
@@ -336,77 +499,9 @@
             }
         }
 
-        // ====================================================================
-        // 图片预加载函数
-        // ====================================================================
-        async function preloadImages() {
-            if (isPreloading || preloadedImages.size > 0) return;
-            
-            isPreloading = true;
-            debugLog('🔄 开始预加载图片...');
-            
-            // 显示加载提示
-            showLoadingMessage();
-            
-            const promises = imageLibrary.map(imageData => {
-                return new Promise((resolve) => {
-                    const img = new Image();
-                    
-                    img.onload = () => {
-                        preloadedImages.set(imageData.id, img.src);
-                        debugLog(`✅ 预加载成功: ${imageData.name}`);
-                        resolve(true);
-                    };
-                    
-                    img.onerror = () => {
-                        // 尝试备用图片
-                        const fallbackImg = new Image();
-                        fallbackImg.onload = () => {
-                            preloadedImages.set(imageData.id, fallbackImg.src);
-                            debugLog(`⚠️ 使用备用图片: ${imageData.name}`);
-                            resolve(true);
-                        };
-                        fallbackImg.onerror = () => {
-                            debugLog(`❌ 预加载失败: ${imageData.name}`);
-                            resolve(false);
-                        };
-                        fallbackImg.src = imageData.fallbackUrl;
-                    };
-                    
-                    img.src = imageData.url;
-                });
-            });
-            
-            await Promise.all(promises);
-            isPreloading = false;
-            debugLog(`✅ 图片预加载完成，共 ${preloadedImages.size} 张`);
-            hideLoadingMessage();
-        }
-
-        function showLoadingMessage() {
-            const loadingDiv = document.createElement('div');
-            loadingDiv.id = 'loadingMessage';
-            loadingDiv.className = 'fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50';
-            loadingDiv.innerHTML = `
-                <div class="bg-white rounded-lg p-6 text-center">
-                    <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500 mx-auto mb-4"></div>
-                    <p class="text-gray-700">${currentLanguage === 'zh' ? '正在加载图片，请稍候...' : 'Loading images, please wait...'}</p>
-                </div>
-            `;
-            document.body.appendChild(loadingDiv);
-        }
-
-        function hideLoadingMessage() {
-            const loadingDiv = document.getElementById('loadingMessage');
-            if (loadingDiv) {
-                loadingDiv.remove();
-            }
-        }
         function loadImageWithFallback(imgElement, imageData, callback) {
             debugLog(`🖼️ 加载图片: ${imageData.name}`);
-            debugLog(`🔗 URL: ${imageData.url}`);
             
-            // 首先尝试原始URL
             imgElement.onload = function() {
                 debugLog(`✅ 图片 ${imageData.name} 原始URL加载成功`);
                 if (callback) callback(true);
@@ -415,7 +510,6 @@
             imgElement.onerror = function() {
                 debugLog(`❌ 图片 ${imageData.name} 原始URL加载失败，尝试备用图片`);
                 
-                // 如果原始URL失败，使用备用图片
                 imgElement.onload = function() {
                     debugLog(`✅ 图片 ${imageData.name} 通过备用源加载成功`);
                     if (callback) callback(true);
@@ -423,7 +517,6 @@
                 
                 imgElement.onerror = function() {
                     debugLog(`❌ 图片 ${imageData.name} 所有源都无法加载`);
-                    // 显示错误占位图
                     imgElement.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjY2IiBoZWlnaHQ9IjUwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNiIgZmlsbD0iIzk5YTNhZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPuWbvueJh+aaguaXoOazleWKoOi9rTwvdGV4dD48L3N2Zz4=';
                     if (callback) callback(false);
                 };
@@ -431,7 +524,6 @@
                 imgElement.src = imageData.fallbackUrl;
             };
             
-            // 开始加载原始图片
             imgElement.src = imageData.url;
         }
 
@@ -452,8 +544,12 @@
                 compareTitle: '以下两张街景中，您认为哪张更加适合"坐"的行为：',
                 hintTitle: '提示',
                 instructions: '在此调研中，您需要在成对的图片中做出选择。请根据您的直觉选择您认为更加适合特定行为的街景。',
-                resultsTitle: '调研结果',
-                rankingTitle: '图片排名情况：',
+                continueTitle: '本组对比已完成',
+                continueMessage: '您已完成了50组图片对比，感谢您的参与！<br>是否继续进行下一组对比？',
+                continueButton: '继续下一组',
+                finishButton: '结束调研',
+                thankYouTitle: '感谢您的参与！',
+                thankYouMessage: '您的数据已成功提交，感谢您为街景感知研究做出的贡献！',
                 restartButton: '重新开始'
             },
             en: {
@@ -469,8 +565,12 @@
                 compareTitle: 'Which of the following two street views do you think is more suitable for sitting:',
                 hintTitle: 'Hint',
                 instructions: 'In this survey, you need to make choices between pairs of images. Please choose the street view you think is more suitable for certain behaviours based on your intuition.',
-                resultsTitle: 'Survey Results',
-                rankingTitle: 'Image Rankings:',
+                continueTitle: 'Group Comparison Completed',
+                continueMessage: 'You have completed 50 image comparisons, thank you for your participation!<br>Would you like to continue with the next group?',
+                continueButton: 'Continue Next Group',
+                finishButton: 'Finish Survey',
+                thankYouTitle: 'Thank You for Your Participation!',
+                thankYouMessage: 'Your data has been successfully submitted. Thank you for contributing to street view perception research!',
                 restartButton: 'Start Over'
             }
         };
@@ -486,13 +586,17 @@
             Object.keys(t).forEach(key => {
                 const element = document.getElementById(key);
                 if (element) {
-                    element.textContent = t[key];
+                    if (key === 'continueMessage' || key === 'thankYouMessage') {
+                        element.innerHTML = t[key];
+                    } else {
+                        element.textContent = t[key];
+                    }
                 }
             });
         }
 
         function showPage(pageId) {
-            const pages = ['languagePage', 'surveyPage', 'comparisonPage', 'resultsPage'];
+            const pages = ['languagePage', 'surveyPage', 'comparisonPage', 'continuePage', 'thankYouPage'];
             pages.forEach(page => {
                 document.getElementById(page).classList.add('hidden');
             });
@@ -501,7 +605,6 @@
         }
 
         async function startComparisons() {
-            // 验证表单
             const gender = document.querySelector('input[name="gender"]:checked');
             const age = document.getElementById('ageInput').value;
             const professional = document.querySelector('input[name="professional"]:checked');
@@ -517,7 +620,6 @@
                 isProfessional: professional.value
             };
 
-            // 确保图片库已加载
             if (!isImageLibraryLoaded) {
                 await initializeImageLibrary();
             }
@@ -527,60 +629,43 @@
                 return;
             }
 
-            initializeRankings();
-            generateComparisonPairs(); // 预生成所有配对
-            currentComparisonIndex = 0;
-            generateNewComparison();
-            showPage('comparisonPage');
+            startNewGroup();
         }
 
-        // 生成配对，确保每张图片都出现恰好2次
+        function startNewGroup() {
+            initializeRankings();
+            generateComparisonPairs();
+            currentComparisonIndex = 0;
+            comparisons = []; // 重置当前组的对比记录
+            generateNewComparison();
+            showPage('comparisonPage');
+            updateGroupCounter();
+        }
+
+        function updateGroupCounter() {
+            document.getElementById('groupCounter').textContent = `${currentLanguage === 'zh' ? '第' : 'Group'} ${currentGroupNumber} ${currentLanguage === 'zh' ? '组' : ''}`;
+        }
+
         function generateComparisonPairs() {
             comparisonPairs = [];
             
-            // 创建一个数组，每张图片的ID出现2次
-            let imagePool = [];
-            imageLibrary.forEach(img => {
-                imagePool.push(img.id);
-                imagePool.push(img.id);
-            });
+            // 重新随机化图片库用于当前组
+            const shuffledLibrary = [...imageLibrary].sort(() => 0.5 - Math.random());
             
-            // 随机打乱
-            for (let i = imagePool.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1));
-                [imagePool[i], imagePool[j]] = [imagePool[j], imagePool[i]];
-            }
-            
-            // 成对组合，确保每对不是同一张图片
-            for (let i = 0; i < imagePool.length - 1; i += 2) {
-                let imageAId = imagePool[i];
-                let imageBId = imagePool[i + 1];
+            // 创建50对随机对比
+            for (let i = 0; i < 50; i++) {
+                const imageA = shuffledLibrary[Math.floor(Math.random() * shuffledLibrary.length)];
+                let imageB = shuffledLibrary[Math.floor(Math.random() * shuffledLibrary.length)];
                 
-                // 如果是同一张图片，与下一张交换
-                if (imageAId === imageBId && i + 2 < imagePool.length) {
-                    [imagePool[i + 1], imagePool[i + 2]] = [imagePool[i + 2], imagePool[i + 1]];
-                    imageBId = imagePool[i + 1];
+                // 确保不是同一张图片
+                while (imageB.id === imageA.id) {
+                    imageB = shuffledLibrary[Math.floor(Math.random() * shuffledLibrary.length)];
                 }
                 
-                // 如果仍然是同一张（最后一对的情况），跳过这一对
-                if (imageAId !== imageBId) {
-                    const imageA = imageLibrary.find(img => img.id === imageAId);
-                    const imageB = imageLibrary.find(img => img.id === imageBId);
-                    comparisonPairs.push({ imageA, imageB });
-                }
-            }
-            
-            debugLog(`✅ 生成了 ${comparisonPairs.length} 组配对`);
-            
-            // 如果配对数量不足50，用剩余图片随机补充
-            while (comparisonPairs.length < 50 && imageLibrary.length >= 2) {
-                const shuffled = [...imageLibrary].sort(() => 0.5 - Math.random());
-                const imageA = shuffled[0];
-                const imageB = shuffled[1];
                 comparisonPairs.push({ imageA, imageB });
             }
             
-            debugLog(`✅ 最终配对数量: ${comparisonPairs.length}`);
+            debugLog(`✅ 第${currentGroupNumber}组生成了 ${comparisonPairs.length} 组配对`);
         }
 
         function initializeRankings() {
@@ -591,9 +676,8 @@
         }
 
         function generateNewComparison() {
-            // 使用预生成的配对
             if (currentComparisonIndex >= comparisonPairs.length) {
-                showResults();
+                completeCurrentGroup();
                 return;
             }
             
@@ -605,13 +689,10 @@
             imageA_img.alt = currentPair.imageA.name;
             imageB_img.alt = currentPair.imageB.name;
 
-            // 使用容错加载
             loadImageWithFallback(imageA_img, currentPair.imageA);
             loadImageWithFallback(imageB_img, currentPair.imageB);
 
-            // 显示进度
-            const totalComparisons = comparisonPairs.length;
-            document.getElementById('progressCounter').textContent = `${currentComparisonIndex + 1}/${totalComparisons}`;
+            document.getElementById('progressCounter').textContent = `${currentComparisonIndex + 1}/50`;
             
             resetSelection();
         }
@@ -670,7 +751,7 @@
                 loserId = currentPair.imageA.id;
             }
 
-            // 更新排名（简化的ELO算法）
+            // 更新本组排名
             const K = 32;
             const winnerRating = imageRankings[winnerId].score;
             const loserRating = imageRankings[loserId].score;
@@ -682,58 +763,38 @@
             imageRankings[winnerId].wins += 1;
             imageRankings[loserId].losses += 1;
 
+            // 记录对比结果
             comparisons.push({
                 winner: winnerId,
                 loser: loserId,
-                timestamp: new Date().toISOString()
+                winnerImage: currentPair.imageA.id === winnerId ? currentPair.imageA.name : currentPair.imageB.name,
+                loserImage: currentPair.imageA.id === loserId ? currentPair.imageA.name : currentPair.imageB.name,
+                timestamp: new Date().toISOString(),
+                groupNumber: currentGroupNumber,
+                comparisonIndex: currentComparisonIndex + 1
             });
 
-            // 移动到下一个配对
             currentComparisonIndex++;
-            
-            if (currentComparisonIndex >= comparisonPairs.length) {
-                showResults();
-            } else {
-                generateNewComparison();
-            }
+            generateNewComparison();
         }
 
-        function showResults() {
-            showPage('resultsPage');
+        function completeCurrentGroup() {
+            debugLog(`✅ 第${currentGroupNumber}组对比完成，共${comparisons.length}次对比`);
             
-            // 生成排名列表
-            const sortedImages = imageLibrary
-                .map(img => ({
-                    ...img,
-                    ...imageRankings[img.id]
-                }))
-                .sort((a, b) => b.score - a.score);
-
-            const rankingHTML = sortedImages.map((img, index) => `
-                <div class="flex items-center space-x-4 p-4 border rounded-lg">
-                    <div class="text-2xl font-bold text-green-600">#${index + 1}</div>
-                    <img src="${img.url}" alt="${img.name}" class="w-20 h-16 object-cover rounded" 
-                         onerror="this.src='${img.fallbackUrl}'">
-                    <div class="flex-1">
-                        <h3 class="font-medium">${img.name}</h3>
-                        <p class="text-sm text-gray-600">
-                            得分: ${Math.round(img.score)} | 胜: ${img.wins} | 负: ${img.losses}
-                        </p>
-                    </div>
-                </div>
-            `).join('');
-
-            document.getElementById('rankingList').innerHTML = rankingHTML;
-
-            // 显示用户信息
-            const genderText = userData.gender === 'male' ? (currentLanguage === 'zh' ? '男' : 'Male') : (currentLanguage === 'zh' ? '女' : 'Female');
-            const professionalText = userData.isProfessional === 'yes' ? (currentLanguage === 'zh' ? '是' : 'Yes') : (currentLanguage === 'zh' ? '否' : 'No');
+            // 保存当前组数据
+            saveUserSession();
             
-            document.getElementById('userInfo').innerHTML = `
-                <div>${currentLanguage === 'zh' ? '性别' : 'Gender'}: ${genderText}</div>
-                <div>${currentLanguage === 'zh' ? '年龄' : 'Age'}: ${userData.age}</div>
-                <div>${currentLanguage === 'zh' ? '专业背景' : 'Professional'}: ${professionalText}</div>
-            `;
+            // 显示继续询问页面
+            showPage('continuePage');
+        }
+
+        function continueNextGroup() {
+            currentGroupNumber++;
+            startNewGroup();
+        }
+
+        function finishSurvey() {
+            showPage('thankYouPage');
         }
 
         function restart() {
@@ -744,8 +805,9 @@
             selectedOption = null;
             comparisonPairs = [];
             currentComparisonIndex = 0;
+            currentGroupNumber = 1;
+            sessionId = generateSessionId();
             
-            // 清空表单
             document.querySelectorAll('input[type="radio"]').forEach(input => input.checked = false);
             document.getElementById('ageInput').value = '';
             
@@ -753,12 +815,166 @@
         }
 
         // ====================================================================
+        // 管理员界面
+        // ====================================================================
+        const ADMIN_PASSWORD = 'UMS2025ygs';
+        
+        function showAdminPanel() {
+            // 密码验证
+            const password = prompt('请输入管理员密码：');
+            
+            if (password === null) {
+                // 用户取消了输入
+                return;
+            }
+            
+            if (password !== ADMIN_PASSWORD) {
+                alert('密码错误！');
+                return;
+            }
+            
+            // 密码正确，显示管理员界面
+            refreshStats();
+            document.getElementById('adminPanel').classList.remove('hidden');
+        }
+
+        function hideAdminPanel() {
+            document.getElementById('adminPanel').classList.add('hidden');
+        }
+
+        function refreshStats() {
+            const stats = getCumulativeStats();
+            const sessions = getAllSessions();
+            
+            // 更新基本统计
+            document.getElementById('totalUsers').textContent = stats.totalUsers || 0;
+            document.getElementById('totalComparisons').textContent = stats.totalComparisons || 0;
+            
+            const avgGroups = stats.totalUsers > 0 ? (stats.totalComparisons / stats.totalUsers / 50).toFixed(1) : '0';
+            document.getElementById('avgGroups').textContent = avgGroups;
+            
+            // 更新图片统计
+            displayImageStats(stats);
+            
+            // 更新用户详情
+            displayUserDetails(sessions);
+        }
+
+        function displayImageStats(stats) {
+            const imageStats = document.getElementById('imageStats');
+            
+            if (!stats.imageRankings || Object.keys(stats.imageRankings).length === 0) {
+                imageStats.innerHTML = '<p class="text-gray-500">暂无图片统计数据</p>';
+                return;
+            }
+            
+            const sortedImages = Object.entries(stats.imageRankings)
+                .sort(([,a], [,b]) => b.score - a.score)
+                .slice(0, 20); // 显示前20名
+            
+            const html = `
+                <div class="space-y-2">
+                    <div class="grid grid-cols-6 gap-2 text-sm font-semibold text-gray-700 border-b pb-2">
+                        <div>排名</div>
+                        <div>图片ID</div>
+                        <div>得分</div>
+                        <div>胜场</div>
+                        <div>负场</div>
+                        <div>胜率</div>
+                    </div>
+                    ${sortedImages.map(([imageId, data], index) => `
+                        <div class="grid grid-cols-6 gap-2 text-sm">
+                            <div class="font-medium text-green-600">#${index + 1}</div>
+                            <div>${imageId}</div>
+                            <div>${Math.round(data.score)}</div>
+                            <div>${data.wins}</div>
+                            <div>${data.losses}</div>
+                            <div>${(data.winRate * 100).toFixed(1)}%</div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            
+            imageStats.innerHTML = html;
+        }
+
+        function displayUserDetails(sessions) {
+            const userDetails = document.getElementById('userDetails');
+            
+            if (sessions.length === 0) {
+                userDetails.innerHTML = '<p class="text-gray-500">暂无用户数据</p>';
+                return;
+            }
+            
+            const html = `
+                <div class="space-y-2">
+                    <div class="grid grid-cols-6 gap-2 text-sm font-semibold text-gray-700 border-b pb-2">
+                        <div>会话ID</div>
+                        <div>性别</div>
+                        <div>年龄</div>
+                        <div>专业</div>
+                        <div>完成组数</div>
+                        <div>时间</div>
+                    </div>
+                    ${sessions.slice(-20).map(session => `
+                        <div class="grid grid-cols-6 gap-2 text-sm">
+                            <div class="truncate">${session.sessionId.substr(-8)}</div>
+                            <div>${session.userData.gender === 'male' ? '男' : '女'}</div>
+                            <div>${session.userData.age}</div>
+                            <div>${session.userData.isProfessional === 'yes' ? '是' : '否'}</div>
+                            <div>${session.groupsCompleted}</div>
+                            <div>${new Date(session.timestamp).toLocaleDateString()}</div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            
+            userDetails.innerHTML = html;
+        }
+
+        function exportData() {
+            const stats = getCumulativeStats();
+            const sessions = getAllSessions();
+            
+            const exportData = {
+                exportTime: new Date().toISOString(),
+                cumulativeStats: stats,
+                allSessions: sessions,
+                summary: {
+                    totalUsers: stats.totalUsers || 0,
+                    totalComparisons: stats.totalComparisons || 0,
+                    averageGroupsPerUser: stats.totalUsers > 0 ? (stats.totalComparisons / stats.totalUsers / 50) : 0
+                }
+            };
+            
+            const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `街景问卷数据_${new Date().toISOString().split('T')[0]}.json`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            
+            alert('数据已导出！');
+        }
+
+        function clearData() {
+            if (confirm('确定要清空所有数据吗？此操作不可恢复！')) {
+                localStorage.removeItem('surveySessionsData');
+                localStorage.removeItem('surveyCumulativeStats');
+                refreshStats();
+                alert('数据已清空！');
+            }
+        }
+
+        // ====================================================================
         // 页面初始化
         // ====================================================================
         document.addEventListener('DOMContentLoaded', async function() {
-            debugLog('🚀 街景问卷系统启动 - 直接URL版');
+            debugLog('🚀 街景问卷系统启动 - 后台存储版');
             
-            // 预先初始化图片库
             await initializeImageLibrary();
             
             if (isImageLibraryLoaded) {
