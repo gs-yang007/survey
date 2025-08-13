@@ -209,29 +209,16 @@
         const DEBUG_MODE = true;
         let debugVisible = true;
         
-        // 多种图片源配置
-        const IMAGE_SOURCES = {
-            // 原始Cloudinary配置
-            cloudinary: {
-                cloudName: 'dw3huanrk',
-                folderName: 'my_website_images/batch_upload',
-                versionNumber: 'v1754902800'
-            },
-            
-            // 备用图片服务
-            placeholder: {
-                service: 'picsum',
-                baseUrl: 'https://picsum.photos'
-            },
-            
-            // 本地图片（如果有的话）
-            local: {
-                folder: './images/'
-            }
+        // Cloudinary配置 - 你的实际配置
+        const CLOUDINARY_CONFIG = {
+            cloudName: 'dw3huanrk',
+            folderPath: 'my_website_images/batch_upload'
         };
 
         // 示例图片列表（作为后备）
         const DEMO_IMAGES = [
+            'fff7d0a1-08b4-4bb4-8e89-50936e51f395_5345.png',
+            'fff11158-a3d5-4e96-9c02-92dd8a42566a_5344.png',
             'street_scene_01.jpg',
             'street_scene_02.jpg', 
             'street_scene_03.jpg',
@@ -239,9 +226,7 @@
             'street_scene_05.jpg',
             'urban_view_01.jpg',
             'urban_view_02.jpg',
-            'park_bench_01.jpg',
-            'plaza_seating.jpg',
-            'outdoor_cafe.jpg'
+            'park_bench_01.jpg'
         ];
 
         let imageLibrary = [];
@@ -275,30 +260,24 @@
 
         // 测试图片加载功能
         function testImageLoading() {
-            debugLog('🧪 开始测试图片加载...');
+            debugLog('🧪 开始测试Cloudinary图片加载...');
             
-            const testUrls = [
-                // Cloudinary格式测试
-                'https://res.cloudinary.com/dw3huanrk/image/upload/v1754902800/my_website_images/batch_upload/street_scene_01.jpg',
-                'https://res.cloudinary.com/dw3huanrk/image/upload/my_website_images/batch_upload/street_scene_01.jpg',
-                
-                // Picsum占位图测试
-                'https://picsum.photos/400/300?random=1',
-                'https://picsum.photos/400/300?random=2',
-                
-                // 建筑/街景主题测试
-                'https://images.unsplash.com/photo-1518553978-3c0556a9fab8?w=400&h=300&fit=crop',
+            const testFilenames = [
+                'fff7d0a1-08b4-4bb4-8e89-50936e51f395_5345.png',
+                'fff11158-a3d5-4e96-9c02-92dd8a42566a_5344.png'
             ];
 
-            testUrls.forEach((url, index) => {
-                debugLog(`测试URL ${index + 1}: ${url.substring(0, 50)}...`);
+            testFilenames.forEach((filename, index) => {
+                const url = buildCloudinaryUrl(filename);
+                debugLog(`测试图片 ${index + 1}: ${filename}`);
+                debugLog(`URL: ${url}`);
                 
                 const img = new Image();
                 img.onload = function() {
-                    debugLog(`✅ URL ${index + 1} 成功加载`);
+                    debugLog(`✅ 图片 ${filename} 加载成功`);
                 };
                 img.onerror = function() {
-                    debugLog(`❌ URL ${index + 1} 加载失败`);
+                    debugLog(`❌ 图片 ${filename} 加载失败`);
                 };
                 img.src = url;
             });
@@ -322,27 +301,19 @@
         }
 
         // ====================================================================
-        // 图片URL构建函数
+        // Cloudinary URL构建函数 - 核心修改部分
         // ====================================================================
-        function buildImageUrl(filename, source = 'placeholder') {
-            switch(source) {
-                case 'cloudinary':
-                    return `https://res.cloudinary.com/${IMAGE_SOURCES.cloudinary.cloudName}/image/upload/${IMAGE_SOURCES.cloudinary.versionNumber}/${IMAGE_SOURCES.cloudinary.folderName}/${filename}`;
-                
-                case 'placeholder':
-                    // 使用Picsum作为占位图
-                    const id = Math.abs(hashCode(filename)) % 1000;
-                    return `https://picsum.photos/seed/${id}/600/400`;
-                
-                case 'unsplash':
-                    // 使用Unsplash相关主题图片
-                    const keywords = ['street', 'urban', 'architecture', 'city', 'building'];
-                    const keyword = keywords[Math.abs(hashCode(filename)) % keywords.length];
-                    return `https://source.unsplash.com/600x400/?${keyword}&sig=${Math.abs(hashCode(filename))}`;
-                
-                default:
-                    return IMAGE_SOURCES.placeholder.baseUrl + '/600/400?random=' + Math.abs(hashCode(filename));
-            }
+        function buildCloudinaryUrl(filename) {
+            // 不使用版本号的Cloudinary URL格式
+            return `https://res.cloudinary.com/${CLOUDINARY_CONFIG.cloudName}/image/upload/${CLOUDINARY_CONFIG.folderPath}/${filename}`;
+        }
+
+        // 备用图片URL（如果Cloudinary失败）
+        function buildFallbackUrl(filename) {
+            // 使用文件名生成一个固定的随机数，确保同一文件总是得到同一张占位图
+            const hash = hashCode(filename);
+            const id = Math.abs(hash) % 1000;
+            return `https://picsum.photos/seed/${id}/600/400`;
         }
 
         // 简单哈希函数
@@ -361,6 +332,7 @@
         // ====================================================================
         async function initializeImageLibrary() {
             debugLog('🚀 初始化图片库...');
+            debugLog(`📁 Cloudinary配置: ${CLOUDINARY_CONFIG.cloudName}/${CLOUDINARY_CONFIG.folderPath}`);
             
             // 尝试从文件加载
             let filenames = await loadImageNamesFromFile();
@@ -376,12 +348,8 @@
                 id: index + 1,
                 name: filename.replace(/\.(jpg|jpeg|png|gif|webp)$/i, ''),
                 filename: filename,
-                // 提供多种图片源作为后备
-                urls: {
-                    cloudinary: buildImageUrl(filename, 'cloudinary'),
-                    placeholder: buildImageUrl(filename, 'placeholder'),
-                    unsplash: buildImageUrl(filename, 'unsplash')
-                }
+                cloudinaryUrl: buildCloudinaryUrl(filename),
+                fallbackUrl: buildFallbackUrl(filename)
             }));
             
             // 随机选择用于对比的图片（最多20张）
@@ -418,72 +386,51 @@
         function testFirstImage() {
             const testImage = imageLibrary[0];
             debugLog(`🧪 测试第一张图片: ${testImage.filename}`);
+            debugLog(`🔗 Cloudinary URL: ${testImage.cloudinaryUrl}`);
             
-            // 依次测试不同的图片源
-            const sources = ['cloudinary', 'placeholder', 'unsplash'];
-            let sourceIndex = 0;
-            
-            function tryNextSource() {
-                if (sourceIndex >= sources.length) {
-                    debugLog('❌ 所有图片源都无法加载');
-                    return;
-                }
-                
-                const source = sources[sourceIndex];
-                const url = testImage.urls[source];
-                debugLog(`🔄 测试 ${source} 源: ${url.substring(0, 50)}...`);
-                
-                const img = new Image();
-                img.onload = function() {
-                    debugLog(`✅ ${source} 源加载成功！`);
-                    // 设置这个源为首选源
-                    imageLibrary.forEach(img => img.primaryUrl = img.urls[source]);
-                };
-                img.onerror = function() {
-                    debugLog(`❌ ${source} 源加载失败`);
-                    sourceIndex++;
-                    tryNextSource();
-                };
-                img.src = url;
-            }
-            
-            tryNextSource();
+            const img = new Image();
+            img.onload = function() {
+                debugLog(`✅ Cloudinary图片加载成功！`);
+            };
+            img.onerror = function() {
+                debugLog(`❌ Cloudinary图片加载失败，将使用备用图片`);
+            };
+            img.src = testImage.cloudinaryUrl;
         }
 
         // ====================================================================
         // 图片加载函数（带容错机制）
         // ====================================================================
         function loadImageWithFallback(imgElement, imageData, callback) {
-            const sources = ['cloudinary', 'placeholder', 'unsplash'];
-            let currentIndex = 0;
+            debugLog(`🖼️ 加载图片: ${imageData.filename}`);
             
-            function tryLoad() {
-                if (currentIndex >= sources.length) {
-                    debugLog(`❌ 图片 ${imageData.filename} 所有源都无法加载`);
-                    // 显示错误占位图
-                    imgElement.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNiIgZmlsbD0iIzk5YTNhZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPuWbvueJh+aaguaXoOazleWKoOi9rTwvdGV4dD48L3N2Zz4=';
-                    if (callback) callback(false);
-                    return;
-                }
+            // 首先尝试Cloudinary
+            imgElement.onload = function() {
+                debugLog(`✅ 图片 ${imageData.filename} 通过Cloudinary加载成功`);
+                if (callback) callback(true);
+            };
+            
+            imgElement.onerror = function() {
+                debugLog(`❌ 图片 ${imageData.filename} Cloudinary加载失败，尝试备用图片`);
                 
-                const source = sources[currentIndex];
-                const url = imageData.urls[source];
-                
+                // 如果Cloudinary失败，使用备用图片
                 imgElement.onload = function() {
-                    debugLog(`✅ 图片 ${imageData.filename} 通过 ${source} 源加载成功`);
+                    debugLog(`✅ 图片 ${imageData.filename} 通过备用源加载成功`);
                     if (callback) callback(true);
                 };
                 
                 imgElement.onerror = function() {
-                    debugLog(`❌ 图片 ${imageData.filename} 的 ${source} 源失败，尝试下一个`);
-                    currentIndex++;
-                    tryLoad();
+                    debugLog(`❌ 图片 ${imageData.filename} 所有源都无法加载`);
+                    // 显示错误占位图
+                    imgElement.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAwIiBoZWlnaHQ9IjQwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNiIgZmlsbD0iIzk5YTNhZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPuWbvueJh+aaguaXoOazleWKoOi9rTwvdGV4dD48L3N2Zz4=';
+                    if (callback) callback(false);
                 };
                 
-                imgElement.src = url;
-            }
+                imgElement.src = imageData.fallbackUrl;
+            };
             
-            tryLoad();
+            // 开始加载Cloudinary图片
+            imgElement.src = imageData.cloudinaryUrl;
         }
 
         // ====================================================================
@@ -707,7 +654,8 @@
             const rankingHTML = sortedImages.map((img, index) => `
                 <div class="flex items-center space-x-4 p-4 border rounded-lg">
                     <div class="text-2xl font-bold text-green-600">#${index + 1}</div>
-                    <img src="${img.urls.placeholder}" alt="${img.name}" class="w-20 h-16 object-cover rounded">
+                    <img src="${img.cloudinaryUrl}" alt="${img.name}" class="w-20 h-16 object-cover rounded" 
+                         onerror="this.src='${img.fallbackUrl}'">
                     <div class="flex-1">
                         <h3 class="font-medium">${img.name}</h3>
                         <p class="text-sm text-gray-600">
@@ -749,7 +697,7 @@
         // ====================================================================
         document.addEventListener('DOMContentLoaded', async function() {
             debugLog('🚀 街景问卷系统启动');
-            debugLog('📊 配置信息: 演示模式，内置占位图');
+            debugLog(`📊 Cloudinary配置: ${CLOUDINARY_CONFIG.cloudName}/${CLOUDINARY_CONFIG.folderPath}`);
             
             // 预先初始化图片库
             await initializeImageLibrary();
@@ -761,9 +709,9 @@
             }
             
             debugLog('💡 使用说明:');
-            debugLog('1. 点击"测试图片加载"检查图片源');
-            debugLog('2. 点击"创建示例图片列表"生成配置文件');
-            debugLog('3. 问卷使用占位图作为演示');
+            debugLog('1. 点击"测试图片加载"检查Cloudinary连接');
+            debugLog('2. 确保image_list.txt文件在同目录下');
+            debugLog('3. 图片将优先从Cloudinary加载，失败时使用备用图片');
         });
     </script>
 </body>
