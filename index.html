@@ -328,9 +328,30 @@
                 </div>
                 
                 <div class="mb-6">
-                    <h3 class="text-lg font-semibold mb-4">图片排名统计</h3>
-                    <div id="imageStats" class="overflow-auto max-h-96">
-                        <!-- 图片统计将在这里显示 -->
+                    <h3 class="text-lg font-semibold mb-4">分行为图片排名统计</h3>
+                    
+                    <!-- 行为标签页 -->
+                    <div class="flex space-x-1 mb-4 border-b">
+                        <button onclick="showBehaviorTab('sitting')" id="tab-sitting" class="px-4 py-2 text-sm font-medium bg-blue-500 text-white rounded-t">
+                            坐
+                        </button>
+                        <button onclick="showBehaviorTab('walking')" id="tab-walking" class="px-4 py-2 text-sm font-medium bg-gray-200 text-gray-700 rounded-t hover:bg-gray-300">
+                            行走
+                        </button>
+                        <button onclick="showBehaviorTab('jogging')" id="tab-jogging" class="px-4 py-2 text-sm font-medium bg-gray-200 text-gray-700 rounded-t hover:bg-gray-300">
+                            慢跑
+                        </button>
+                        <button onclick="showBehaviorTab('gathering')" id="tab-gathering" class="px-4 py-2 text-sm font-medium bg-gray-200 text-gray-700 rounded-t hover:bg-gray-300">
+                            集合
+                        </button>
+                        <button onclick="showBehaviorTab('overall')" id="tab-overall" class="px-4 py-2 text-sm font-medium bg-gray-200 text-gray-700 rounded-t hover:bg-gray-300">
+                            综合排名
+                        </button>
+                    </div>
+                    
+                    <!-- 各行为的排名显示区域 -->
+                    <div id="behaviorRankings" class="overflow-auto max-h-96">
+                        <!-- 行为排名将在这里显示 -->
                     </div>
                 </div>
                 
@@ -350,6 +371,7 @@
         // ====================================================================
         const DEBUG_MODE = false; // 关闭调试模式
         let debugVisible = false;
+        let currentBehaviorTab = 'sitting'; // 当前选中的行为标签
 
         // 示例图片URL列表
         const DEMO_IMAGES = [
@@ -443,6 +465,7 @@
                         stats.behaviorStats[behavior] = {
                             imageWinCounts: {},
                             imageLossCounts: {},
+                            imageRankings: {},
                             totalComparisons: 0
                         };
                     }
@@ -453,6 +476,12 @@
                     if (!stats.behaviorStats[behavior].imageLossCounts[loserId]) {
                         stats.behaviorStats[behavior].imageLossCounts[loserId] = 0;
                     }
+                    if (!stats.behaviorStats[behavior].imageLossCounts[winnerId]) {
+                        stats.behaviorStats[behavior].imageLossCounts[winnerId] = 0;
+                    }
+                    if (!stats.behaviorStats[behavior].imageWinCounts[loserId]) {
+                        stats.behaviorStats[behavior].imageWinCounts[loserId] = 0;
+                    }
                     
                     stats.behaviorStats[behavior].imageWinCounts[winnerId] += 1;
                     stats.behaviorStats[behavior].imageLossCounts[loserId] += 1;
@@ -460,7 +489,35 @@
                 });
             });
             
-            // 重新计算所有图片的排名分数
+            // 重新计算每个行为的图片排名分数
+            Object.keys(stats.behaviorStats).forEach(behavior => {
+                const behaviorData = stats.behaviorStats[behavior];
+                const allImageIds = new Set([
+                    ...Object.keys(behaviorData.imageWinCounts),
+                    ...Object.keys(behaviorData.imageLossCounts)
+                ]);
+                
+                allImageIds.forEach(imageId => {
+                    const wins = behaviorData.imageWinCounts[imageId] || 0;
+                    const losses = behaviorData.imageLossCounts[imageId] || 0;
+                    const total = wins + losses;
+                    
+                    // 使用胜率计算分数，加上平滑因子避免极端值
+                    const winRate = total > 0 ? wins / total : 0.5;
+                    const score = winRate * 1000 + (wins - losses);
+                    
+                    if (!behaviorData.imageRankings) behaviorData.imageRankings = {};
+                    behaviorData.imageRankings[imageId] = {
+                        score: score,
+                        wins: wins,
+                        losses: losses,
+                        total: total,
+                        winRate: winRate
+                    };
+                });
+            });
+            
+            // 重新计算所有图片的综合排名分数
             Object.keys(stats.imageWinCounts).forEach(imageId => {
                 const wins = stats.imageWinCounts[imageId] || 0;
                 const losses = stats.imageLossCounts[imageId] || 0;
@@ -1055,24 +1112,36 @@
             const avgComparisonsPerUser = stats.totalUsers > 0 ? (stats.totalComparisons / stats.totalUsers).toFixed(1) : '0';
             document.getElementById('avgGroups').textContent = avgComparisonsPerUser;
             
-            // 更新图片统计
-            displayImageStats(stats);
+            // 显示当前选中行为的排名
+            displayBehaviorRankings(stats, currentBehaviorTab);
             
             // 更新用户详情
             displayUserDetails(sessions);
         }
 
-        function displayImageStats(stats) {
-            const imageStats = document.getElementById('imageStats');
+        function showBehaviorTab(behaviorKey) {
+            currentBehaviorTab = behaviorKey;
             
-            if (!stats.imageRankings || Object.keys(stats.imageRankings).length === 0) {
-                imageStats.innerHTML = '<p class="text-gray-500">暂无图片统计数据</p>';
-                return;
-            }
+            // 更新标签样式
+            const tabs = ['sitting', 'walking', 'jogging', 'gathering', 'overall'];
+            tabs.forEach(tab => {
+                const tabElement = document.getElementById(`tab-${tab}`);
+                if (tab === behaviorKey) {
+                    tabElement.classList.remove('bg-gray-200', 'text-gray-700', 'hover:bg-gray-300');
+                    tabElement.classList.add('bg-blue-500', 'text-white');
+                } else {
+                    tabElement.classList.remove('bg-blue-500', 'text-white');
+                    tabElement.classList.add('bg-gray-200', 'text-gray-700', 'hover:bg-gray-300');
+                }
+            });
             
-            const sortedImages = Object.entries(stats.imageRankings)
-                .sort(([,a], [,b]) => b.winRate - a.winRate) // 直接按胜率排序
-                .slice(0, 20); // 显示前20名
+            // 显示对应的排名数据
+            const stats = getCumulativeStats();
+            displayBehaviorRankings(stats, behaviorKey);
+        }
+
+        function displayBehaviorRankings(stats, behaviorKey) {
+            const behaviorRankings = document.getElementById('behaviorRankings');
             
             // 获取图片名称的辅助函数
             function getImageName(imageId) {
@@ -1080,8 +1149,43 @@
                 return image ? image.name : `图片${imageId}`;
             }
             
+            let rankings = [];
+            let behaviorName = '';
+            
+            if (behaviorKey === 'overall') {
+                // 显示综合排名
+                behaviorName = '综合排名';
+                if (stats.imageRankings && Object.keys(stats.imageRankings).length > 0) {
+                    rankings = Object.entries(stats.imageRankings)
+                        .sort(([,a], [,b]) => b.winRate - a.winRate)
+                        .slice(0, 20);
+                }
+            } else {
+                // 显示特定行为的排名
+                const behaviorNames = {
+                    'sitting': '坐',
+                    'walking': '行走', 
+                    'jogging': '慢跑',
+                    'gathering': '集合'
+                };
+                behaviorName = behaviorNames[behaviorKey] || behaviorKey;
+                
+                const behaviorData = stats.behaviorStats && stats.behaviorStats[behaviorName];
+                if (behaviorData && behaviorData.imageRankings && Object.keys(behaviorData.imageRankings).length > 0) {
+                    rankings = Object.entries(behaviorData.imageRankings)
+                        .sort(([,a], [,b]) => b.winRate - a.winRate)
+                        .slice(0, 20);
+                }
+            }
+            
+            if (rankings.length === 0) {
+                behaviorRankings.innerHTML = `<p class="text-gray-500">暂无${behaviorName}的统计数据</p>`;
+                return;
+            }
+            
             const html = `
                 <div class="space-y-2">
+                    <h4 class="font-semibold text-gray-800 mb-3">${behaviorName}排名</h4>
                     <div class="grid grid-cols-5 gap-2 text-sm font-semibold text-gray-700 border-b pb-2">
                         <div>排名</div>
                         <div>图片名称</div>
@@ -1089,7 +1193,7 @@
                         <div>胜场</div>
                         <div>负场</div>
                     </div>
-                    ${sortedImages.map(([imageId, data], index) => {
+                    ${rankings.map(([imageId, data], index) => {
                         const imageName = getImageName(imageId);
                         return `
                         <div class="grid grid-cols-5 gap-2 text-sm">
@@ -1103,7 +1207,7 @@
                 </div>
             `;
             
-            imageStats.innerHTML = html;
+            behaviorRankings.innerHTML = html;
         }
 
         function displayUserDetails(sessions) {
