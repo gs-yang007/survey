@@ -391,6 +391,7 @@
         let currentComparisonIndex = 0;
         let currentGroupNumber = 1;
         let sessionId = generateSessionId();
+        let preloadedImages = new Map(); // 存储预加载的图片
 
         // ====================================================================
         // 数据存储管理
@@ -660,6 +661,18 @@
         function loadImageWithFallback(imgElement, imageData, callback) {
             debugLog(`🖼️ 加载图片: ${imageData.name}`);
             
+            // 检查是否已有预加载的图片
+            const preloadedImageKey = `${imageData.id}_${imageData.url}`;
+            if (preloadedImages.has(preloadedImageKey)) {
+                const preloadedImg = preloadedImages.get(preloadedImageKey);
+                if (preloadedImg.complete && preloadedImg.naturalHeight !== 0) {
+                    debugLog(`✅ 使用预加载的图片: ${imageData.name}`);
+                    imgElement.src = preloadedImg.src;
+                    if (callback) callback(true);
+                    return;
+                }
+            }
+            
             imgElement.onload = function() {
                 debugLog(`✅ 图片 ${imageData.name} 原始URL加载成功`);
                 if (callback) callback(true);
@@ -683,6 +696,92 @@
             };
             
             imgElement.src = imageData.url;
+        }
+
+        // 预加载图片函数
+        function preloadImage(imageData) {
+            return new Promise((resolve) => {
+                const preloadedImageKey = `${imageData.id}_${imageData.url}`;
+                
+                // 如果已经预加载过，直接返回
+                if (preloadedImages.has(preloadedImageKey)) {
+                    resolve(preloadedImages.get(preloadedImageKey));
+                    return;
+                }
+                
+                const img = new Image();
+                
+                img.onload = function() {
+                    debugLog(`🚀 预加载成功: ${imageData.name}`);
+                    preloadedImages.set(preloadedImageKey, img);
+                    resolve(img);
+                };
+                
+                img.onerror = function() {
+                    debugLog(`❌ 预加载原始URL失败，尝试备用URL: ${imageData.name}`);
+                    
+                    // 尝试备用URL
+                    const fallbackImg = new Image();
+                    fallbackImg.onload = function() {
+                        debugLog(`🚀 预加载备用URL成功: ${imageData.name}`);
+                        preloadedImages.set(preloadedImageKey, fallbackImg);
+                        resolve(fallbackImg);
+                    };
+                    
+                    fallbackImg.onerror = function() {
+                        debugLog(`❌ 预加载所有URL都失败: ${imageData.name}`);
+                        resolve(null);
+                    };
+                    
+                    fallbackImg.src = imageData.fallbackUrl;
+                };
+                
+                img.src = imageData.url;
+            });
+        }
+
+        // 预加载下一对图片
+        function preloadNextPair() {
+            const nextIndex = currentComparisonIndex + 1;
+            if (nextIndex < comparisonPairs.length) {
+                const nextPair = comparisonPairs[nextIndex];
+                debugLog(`🔄 开始预加载下一对图片 (${nextIndex + 1}/${comparisonPairs.length})`);
+                
+                // 同时预加载两张图片
+                Promise.all([
+                    preloadImage(nextPair.imageA),
+                    preloadImage(nextPair.imageB)
+                ]).then(() => {
+                    debugLog(`✅ 下一对图片预加载完成`);
+                }).catch((error) => {
+                    debugLog(`❌ 预加载失败: ${error}`);
+                });
+            }
+        }
+
+        // 清理预加载缓存（避免内存占用过多）
+        function cleanupPreloadCache() {
+            // 只保留当前和下一对的预加载图片
+            const keepKeys = new Set();
+            
+            if (currentComparisonIndex < comparisonPairs.length) {
+                const currentPair = comparisonPairs[currentComparisonIndex];
+                keepKeys.add(`${currentPair.imageA.id}_${currentPair.imageA.url}`);
+                keepKeys.add(`${currentPair.imageB.id}_${currentPair.imageB.url}`);
+            }
+            
+            if (currentComparisonIndex + 1 < comparisonPairs.length) {
+                const nextPair = comparisonPairs[currentComparisonIndex + 1];
+                keepKeys.add(`${nextPair.imageA.id}_${nextPair.imageA.url}`);
+                keepKeys.add(`${nextPair.imageB.id}_${nextPair.imageB.url}`);
+            }
+            
+            // 删除不需要的预加载图片
+            for (const key of preloadedImages.keys()) {
+                if (!keepKeys.has(key)) {
+                    preloadedImages.delete(key);
+                }
+            }
         }
 
         // ====================================================================
@@ -827,6 +926,9 @@
         }
 
         function startNewGroup() {
+            // 清空预加载缓存
+            preloadedImages.clear();
+            
             initializeRankings();
             generateComparisonPairs();
             currentComparisonIndex = 0;
@@ -934,8 +1036,12 @@
             imageA_img.alt = currentPair.imageA.name;
             imageB_img.alt = currentPair.imageB.name;
 
+            // 加载当前图片
             loadImageWithFallback(imageA_img, currentPair.imageA);
             loadImageWithFallback(imageB_img, currentPair.imageB);
+
+            // 开始预加载下一对图片
+            preloadNextPair();
 
             document.getElementById('progressCounter').textContent = `${currentComparisonIndex + 1}/50`;
             
@@ -1034,6 +1140,10 @@
             });
 
             currentComparisonIndex++;
+            
+            // 清理预加载缓存，避免内存占用过多
+            cleanupPreloadCache();
+            
             generateNewComparison();
         }
 
@@ -1066,6 +1176,7 @@
             currentComparisonIndex = 0;
             currentGroupNumber = 1;
             sessionId = generateSessionId();
+            preloadedImages.clear(); // 清空预加载缓存
             
             document.querySelectorAll('input[type="radio"]').forEach(input => input.checked = false);
             document.getElementById('ageInput').value = '';
