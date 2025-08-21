@@ -165,7 +165,7 @@
             <div class="flex justify-center mb-6 space-x-6">
                 <div class="bg-white rounded-lg p-4">
                     <div class="text-center mb-2">
-                        <span class="font-bold text-gray-800">图片 A</span>
+                        <span id="imageALabel" class="font-bold text-gray-800">图片 A</span>
                     </div>
                     <div class="image-container">
                         <img id="imageA_img" src="" alt="" class="survey-image rounded">
@@ -174,7 +174,7 @@
                 
                 <div class="bg-white rounded-lg p-4">
                     <div class="text-center mb-2">
-                        <span class="font-bold text-gray-800">图片 B</span>
+                        <span id="imageBLabel" class="font-bold text-gray-800">图片 B</span>
                     </div>
                     <div class="image-container">
                         <img id="imageB_img" src="" alt="" class="survey-image rounded">
@@ -191,11 +191,11 @@
                         <div class="flex space-x-6">
                             <label class="flex items-center">
                                 <input type="radio" name="sitting" value="A" class="mr-2">
-                                <span>图片 A</span>
+                                <span class="optionA">图片 A</span>
                             </label>
                             <label class="flex items-center">
                                 <input type="radio" name="sitting" value="B" class="mr-2">
-                                <span>图片 B</span>
+                                <span class="optionB">图片 B</span>
                             </label>
                         </div>
                     </div>
@@ -206,11 +206,11 @@
                         <div class="flex space-x-6">
                             <label class="flex items-center">
                                 <input type="radio" name="walking" value="A" class="mr-2">
-                                <span>图片 A</span>
+                                <span class="optionA">图片 A</span>
                             </label>
                             <label class="flex items-center">
                                 <input type="radio" name="walking" value="B" class="mr-2">
-                                <span>图片 B</span>
+                                <span class="optionB">图片 B</span>
                             </label>
                         </div>
                     </div>
@@ -221,11 +221,11 @@
                         <div class="flex space-x-6">
                             <label class="flex items-center">
                                 <input type="radio" name="jogging" value="A" class="mr-2">
-                                <span>图片 A</span>
+                                <span class="optionA">图片 A</span>
                             </label>
                             <label class="flex items-center">
                                 <input type="radio" name="jogging" value="B" class="mr-2">
-                                <span>图片 B</span>
+                                <span class="optionB">图片 B</span>
                             </label>
                         </div>
                     </div>
@@ -236,11 +236,11 @@
                         <div class="flex space-x-6">
                             <label class="flex items-center">
                                 <input type="radio" name="gathering" value="A" class="mr-2">
-                                <span>图片 A</span>
+                                <span class="optionA">图片 A</span>
                             </label>
                             <label class="flex items-center">
                                 <input type="radio" name="gathering" value="B" class="mr-2">
-                                <span>图片 B</span>
+                                <span class="optionB">图片 B</span>
                             </label>
                         </div>
                     </div>
@@ -250,7 +250,7 @@
             <!-- 确认按钮 -->
             <div class="text-center">
                 <button id="confirmButton" onclick="confirmAllSelections()" disabled class="px-8 py-3 bg-gray-400 text-white rounded-lg transition-colors font-medium cursor-not-allowed">
-                    确认并继续
+                    <span id="confirmButtonText">确认并继续</span>
                 </button>
             </div>
         </div>
@@ -651,7 +651,18 @@
                 finishButton: '结束调研',
                 thankYouTitle: '感谢您的参与！',
                 thankYouMessage: '您的数据已成功提交，感谢您为街景感知研究做出的贡献！',
-                restartButton: '重新开始'
+                restartButton: '重新开始',
+                // 图片和选项标签
+                imageALabel: '图片 A',
+                imageBLabel: '图片 B',
+                optionA: '图片 A',
+                optionB: '图片 B',
+                // 四个问题
+                question1: '以下两张街景中，您认为哪张更加适合"坐"的行为：',
+                question2: '以下两张街景中，您认为哪张更加适合"行走"的行为：',
+                question3: '以下两张街景中，您认为哪张更加适合"慢跑"的行为：',
+                question4: '以下两张街景中，您认为哪张更加适合"集合"的行为：',
+                confirmButtonText: '确认并继续'
             },
             en: {
                 surveyTitle: 'Street View Perception Questionnaire: Part 1',
@@ -672,7 +683,18 @@
                 finishButton: 'Finish Survey',
                 thankYouTitle: 'Thank You for Your Participation!',
                 thankYouMessage: 'Your data has been successfully submitted. Thank you for contributing to street view perception research!',
-                restartButton: 'Start Over'
+                restartButton: 'Start Over',
+                // 图片和选项标签
+                imageALabel: 'Image A',
+                imageBLabel: 'Image B',
+                optionA: 'Image A',
+                optionB: 'Image B',
+                // 四个问题
+                question1: 'Which of the following two street views do you think is more suitable for "sitting":',
+                question2: 'Which of the following two street views do you think is more suitable for "walking":',
+                question3: 'Which of the following two street views do you think is more suitable for "jogging":',
+                question4: 'Which of the following two street views do you think is more suitable for "gathering":',
+                confirmButtonText: 'Confirm and Continue'
             }
         };
 
@@ -684,6 +706,8 @@
 
         function updateTexts() {
             const t = texts[currentLanguage];
+            
+            // 更新基础文本元素
             Object.keys(t).forEach(key => {
                 const element = document.getElementById(key);
                 if (element) {
@@ -693,6 +717,18 @@
                         element.textContent = t[key];
                     }
                 }
+            });
+            
+            // 更新选项文字（使用类选择器）
+            const optionAElements = document.querySelectorAll('.optionA');
+            const optionBElements = document.querySelectorAll('.optionB');
+            
+            optionAElements.forEach(element => {
+                element.textContent = t.optionA;
+            });
+            
+            optionBElements.forEach(element => {
+                element.textContent = t.optionB;
             });
         }
 
@@ -744,7 +780,8 @@
         }
 
         function updateGroupCounter() {
-            document.getElementById('groupCounter').textContent = `${currentLanguage === 'zh' ? '第' : 'Group'} ${currentGroupNumber} ${currentLanguage === 'zh' ? '组' : ''}`;
+            const groupText = currentLanguage === 'zh' ? `第 ${currentGroupNumber} 组` : `Group ${currentGroupNumber}`;
+            document.getElementById('groupCounter').textContent = groupText;
         }
 
         function generateComparisonPairs() {
