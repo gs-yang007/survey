@@ -143,7 +143,7 @@
 
     <!-- 图片对比页面 -->
     <div id="comparisonPage" class="hidden min-h-screen bg-green-500 p-4">
-        <div class="max-w-7xl mx-auto">
+        <div class="max-w-6xl mx-auto">
             <div class="flex justify-between text-white mb-4">
                 <div>
                     <span id="groupCounter">第 1 组</span>
@@ -153,46 +153,105 @@
                 </div>
             </div>
             
-            <h1 id="compareTitle" class="text-white text-xl font-medium text-center mb-6">
-                以下两张街景中，您认为哪张更加适合"坐"的行为：
-            </h1>
+            <!-- 顶部提示 -->
+            <div class="bg-white rounded-lg p-4 mb-6">
+                <h3 id="hintTitle" class="font-bold text-gray-800 mb-2">提示</h3>
+                <p id="instructions" class="text-sm text-gray-600">
+                    在此调研中，您需要对每对图片回答四个不同的行为问题。请根据您的直觉选择您认为更加适合进行各种活动的街景。所有问题都必须回答完毕才能进入下一对图片。
+                </p>
+            </div>
             
-            <div class="flex justify-between items-start">
-                <!-- 左侧提示 -->
-                <div class="w-48 bg-white rounded-lg p-4 mr-4">
-                    <h3 id="hintTitle" class="font-bold text-gray-800 mb-2">提示</h3>
-                    <p id="instructions" class="text-sm text-gray-600">
-                        在此调研中，您需要在成对的图片中做出选择。请根据您的直觉选择您认为更加适合进行指定活动的街景。
-                    </p>
+            <!-- 图片展示区域 -->
+            <div class="flex justify-center mb-6 space-x-6">
+                <div class="bg-white rounded-lg p-4">
+                    <div class="text-center mb-2">
+                        <span class="font-bold text-gray-800">图片 A</span>
+                    </div>
+                    <div class="image-container">
+                        <img id="imageA_img" src="" alt="" class="survey-image rounded">
+                    </div>
                 </div>
                 
-                <!-- 图片对比区域 -->
-                <div class="flex-1 space-y-4 flex flex-col items-center">
-                    <div id="imageA" class="bg-white rounded-lg p-4 hover:shadow-lg transition-shadow">
-                        <div class="image-container">
-                            <img id="imageA_img" src="" alt="" class="survey-image rounded">
-                        </div>
-                        <div class="text-center mt-2 flex justify-end">
-                            <div id="radioA" class="w-6 h-6 border-2 border-gray-300 rounded-full cursor-pointer hover:border-green-500 transition-colors" onclick="selectOption('A')"></div>
+                <div class="bg-white rounded-lg p-4">
+                    <div class="text-center mb-2">
+                        <span class="font-bold text-gray-800">图片 B</span>
+                    </div>
+                    <div class="image-container">
+                        <img id="imageB_img" src="" alt="" class="survey-image rounded">
+                    </div>
+                </div>
+            </div>
+            
+            <!-- 问题区域 -->
+            <div class="bg-white rounded-lg p-6 mb-6">
+                <div class="space-y-6">
+                    <!-- 问题1：坐 -->
+                    <div class="border-b border-gray-200 pb-4">
+                        <h3 id="question1" class="font-bold text-gray-800 mb-3">以下两张街景中，您认为哪张更加适合"坐"的行为：</h3>
+                        <div class="flex space-x-6">
+                            <label class="flex items-center">
+                                <input type="radio" name="sitting" value="A" class="mr-2">
+                                <span>图片 A</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="radio" name="sitting" value="B" class="mr-2">
+                                <span>图片 B</span>
+                            </label>
                         </div>
                     </div>
                     
-                    <div id="imageB" class="bg-white rounded-lg p-4 hover:shadow-lg transition-shadow">
-                        <div class="image-container">
-                            <img id="imageB_img" src="" alt="" class="survey-image rounded">
+                    <!-- 问题2：行走 -->
+                    <div class="border-b border-gray-200 pb-4">
+                        <h3 id="question2" class="font-bold text-gray-800 mb-3">以下两张街景中，您认为哪张更加适合"行走"的行为：</h3>
+                        <div class="flex space-x-6">
+                            <label class="flex items-center">
+                                <input type="radio" name="walking" value="A" class="mr-2">
+                                <span>图片 A</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="radio" name="walking" value="B" class="mr-2">
+                                <span>图片 B</span>
+                            </label>
                         </div>
-                        <div class="text-center mt-2 flex justify-end">
-                            <div id="radioB" class="w-6 h-6 border-2 border-gray-300 rounded-full cursor-pointer hover:border-green-500 transition-colors" onclick="selectOption('B')"></div>
+                    </div>
+                    
+                    <!-- 问题3：慢跑 -->
+                    <div class="border-b border-gray-200 pb-4">
+                        <h3 id="question3" class="font-bold text-gray-800 mb-3">以下两张街景中，您认为哪张更加适合"慢跑"的行为：</h3>
+                        <div class="flex space-x-6">
+                            <label class="flex items-center">
+                                <input type="radio" name="jogging" value="A" class="mr-2">
+                                <span>图片 A</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="radio" name="jogging" value="B" class="mr-2">
+                                <span>图片 B</span>
+                            </label>
+                        </div>
+                    </div>
+                    
+                    <!-- 问题4：集合 -->
+                    <div>
+                        <h3 id="question4" class="font-bold text-gray-800 mb-3">以下两张街景中，您认为哪张更加适合"集合"的行为：</h3>
+                        <div class="flex space-x-6">
+                            <label class="flex items-center">
+                                <input type="radio" name="gathering" value="A" class="mr-2">
+                                <span>图片 A</span>
+                            </label>
+                            <label class="flex items-center">
+                                <input type="radio" name="gathering" value="B" class="mr-2">
+                                <span>图片 B</span>
+                            </label>
                         </div>
                     </div>
                 </div>
-                
-                <!-- 右侧确认按钮 -->
-                <div class="w-32 ml-4">
-                    <button id="confirmButton" onclick="confirmSelection()" disabled class="w-full bg-gray-400 text-white py-3 rounded-lg transition-colors font-medium cursor-not-allowed">
-                        确认
-                    </button>
-                </div>
+            </div>
+            
+            <!-- 确认按钮 -->
+            <div class="text-center">
+                <button id="confirmButton" onclick="confirmAllSelections()" disabled class="px-8 py-3 bg-gray-400 text-white rounded-lg transition-colors font-medium cursor-not-allowed">
+                    确认并继续
+                </button>
             </div>
         </div>
     </div>
@@ -347,6 +406,7 @@
             if (!stats.imageWinCounts) stats.imageWinCounts = {};
             if (!stats.imageLossCounts) stats.imageLossCounts = {};
             if (!stats.imageRankings) stats.imageRankings = {};
+            if (!stats.behaviorStats) stats.behaviorStats = {};
             if (!stats.totalUsers) stats.totalUsers = 0;
             if (!stats.totalComparisons) stats.totalComparisons = 0;
             if (!stats.userDemographics) stats.userDemographics = { male: 0, female: 0, professional: 0, nonProfessional: 0 };
@@ -361,18 +421,43 @@
             if (sessionData.userData.isProfessional === 'yes') stats.userDemographics.professional += 1;
             if (sessionData.userData.isProfessional === 'no') stats.userDemographics.nonProfessional += 1;
             
-            // 更新图片胜负统计
+            // 更新图片胜负统计和行为统计
             sessionData.comparisons.forEach(comparison => {
-                const winnerId = comparison.winner;
-                const loserId = comparison.loser;
-                
-                if (!stats.imageWinCounts[winnerId]) stats.imageWinCounts[winnerId] = 0;
-                if (!stats.imageLossCounts[winnerId]) stats.imageLossCounts[winnerId] = 0;
-                if (!stats.imageWinCounts[loserId]) stats.imageWinCounts[loserId] = 0;
-                if (!stats.imageLossCounts[loserId]) stats.imageLossCounts[loserId] = 0;
-                
-                stats.imageWinCounts[winnerId] += 1;
-                stats.imageLossCounts[loserId] += 1;
+                // 处理每个行为的答案
+                Object.entries(comparison.answers).forEach(([behaviorKey, answer]) => {
+                    const behavior = answer.behavior;
+                    const winnerId = answer.winner;
+                    const loserId = answer.loser;
+                    
+                    // 更新总体图片统计
+                    if (!stats.imageWinCounts[winnerId]) stats.imageWinCounts[winnerId] = 0;
+                    if (!stats.imageLossCounts[winnerId]) stats.imageLossCounts[winnerId] = 0;
+                    if (!stats.imageWinCounts[loserId]) stats.imageWinCounts[loserId] = 0;
+                    if (!stats.imageLossCounts[loserId]) stats.imageLossCounts[loserId] = 0;
+                    
+                    stats.imageWinCounts[winnerId] += 1;
+                    stats.imageLossCounts[loserId] += 1;
+                    
+                    // 更新按行为分类的统计
+                    if (!stats.behaviorStats[behavior]) {
+                        stats.behaviorStats[behavior] = {
+                            imageWinCounts: {},
+                            imageLossCounts: {},
+                            totalComparisons: 0
+                        };
+                    }
+                    
+                    if (!stats.behaviorStats[behavior].imageWinCounts[winnerId]) {
+                        stats.behaviorStats[behavior].imageWinCounts[winnerId] = 0;
+                    }
+                    if (!stats.behaviorStats[behavior].imageLossCounts[loserId]) {
+                        stats.behaviorStats[behavior].imageLossCounts[loserId] = 0;
+                    }
+                    
+                    stats.behaviorStats[behavior].imageWinCounts[winnerId] += 1;
+                    stats.behaviorStats[behavior].imageLossCounts[loserId] += 1;
+                    stats.behaviorStats[behavior].totalComparisons += 1;
+                });
             });
             
             // 重新计算所有图片的排名分数
@@ -559,7 +644,7 @@
                 nextButton: '下一部分',
                 compareTitle: '以下两张街景中，您认为哪张更加适合"坐"的行为：',
                 hintTitle: '提示',
-                instructions: '在此调研中，您需要在成对的图片中做出选择。请根据您的直觉选择您认为更加适合特定行为的街景。',
+                instructions: '在此调研中，您需要对每对图片回答四个不同的行为问题。请根据您的直觉选择您认为更加适合进行各种活动的街景。所有问题都必须回答完毕才能进入下一对图片。',
                 continueTitle: '本组对比已完成',
                 continueMessage: '您已完成了50组图片对比，感谢您的参与！<br>是否继续进行下一组对比？',
                 continueButton: '继续下一组',
@@ -580,7 +665,7 @@
                 nextButton: 'Next Part',
                 compareTitle: 'Which of the following two street views do you think is more suitable for sitting:',
                 hintTitle: 'Hint',
-                instructions: 'In this survey, you need to make choices between pairs of images. Please choose the street view you think is more suitable for certain behaviours based on your intuition.',
+                instructions: 'In this survey, you need to answer four different behavioral questions for each pair of images. Please choose the street view you think is more suitable for various activities based on your intuition. All questions must be answered before proceeding to the next pair of images.',
                 continueTitle: 'Group Comparison Completed',
                 continueMessage: 'You have completed 50 image comparisons, thank you for your participation!<br>Would you like to continue with the next group?',
                 continueButton: 'Continue Next Group',
@@ -760,81 +845,95 @@
 
             document.getElementById('progressCounter').textContent = `${currentComparisonIndex + 1}/50`;
             
-            resetSelection();
+            resetAllSelections();
         }
 
-        function resetSelection() {
-            selectedOption = null;
+        function resetAllSelections() {
+            // 重置所有单选按钮
+            const radioGroups = ['sitting', 'walking', 'jogging', 'gathering'];
+            radioGroups.forEach(group => {
+                const radios = document.querySelectorAll(`input[name="${group}"]`);
+                radios.forEach(radio => {
+                    radio.checked = false;
+                });
+            });
             
-            const radioA = document.getElementById('radioA');
-            const radioB = document.getElementById('radioB');
-            
-            radioA.className = 'w-6 h-6 border-2 border-gray-300 rounded-full cursor-pointer hover:border-green-500 transition-colors';
-            radioB.className = 'w-6 h-6 border-2 border-gray-300 rounded-full cursor-pointer hover:border-green-500 transition-colors';
-            radioA.innerHTML = '';
-            radioB.innerHTML = '';
-            
+            // 重置确认按钮
             const confirmButton = document.getElementById('confirmButton');
             confirmButton.disabled = true;
-            confirmButton.classList.remove('bg-green-600', 'hover:bg-green-700');
+            confirmButton.classList.remove('bg-green-600', 'hover:bg-green-700', 'cursor-pointer');
             confirmButton.classList.add('bg-gray-400', 'cursor-not-allowed');
         }
 
-        function selectOption(choice) {
-            selectedOption = choice;
-            
-            const radioA = document.getElementById('radioA');
-            const radioB = document.getElementById('radioB');
-            
-            radioA.className = 'w-6 h-6 border-2 border-gray-300 rounded-full cursor-pointer hover:border-green-500 transition-colors';
-            radioB.className = 'w-6 h-6 border-2 border-gray-300 rounded-full cursor-pointer hover:border-green-500 transition-colors';
-            radioA.innerHTML = '';
-            radioB.innerHTML = '';
-            
-            if (choice === 'A') {
-                radioA.className = 'w-6 h-6 border-2 border-green-500 bg-green-500 rounded-full cursor-pointer transition-colors';
-                radioA.innerHTML = '<div class="w-2 h-2 bg-white rounded-full m-auto mt-1"></div>';
-            } else {
-                radioB.className = 'w-6 h-6 border-2 border-green-500 bg-green-500 rounded-full cursor-pointer transition-colors';
-                radioB.innerHTML = '<div class="w-2 h-2 bg-white rounded-full m-auto mt-1"></div>';
-            }
+        function checkAllAnswered() {
+            const radioGroups = ['sitting', 'walking', 'jogging', 'gathering'];
+            const allAnswered = radioGroups.every(group => {
+                return document.querySelector(`input[name="${group}"]:checked`) !== null;
+            });
             
             const confirmButton = document.getElementById('confirmButton');
-            confirmButton.disabled = false;
-            confirmButton.classList.remove('bg-gray-400', 'cursor-not-allowed');
-            confirmButton.classList.add('bg-green-600', 'hover:bg-green-700', 'cursor-pointer');
+            if (allAnswered) {
+                confirmButton.disabled = false;
+                confirmButton.classList.remove('bg-gray-400', 'cursor-not-allowed');
+                confirmButton.classList.add('bg-green-600', 'hover:bg-green-700', 'cursor-pointer');
+            } else {
+                confirmButton.disabled = true;
+                confirmButton.classList.remove('bg-green-600', 'hover:bg-green-700', 'cursor-pointer');
+                confirmButton.classList.add('bg-gray-400', 'cursor-not-allowed');
+            }
         }
 
-        function confirmSelection() {
-            if (!selectedOption) return;
+        function confirmAllSelections() {
+            // 收集所有问题的答案
+            const radioGroups = ['sitting', 'walking', 'jogging', 'gathering'];
+            const behaviors = ['坐', '行走', '慢跑', '集合'];
+            const answers = {};
             
-            let winnerId, loserId;
-            if (selectedOption === 'A') {
-                winnerId = currentPair.imageA.id;
-                loserId = currentPair.imageB.id;
-            } else {
-                winnerId = currentPair.imageB.id;
-                loserId = currentPair.imageA.id;
+            let allAnswered = true;
+            radioGroups.forEach((group, index) => {
+                const selected = document.querySelector(`input[name="${group}"]:checked`);
+                if (selected) {
+                    answers[group] = {
+                        behavior: behaviors[index],
+                        choice: selected.value,
+                        winner: selected.value === 'A' ? currentPair.imageA.id : currentPair.imageB.id,
+                        loser: selected.value === 'A' ? currentPair.imageB.id : currentPair.imageA.id,
+                        winnerImage: selected.value === 'A' ? currentPair.imageA.name : currentPair.imageB.name,
+                        loserImage: selected.value === 'A' ? currentPair.imageB.name : currentPair.imageA.name
+                    };
+                } else {
+                    allAnswered = false;
+                }
+            });
+
+            if (!allAnswered) {
+                alert(currentLanguage === 'zh' ? '请回答所有问题！' : 'Please answer all questions!');
+                return;
             }
 
-            // 更新本组排名
-            const K = 32;
-            const winnerRating = imageRankings[winnerId].score;
-            const loserRating = imageRankings[loserId].score;
-            
-            const expectedWinner = 1 / (1 + Math.pow(10, (loserRating - winnerRating) / 400));
-            
-            imageRankings[winnerId].score += K * (1 - expectedWinner);
-            imageRankings[loserId].score += K * (0 - expectedWinner);
-            imageRankings[winnerId].wins += 1;
-            imageRankings[loserId].losses += 1;
+            // 为每个行为更新排名
+            Object.values(answers).forEach(answer => {
+                const winnerId = answer.winner;
+                const loserId = answer.loser;
+                
+                // 更新本组排名
+                const K = 32;
+                const winnerRating = imageRankings[winnerId].score;
+                const loserRating = imageRankings[loserId].score;
+                
+                const expectedWinner = 1 / (1 + Math.pow(10, (loserRating - winnerRating) / 400));
+                
+                imageRankings[winnerId].score += K * (1 - expectedWinner);
+                imageRankings[loserId].score += K * (0 - expectedWinner);
+                imageRankings[winnerId].wins += 1;
+                imageRankings[loserId].losses += 1;
+            });
 
             // 记录对比结果
             comparisons.push({
-                winner: winnerId,
-                loser: loserId,
-                winnerImage: currentPair.imageA.id === winnerId ? currentPair.imageA.name : currentPair.imageB.name,
-                loserImage: currentPair.imageA.id === loserId ? currentPair.imageA.name : currentPair.imageB.name,
+                imageA: currentPair.imageA,
+                imageB: currentPair.imageB,
+                answers: answers,
                 timestamp: new Date().toISOString(),
                 groupNumber: currentGroupNumber,
                 comparisonIndex: currentComparisonIndex + 1
@@ -1048,6 +1147,15 @@
             debugLog('🚀 街景问卷系统启动 - 后台存储版');
             
             await initializeImageLibrary();
+            
+            // 添加事件监听器到所有单选按钮
+            const radioGroups = ['sitting', 'walking', 'jogging', 'gathering'];
+            radioGroups.forEach(group => {
+                const radios = document.querySelectorAll(`input[name="${group}"]`);
+                radios.forEach(radio => {
+                    radio.addEventListener('change', checkAllAnswered);
+                });
+            });
             
             if (isImageLibraryLoaded) {
                 debugLog(`✅ 系统就绪，图片库包含 ${imageLibrary.length} 张图片`);
