@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>街景行为问卷调研</title>
+    <title>街景行为问卷调研 - 调试版</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         .hidden { display: none; }
@@ -26,7 +26,7 @@
             max-height: 200px;
             overflow-y: auto;
             z-index: 1000;
-            display: none;
+            display: block;
         }
         .image-container {
             width: 666px;
@@ -100,9 +100,21 @@
             background-color: #fef3c7;
             color: #92400e;
         }
+        .debug-highlight {
+            background-color: #fff3cd;
+            border: 2px solid #ffc107;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+        }
     </style>
 </head>
 <body class="bg-gray-100">
+    <!-- 调试提示 -->
+    <div class="debug-highlight text-center">
+        <strong>🔧 调试模式激活</strong> - 每组只有5次对比，最小观看时间缩短为2秒
+    </div>
+
     <!-- 管理员入口 -->
     <div class="admin-panel">
         <button onclick="showAdminPanel()" class="bg-gray-800 text-white px-3 py-1 rounded text-xs hover:bg-gray-700">
@@ -130,6 +142,10 @@
         <div class="bg-white rounded-lg shadow-lg p-8 text-center max-w-md w-full">
             <h1 class="text-2xl font-bold text-gray-800 mb-2">街景行为感知问卷</h1>
             <h2 class="text-lg text-gray-600 mb-8">Street View Behaviours Questionnaire</h2>
+            <div class="debug-highlight">
+                <strong>调试版本</strong><br>
+                每组5次对比，观看时间2秒
+            </div>
             
             <div class="mb-6">
                 <h3 class="text-lg font-semibold text-gray-700 mb-4">语言选择</h3>
@@ -256,7 +272,7 @@
                     <span id="groupCounter">第 1 组</span>
                 </div>
                 <div>
-                    <span id="progressCounter">1/50</span>
+                    <span id="progressCounter">1/5</span>
                 </div>
             </div>
             
@@ -266,6 +282,9 @@
                 <p id="instructions" class="text-sm text-gray-600">
                     在此调研中，您需要对每对图片回答四个不同的行为问题。请根据您的直觉选择您认为更加适合进行各种活动的街景。所有问题都必须回答完毕才能进入下一对图片。
                 </p>
+                <div class="debug-highlight mt-2">
+                    <strong>调试模式：</strong>最小观看时间 2秒，共5组对比
+                </div>
             </div>
             
             <!-- 图片展示区域 -->
@@ -365,7 +384,7 @@
                     <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                     </svg>
-                    <span id="timeWarningText">请仔细观察图片至少6秒后再进行选择</span>
+                    <span id="timeWarningText">请仔细观察图片至少2秒后再进行选择</span>
                 </div>
             </div>
         </div>
@@ -375,7 +394,7 @@
     <div id="continuePage" class="hidden min-h-screen bg-gray-100 flex items-center justify-center p-4">
         <div class="bg-white rounded-lg shadow-lg p-8 text-center max-w-md w-full">
             <h2 id="continueTitle" class="text-2xl font-bold text-gray-800 mb-4">本组对比已完成</h2>
-            <p id="continueMessage" class="text-gray-600 mb-8">您已完成了50组图片对比，感谢您的参与！<br>是否继续进行下一组对比？</p>
+            <p id="continueMessage" class="text-gray-600 mb-8">您已完成了5组图片对比，感谢您的参与！<br>是否继续进行下一组对比？</p>
             
             <div class="flex justify-center space-x-4">
                 <button onclick="continueNextGroup()" id="continueButton" class="px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors font-medium">
@@ -405,7 +424,7 @@
         <div class="bg-white rounded-lg shadow-lg max-w-6xl w-full max-h-full overflow-auto">
             <div class="p-6 border-b">
                 <div class="flex justify-between items-center">
-                    <h2 class="text-2xl font-bold text-gray-800">管理员面板</h2>
+                    <h2 class="text-2xl font-bold text-gray-800">管理员面板 - 调试模式</h2>
                     <button onclick="hideAdminPanel()" class="text-gray-500 hover:text-gray-700">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
@@ -469,6 +488,13 @@
 
     <script>
         // ====================================================================
+        // 调试配置
+        // ====================================================================
+        const DEBUG_MODE = true; // 开启调试模式
+        const COMPARISONS_PER_GROUP = 5; // 每组只有5次对比
+        const MIN_VIEW_TIME = 2000; // 最小观看时间改为2秒
+        
+        // ====================================================================
         // JSONBin.io 配置和远程数据存储
         // ====================================================================
         const JSONBIN_CONFIG = {
@@ -527,7 +553,7 @@
                     sessions: sessions,
                     comparisonRecords: comparisonRecords,
                     lastUpdated: new Date().toISOString(),
-                    version: '1.0'
+                    version: '1.0_debug'
                 };
 
                 const response = await fetch(`${JSONBIN_CONFIG.baseUrl}/b/${JSONBIN_CONFIG.binId}`, {
@@ -543,7 +569,9 @@
                     throw new Error(`HTTP ${response.status}: ${response.statusText}`);
                 }
 
+                const result = await response.json();
                 debugLog('✅ 数据保存成功');
+                debugLog(`📊 保存响应: ${JSON.stringify(result, null, 2)}`);
                 showDataStatus('数据保存成功', 'success');
                 setTimeout(hideDataStatus, 2000);
                 return true;
@@ -594,13 +622,20 @@
         // ====================================================================
         // 配置和全局变量
         // ====================================================================
-        const DEBUG_MODE = false; // 关闭调试模式
-        let debugVisible = false;
+        let debugVisible = true; // 调试模式下默认显示
 
         // 示例图片URL列表
         const DEMO_IMAGES = [
             'https://res.cloudinary.com/dw3huanrk/image/upload/my_website_images/batch_upload/fff7d0a1-08b4-4bb4-8e89-50936e51f395_5345.png',
-            'https://res.cloudinary.com/dw3huanrk/image/upload/my_website_images/batch_upload/fff11158-a3d5-4e96-9c02-92dd8a42566a_5344.png'
+            'https://res.cloudinary.com/dw3huanrk/image/upload/my_website_images/batch_upload/fff11158-a3d5-4e96-9c02-92dd8a42566a_5344.png',
+            'https://picsum.photos/seed/1/666/500',
+            'https://picsum.photos/seed/2/666/500',
+            'https://picsum.photos/seed/3/666/500',
+            'https://picsum.photos/seed/4/666/500',
+            'https://picsum.photos/seed/5/666/500',
+            'https://picsum.photos/seed/6/666/500',
+            'https://picsum.photos/seed/7/666/500',
+            'https://picsum.photos/seed/8/666/500'
         ];
 
         let imageLibrary = [];
@@ -618,7 +653,7 @@
         
         // 时间控制变量
         let comparisonStartTime = null;
-        let minimumViewTime = 6000; // 6秒最小观看时间
+        let minimumViewTime = MIN_VIEW_TIME; // 使用配置的最小观看时间
         let timeWarningShown = false;
 
         // 缓存的远程数据
@@ -629,13 +664,16 @@
         // 数据存储管理 - 使用远程存储
         // ====================================================================
         function generateSessionId() {
-            return 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+            return 'debug_session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
         }
 
         async function saveUserSession() {
             try {
+                debugLog('📤 开始保存用户会话数据...');
+                
                 // 获取当前远程数据
                 const remoteData = await fetchRemoteData();
+                debugLog(`📊 当前远程数据: 会话数=${remoteData.sessions.length}, 对比记录数=${remoteData.comparisonRecords.length}`);
                 
                 const sessionData = {
                     sessionId: sessionId,
@@ -644,15 +682,19 @@
                     totalComparisons: comparisons.length,
                     comparisons: comparisons,
                     timestamp: new Date().toISOString(),
-                    language: currentLanguage
+                    language: currentLanguage,
+                    isDebugSession: true
                 };
                 
                 // 添加会话数据
                 remoteData.sessions.push(sessionData);
+                debugLog(`📝 添加会话数据: ${sessionData.sessionId}`);
                 
                 // 更新对比记录
                 const newComparisonRecords = [...remoteData.comparisonRecords];
-                comparisons.forEach(comparison => {
+                debugLog(`📊 当前对比数据长度: ${comparisons.length}`);
+                
+                comparisons.forEach((comparison, index) => {
                     const record = {
                         sessionId: sessionData.sessionId,
                         nickname: sessionData.userData.nickname,
@@ -670,16 +712,19 @@
                         jogging: comparison.answers.jogging ? (comparison.answers.jogging.choice === 'A' ? 0 : 1) : null,
                         gathering: comparison.answers.gathering ? (comparison.answers.gathering.choice === 'A' ? 0 : 1) : null,
                         viewTime: comparison.viewTime || 0,
-                        timestamp: comparison.timestamp
+                        timestamp: comparison.timestamp,
+                        isDebugData: true
                     };
                     newComparisonRecords.push(record);
+                    debugLog(`📝 添加对比记录 ${index + 1}: 组${record.groupNumber}-${record.comparisonIndex}`);
                 });
                 
                 // 保存到远程
+                debugLog('📤 开始上传到远程存储...');
                 const saveSuccess = await saveRemoteData(remoteData.sessions, newComparisonRecords);
                 
                 if (saveSuccess) {
-                    debugLog(`💾 用户会话已保存: ${sessionId}, 完成组数: ${currentGroupNumber}`);
+                    debugLog(`💾 用户会话已保存: ${sessionId}, 完成组数: ${currentGroupNumber}, 对比次数: ${comparisons.length}`);
                     
                     // 更新缓存
                     remoteDataCache = {
@@ -694,14 +739,16 @@
                 return saveSuccess;
             } catch (error) {
                 debugLog(`❌ 保存用户会话时发生错误: ${error.message}`);
+                debugLog(`🔍 错误堆栈: ${error.stack}`);
                 return false;
             }
         }
 
         async function getComparisonRecords() {
             try {
-                // 如果有缓存且不超过5分钟，使用缓存
-                if (remoteDataCache && lastDataFetch && (Date.now() - lastDataFetch < 5 * 60 * 1000)) {
+                // 如果有缓存且不超过1分钟，使用缓存
+                if (remoteDataCache && lastDataFetch && (Date.now() - lastDataFetch < 60 * 1000)) {
+                    debugLog('📋 使用缓存的对比记录');
                     return remoteDataCache.comparisonRecords || [];
                 }
                 
@@ -711,6 +758,7 @@
                 remoteDataCache = remoteData;
                 lastDataFetch = Date.now();
                 
+                debugLog(`📋 获取对比记录: ${remoteData.comparisonRecords.length} 条`);
                 return remoteData.comparisonRecords || [];
             } catch (error) {
                 debugLog(`❌ 获取对比记录失败: ${error.message}`);
@@ -720,8 +768,9 @@
 
         async function getAllSessions() {
             try {
-                // 如果有缓存且不超过5分钟，使用缓存
-                if (remoteDataCache && lastDataFetch && (Date.now() - lastDataFetch < 5 * 60 * 1000)) {
+                // 如果有缓存且不超过1分钟，使用缓存
+                if (remoteDataCache && lastDataFetch && (Date.now() - lastDataFetch < 60 * 1000)) {
+                    debugLog('📋 使用缓存的会话记录');
                     return remoteDataCache.sessions || [];
                 }
                 
@@ -731,6 +780,7 @@
                 remoteDataCache = remoteData;
                 lastDataFetch = Date.now();
                 
+                debugLog(`📋 获取会话记录: ${remoteData.sessions.length} 条`);
                 return remoteData.sessions || [];
             } catch (error) {
                 debugLog(`❌ 获取会话记录失败: ${error.message}`);
@@ -743,10 +793,13 @@
         // ====================================================================
         function debugLog(message) {
             if (DEBUG_MODE) {
-                console.log(message);
+                const timestamp = new Date().toLocaleTimeString();
+                const logMessage = `[${timestamp}] ${message}`;
+                console.log(logMessage);
+                
                 const debugLog = document.getElementById('debugLog');
                 if (debugLog) {
-                    debugLog.innerHTML += '<div>' + message + '</div>';
+                    debugLog.innerHTML += '<div>' + logMessage + '</div>';
                     debugLog.scrollTop = debugLog.scrollHeight;
                 }
             }
@@ -765,13 +818,16 @@
             comparisonStartTime = Date.now();
             timeWarningShown = false;
             hideTimeWarning();
+            debugLog(`⏱️ 开始计时，最小观看时间: ${minimumViewTime}ms`);
         }
 
         function checkMinimumViewTime() {
             if (!comparisonStartTime) return true;
             
             const elapsed = Date.now() - comparisonStartTime;
-            return elapsed >= minimumViewTime;
+            const isReady = elapsed >= minimumViewTime;
+            debugLog(`⏱️ 观看时间检查: ${elapsed}ms / ${minimumViewTime}ms, 可确认: ${isReady}`);
+            return isReady;
         }
 
         function showTimeWarning() {
@@ -779,13 +835,14 @@
             const warningText = document.getElementById('timeWarningText');
             
             if (currentLanguage === 'zh') {
-                warningText.textContent = '请仔细观察图片至少6秒后再进行选择';
+                warningText.textContent = '请仔细观察图片至少2秒后再进行选择';
             } else {
-                warningText.textContent = 'Please observe the images carefully for at least 6 seconds before making a selection';
+                warningText.textContent = 'Please observe the images carefully for at least 2 seconds before making a selection';
             }
             
             warning.classList.remove('hidden');
             timeWarningShown = true;
+            debugLog('⚠️ 显示时间警告');
             
             // 3秒后自动隐藏警告
             setTimeout(() => {
@@ -828,12 +885,9 @@
         async function initializeImageLibrary() {
             debugLog('🚀 初始化图片库...');
             
-            let imageUrls = await loadImageUrlsFromFile();
-            
-            if (!imageUrls || imageUrls.length === 0) {
-                debugLog('📁 文件加载失败，使用演示图片列表');
-                imageUrls = DEMO_IMAGES;
-            }
+            // 直接使用演示图片列表，便于调试
+            let imageUrls = DEMO_IMAGES;
+            debugLog(`📁 使用演示图片列表，共 ${imageUrls.length} 张`);
             
             imageLibrary = imageUrls.map((url, index) => ({
                 id: index + 1,
@@ -842,45 +896,23 @@
                 fallbackUrl: buildFallbackUrl(url)
             }));
             
-            // 确保有足够的图片进行50组对比
-            const minImagesNeeded = 50;
+            // 确保有足够的图片进行调试
+            const minImagesNeeded = COMPARISONS_PER_GROUP;
             
             if (imageLibrary.length < minImagesNeeded) {
                 debugLog(`⚠️ 图片数量不足(${imageLibrary.length}张)，需要至少${minImagesNeeded}张`);
                 // 重复图片库直到达到最少要求
                 const originalLibrary = [...imageLibrary];
-                while (imageLibrary.length < minImagesNeeded) {
+                while (imageLibrary.length < minImagesNeeded * 2) {
                     imageLibrary.push(...originalLibrary);
                 }
-                // 截取到恰好50张
-                imageLibrary = imageLibrary.slice(0, minImagesNeeded);
-                debugLog(`✅ 已调整图片库到${imageLibrary.length}张图片`);
-            } else {
-                // 随机选择50张图片用于对比
-                imageLibrary = imageLibrary.sort(() => 0.5 - Math.random()).slice(0, minImagesNeeded);
             }
+            
+            // 随机选择图片用于对比
+            imageLibrary = imageLibrary.sort(() => 0.5 - Math.random()).slice(0, minImagesNeeded * 2);
             
             isImageLibraryLoaded = true;
             debugLog(`✅ 图片库初始化完成，共 ${imageLibrary.length} 张图片`);
-        }
-
-        async function loadImageUrlsFromFile() {
-            try {
-                const response = await fetch('image_list.txt');
-                if (!response.ok) throw new Error('文件不存在');
-                
-                const text = await response.text();
-                const urls = text.split('\n')
-                    .map(line => line.trim())
-                    .filter(line => line.length > 0 && !line.startsWith('#'))
-                    .filter(line => line.startsWith('http'));
-                
-                debugLog(`📋 从文件加载了 ${urls.length} 个图片URL`);
-                return urls;
-            } catch (error) {
-                debugLog(`❌ 加载图片列表文件失败: ${error.message}`);
-                return null;
-            }
         }
 
         function loadImageWithFallback(imgElement, imageData, callback) {
@@ -923,92 +955,6 @@
             imgElement.src = imageData.url;
         }
 
-        // 预加载图片函数
-        function preloadImage(imageData) {
-            return new Promise((resolve) => {
-                const preloadedImageKey = `${imageData.id}_${imageData.url}`;
-                
-                // 如果已经预加载过，直接返回
-                if (preloadedImages.has(preloadedImageKey)) {
-                    resolve(preloadedImages.get(preloadedImageKey));
-                    return;
-                }
-                
-                const img = new Image();
-                
-                img.onload = function() {
-                    debugLog(`🚀 预加载成功: ${imageData.name}`);
-                    preloadedImages.set(preloadedImageKey, img);
-                    resolve(img);
-                };
-                
-                img.onerror = function() {
-                    debugLog(`❌ 预加载原始URL失败，尝试备用URL: ${imageData.name}`);
-                    
-                    // 尝试备用URL
-                    const fallbackImg = new Image();
-                    fallbackImg.onload = function() {
-                        debugLog(`🚀 预加载备用URL成功: ${imageData.name}`);
-                        preloadedImages.set(preloadedImageKey, fallbackImg);
-                        resolve(fallbackImg);
-                    };
-                    
-                    fallbackImg.onerror = function() {
-                        debugLog(`❌ 预加载所有URL都失败: ${imageData.name}`);
-                        resolve(null);
-                    };
-                    
-                    fallbackImg.src = imageData.fallbackUrl;
-                };
-                
-                img.src = imageData.url;
-            });
-        }
-
-        // 预加载下一对图片
-        function preloadNextPair() {
-            const nextIndex = currentComparisonIndex + 1;
-            if (nextIndex < comparisonPairs.length) {
-                const nextPair = comparisonPairs[nextIndex];
-                debugLog(`🔄 开始预加载下一对图片 (${nextIndex + 1}/${comparisonPairs.length})`);
-                
-                // 同时预加载两张图片
-                Promise.all([
-                    preloadImage(nextPair.imageA),
-                    preloadImage(nextPair.imageB)
-                ]).then(() => {
-                    debugLog(`✅ 下一对图片预加载完成`);
-                }).catch((error) => {
-                    debugLog(`❌ 预加载失败: ${error}`);
-                });
-            }
-        }
-
-        // 清理预加载缓存（避免内存占用过多）
-        function cleanupPreloadCache() {
-            // 只保留当前和下一对的预加载图片
-            const keepKeys = new Set();
-            
-            if (currentComparisonIndex < comparisonPairs.length) {
-                const currentPair = comparisonPairs[currentComparisonIndex];
-                keepKeys.add(`${currentPair.imageA.id}_${currentPair.imageA.url}`);
-                keepKeys.add(`${currentPair.imageB.id}_${currentPair.imageB.url}`);
-            }
-            
-            if (currentComparisonIndex + 1 < comparisonPairs.length) {
-                const nextPair = comparisonPairs[currentComparisonIndex + 1];
-                keepKeys.add(`${nextPair.imageA.id}_${nextPair.imageA.url}`);
-                keepKeys.add(`${nextPair.imageB.id}_${nextPair.imageB.url}`);
-            }
-            
-            // 删除不需要的预加载图片
-            for (const key of preloadedImages.keys()) {
-                if (!keepKeys.has(key)) {
-                    preloadedImages.delete(key);
-                }
-            }
-        }
-
         // ====================================================================
         // 问卷逻辑
         // ====================================================================
@@ -1031,7 +977,7 @@
                 hintTitle: '提示',
                 instructions: '在此调研中，您需要对每对图片回答四个不同的行为问题。请根据您的直觉选择您认为更加适合进行各种活动的街景。所有问题都必须回答完毕才能进入下一对图片。',
                 continueTitle: '本组对比已完成',
-                continueMessage: '您已完成了50组图片对比，感谢您的参与！<br>是否继续进行下一组对比？',
+                continueMessage: '您已完成了5组图片对比，感谢您的参与！<br>是否继续进行下一组对比？',
                 continueButton: '继续下一组',
                 finishButton: '结束调研',
                 thankYouTitle: '感谢您的参与！',
@@ -1048,7 +994,7 @@
                 question3: '以下两张街景中，您认为哪张更加适合"慢跑"的行为：',
                 question4: '以下两张街景中，您认为哪张更加适合"集合"的行为：',
                 confirmButtonText: '确认并继续',
-                timeWarningText: '请仔细观察图片至少6秒后再进行选择'
+                timeWarningText: '请仔细观察图片至少2秒后再进行选择'
             },
             en: {
                 surveyTitle: 'Street View Perception Questionnaire: Part 1',
@@ -1068,7 +1014,7 @@
                 hintTitle: 'Hint',
                 instructions: 'In this survey, you need to answer four different behavioral questions for each pair of images. Please choose the street view you think is more suitable for various activities based on your intuition. All questions must be answered before proceeding to the next pair of images.',
                 continueTitle: 'Group Comparison Completed',
-                continueMessage: 'You have completed 50 image comparisons, thank you for your participation!<br>Would you like to continue with the next group?',
+                continueMessage: 'You have completed 5 image comparisons, thank you for your participation!<br>Would you like to continue with the next group?',
                 continueButton: 'Continue Next Group',
                 finishButton: 'Finish Survey',
                 thankYouTitle: 'Thank You for Your Participation!',
@@ -1085,7 +1031,7 @@
                 question3: 'Which of the following two street views do you think is more suitable for "jogging":',
                 question4: 'Which of the following two street views do you think is more suitable for "gathering":',
                 confirmButtonText: 'Confirm and Continue',
-                timeWarningText: 'Please observe the images carefully for at least 6 seconds before making a selection'
+                timeWarningText: 'Please observe the images carefully for at least 2 seconds before making a selection'
             }
         };
 
@@ -1093,6 +1039,7 @@
             currentLanguage = lang;
             updateTexts();
             showPage('surveyPage');
+            debugLog(`🌍 选择语言: ${lang}`);
         }
 
         function updateTexts() {
@@ -1155,6 +1102,7 @@
             });
             document.getElementById(pageId).classList.remove('hidden');
             document.getElementById(pageId).classList.add('fade-in');
+            debugLog(`📱 显示页面: ${pageId}`);
         }
 
         async function startComparisons() {
@@ -1175,6 +1123,8 @@
                 age: age,
                 isProfessional: professional.value
             };
+            
+            debugLog(`👤 用户信息: ${JSON.stringify(userData)}`);
 
             if (!isImageLibraryLoaded) {
                 await initializeImageLibrary();
@@ -1198,6 +1148,7 @@
             generateNewComparison();
             showPage('comparisonPage');
             updateGroupCounter();
+            debugLog(`🆕 开始第 ${currentGroupNumber} 组`);
         }
 
         function updateGroupCounter() {
@@ -1249,8 +1200,8 @@
                     }
                 }
                 
-                // 确保不超过50组对比
-                if (comparisonPairs.length >= 50) {
+                // 确保不超过配置的对比次数
+                if (comparisonPairs.length >= COMPARISONS_PER_GROUP) {
                     break;
                 }
             }
@@ -1259,12 +1210,13 @@
         }
 
         function generateNewComparison() {
-            if (currentComparisonIndex >= 50) {
+            if (currentComparisonIndex >= COMPARISONS_PER_GROUP) {
                 completeCurrentGroup();
                 return;
             }
             
             currentPair = comparisonPairs[currentComparisonIndex];
+            debugLog(`🆚 第 ${currentComparisonIndex + 1} 对: ${currentPair.imageA.name} vs ${currentPair.imageB.name}`);
 
             const imageA_img = document.getElementById('imageA_img');
             const imageB_img = document.getElementById('imageB_img');
@@ -1276,10 +1228,7 @@
             loadImageWithFallback(imageA_img, currentPair.imageA);
             loadImageWithFallback(imageB_img, currentPair.imageB);
 
-            // 开始预加载下一对图片
-            preloadNextPair();
-
-            document.getElementById('progressCounter').textContent = `${currentComparisonIndex + 1}/50`;
+            document.getElementById('progressCounter').textContent = `${currentComparisonIndex + 1}/${COMPARISONS_PER_GROUP}`;
             
             resetAllSelections();
             
@@ -1315,6 +1264,7 @@
                 confirmButton.disabled = false;
                 confirmButton.classList.remove('bg-gray-400', 'cursor-not-allowed');
                 confirmButton.classList.add('bg-green-600', 'hover:bg-green-700', 'cursor-pointer');
+                debugLog('✅ 所有问题已回答，可以确认');
             } else {
                 confirmButton.disabled = true;
                 confirmButton.classList.remove('bg-green-600', 'hover:bg-green-700', 'cursor-pointer');
@@ -1357,7 +1307,7 @@
             }
 
             // 记录对比结果
-            comparisons.push({
+            const comparisonResult = {
                 imageA: currentPair.imageA,
                 imageB: currentPair.imageB,
                 answers: answers,
@@ -1365,13 +1315,12 @@
                 groupNumber: currentGroupNumber,
                 comparisonIndex: currentComparisonIndex + 1,
                 viewTime: Date.now() - comparisonStartTime // 记录观看时间
-            });
+            };
+            
+            comparisons.push(comparisonResult);
+            debugLog(`📝 记录对比结果: 第${currentComparisonIndex + 1}对，观看时间: ${comparisonResult.viewTime}ms`);
 
             currentComparisonIndex++;
-            
-            // 清理预加载缓存，避免内存占用过多
-            cleanupPreloadCache();
-            
             generateNewComparison();
         }
 
@@ -1404,10 +1353,12 @@
 
         function continueNextGroup() {
             currentGroupNumber++;
+            debugLog(`➡️ 继续第 ${currentGroupNumber} 组`);
             startNewGroup();
         }
 
         function finishSurvey() {
+            debugLog('🎯 完成调研');
             showPage('thankYouPage');
         }
 
@@ -1431,17 +1382,18 @@
             document.getElementById('ageInput').value = '';
             document.getElementById('consentCheckbox').checked = false;
             
+            debugLog('🔄 重置系统');
             showPage('languagePage');
         }
 
         // ====================================================================
         // 管理员界面
         // ====================================================================
-        const ADMIN_PASSWORD = 'UMS2025ygs';
+        const ADMIN_PASSWORD = 'debug123';
         
         async function showAdminPanel() {
             // 密码验证
-            const password = prompt('请输入管理员密码：');
+            const password = prompt('请输入管理员密码（调试版）：');
             
             if (password === null) {
                 return;
@@ -1471,6 +1423,8 @@
                 const sessions = await getAllSessions();
                 const comparisonRecords = await getComparisonRecords();
                 
+                debugLog(`📊 管理员面板数据: 会话=${sessions.length}, 对比记录=${comparisonRecords.length}`);
+                
                 // 更新数据库状态
                 updateDatabaseStatus(`数据库连接成功 (最后更新: ${new Date().toLocaleString()})`, 'success');
                 
@@ -1492,6 +1446,7 @@
                 
             } catch (error) {
                 console.error('刷新统计失败:', error);
+                debugLog(`❌ 管理员面板刷新失败: ${error.message}`);
                 updateDatabaseStatus(`数据库连接失败: ${error.message}`, 'error');
                 
                 // 显示空数据
@@ -1568,7 +1523,7 @@
             
             const html = `
                 <div class="space-y-2">
-                    <h4 class="font-semibold text-gray-800 mb-3">最近20条对比记录</h4>
+                    <h4 class="font-semibold text-gray-800 mb-3">最近20条对比记录 (调试模式)</h4>
                     <div class="grid grid-cols-10 gap-1 text-xs font-semibold text-gray-700 border-b pb-2">
                         <div>昵称</div>
                         <div>组序</div>
@@ -1582,7 +1537,7 @@
                         <div>时间</div>
                     </div>
                     ${recentRecords.map(record => `
-                        <div class="grid grid-cols-10 gap-1 text-xs">
+                        <div class="grid grid-cols-10 gap-1 text-xs ${record.isDebugData ? 'bg-yellow-50' : ''}">
                             <div class="truncate" title="${record.nickname}">${record.nickname}</div>
                             <div>${record.groupNumber}-${record.comparisonIndex}</div>
                             <div class="truncate" title="${record.image1_name}">${record.image1_name.substring(0, 8)}...</div>
@@ -1592,12 +1547,13 @@
                             <div class="text-center ${record.jogging === 0 ? 'text-green-600' : 'text-blue-600'}">${record.jogging}</div>
                             <div class="text-center ${record.gathering === 0 ? 'text-green-600' : 'text-blue-600'}">${record.gathering}</div>
                             <div>${(record.viewTime / 1000).toFixed(1)}</div>
-                            <div>${new Date(record.timestamp).toLocaleDateString()}</div>
+                            <div>${new Date(record.timestamp).toLocaleString()}</div>
                         </div>
                     `).join('')}
                 </div>
                 <div class="mt-4 text-sm text-gray-600">
                     <p><span class="text-green-600">0</span> = 选择图片1，<span class="text-blue-600">1</span> = 选择图片2</p>
+                    <p><span class="bg-yellow-100 px-1">黄色背景</span> = 调试数据</p>
                 </div>
             `;
             
@@ -1623,15 +1579,18 @@
                         <div>时间</div>
                     </div>
                     ${sessions.slice(-20).map(session => `
-                        <div class="grid grid-cols-6 gap-2 text-sm">
+                        <div class="grid grid-cols-6 gap-2 text-sm ${session.isDebugSession ? 'bg-yellow-50' : ''}">
                             <div class="truncate">${session.userData.nickname}</div>
                             <div>${session.userData.gender === 'male' ? '男' : '女'}</div>
                             <div>${session.userData.age}</div>
                             <div>${session.userData.isProfessional === 'yes' ? '是' : '否'}</div>
                             <div>${session.groupsCompleted}</div>
-                            <div>${new Date(session.timestamp).toLocaleDateString()}</div>
+                            <div>${new Date(session.timestamp).toLocaleString()}</div>
                         </div>
                     `).join('')}
+                </div>
+                <div class="mt-4 text-sm text-gray-600">
+                    <p><span class="bg-yellow-100 px-1">黄色背景</span> = 调试会话</p>
                 </div>
             `;
             
@@ -1652,7 +1611,7 @@
                     'sessionId', 'nickname', 'gender', 'age', 'isProfessional',
                     'groupNumber', 'comparisonIndex', 'image1_url', 'image2_url',
                     'image1_name', 'image2_name', 'sitting', 'walking', 'jogging', 'gathering',
-                    'viewTime_ms', 'timestamp'
+                    'viewTime_ms', 'timestamp', 'isDebugData'
                 ];
                 
                 const csvContent = [
@@ -1674,7 +1633,8 @@
                         record.jogging,
                         record.gathering,
                         record.viewTime,
-                        record.timestamp
+                        record.timestamp,
+                        record.isDebugData || false
                     ].join(','))
                 ].join('\n');
                 
@@ -1683,15 +1643,17 @@
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = `街景问卷对比数据_${new Date().toISOString().split('T')[0]}.csv`;
+                a.download = `街景问卷对比数据_调试版_${new Date().toISOString().split('T')[0]}.csv`;
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
                 URL.revokeObjectURL(url);
                 
-                alert('数据已导出为CSV格式！');
+                alert('调试数据已导出为CSV格式！');
+                debugLog('📊 导出调试数据成功');
             } catch (error) {
                 console.error('导出数据失败:', error);
+                debugLog(`❌ 导出数据失败: ${error.message}`);
                 alert('导出失败：' + error.message);
             }
         }
@@ -1706,12 +1668,14 @@
                         lastDataFetch = null;
                         
                         await refreshStats();
-                        alert('数据已清空！');
+                        alert('调试数据已清空！');
+                        debugLog('🗑️ 清空所有数据');
                     } else {
                         alert('清空数据失败，请稍后重试！');
                     }
                 } catch (error) {
                     console.error('清空数据失败:', error);
+                    debugLog(`❌ 清空数据失败: ${error.message}`);
                     alert('清空失败：' + error.message);
                 }
             }
@@ -1721,7 +1685,8 @@
         // 页面初始化
         // ====================================================================
         document.addEventListener('DOMContentLoaded', async function() {
-            debugLog('🚀 街景问卷系统启动 - 远程数据存储版');
+            debugLog('🚀 街景问卷调试系统启动');
+            debugLog(`🔧 调试配置: ${COMPARISONS_PER_GROUP}次对比/组, ${MIN_VIEW_TIME}ms最小观看时间`);
             
             await initializeImageLibrary();
             
@@ -1735,15 +1700,16 @@
             });
             
             if (isImageLibraryLoaded) {
-                debugLog(`✅ 系统就绪，图片库包含 ${imageLibrary.length} 张图片`);
+                debugLog(`✅ 调试系统就绪，图片库包含 ${imageLibrary.length} 张图片`);
             } else {
                 debugLog('⚠️ 图片库初始化有问题，但系统仍可运行');
             }
             
             // 测试远程连接
             try {
-                await fetchRemoteData();
+                const testData = await fetchRemoteData();
                 debugLog('✅ 远程数据库连接测试成功');
+                debugLog(`📊 现有数据: 会话=${testData.sessions.length}, 对比记录=${testData.comparisonRecords.length}`);
             } catch (error) {
                 debugLog(`❌ 远程数据库连接测试失败: ${error.message}`);
             }
