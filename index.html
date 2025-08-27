@@ -100,6 +100,18 @@
             background-color: #fef3c7;
             color: #92400e;
         }
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background-color: #e5e7eb;
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        .progress-fill {
+            height: 100%;
+            background-color: #10b981;
+            transition: width 0.3s ease;
+        }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -122,6 +134,9 @@
         <div class="status-indicator">
             <div class="spinner"></div>
             <span id="dataStatusText">正在保存数据...</span>
+        </div>
+        <div id="saveProgress" class="progress-bar hidden">
+            <div class="progress-fill" style="width: 0%"></div>
         </div>
     </div>
 
@@ -477,6 +492,14 @@
             baseUrl: 'https://api.jsonbin.io/v3'
         };
 
+        // 分块保存配置
+        const CHUNKED_SAVE_CONFIG = {
+            chunkSize: 25, // 每次保存25个对比记录
+            maxRetries: 3,
+            retryDelay: 1000, // 1秒
+            batchDelay: 500 // 批次之间的延迟
+        };
+
         // 远程数据操作函数
         async function fetchRemoteData() {
             try {
@@ -518,6 +541,116 @@
             }
         }
 
+        // 优化的数据保存函数 - 分块保存
+        async function saveRemoteDataChunked(sessions, newComparisonRecords) {
+            try {
+                showDataStatus('正在保存数据...', 'loading');
+                debugLog('🔄 开始分块保存数据到JSONBin.io...');
+
+                // 获取现有数据
+                const existingData = await fetchRemoteData();
+                
+                // 合并会话数据
+                const allSessions = [...existingData.sessions, ...sessions];
+                
+                // 分块保存对比记录
+                const chunkSize = CHUNKED_SAVE_CONFIG.chunkSize;
+                const chunks = [];
+                
+                for (let i = 0; i < newComparisonRecords.length; i += chunkSize) {
+                    chunks.push(newComparisonRecords.slice(i, i + chunkSize));
+                }
+                
+                debugLog(`📦 将 ${newComparisonRecords.length} 条记录分为 ${chunks.length} 个块`);
+                
+                // 显示进度条
+                showSaveProgress(true);
+                
+                let savedChunks = 0;
+                const totalChunks = chunks.length;
+                
+                for (let chunkIndex = 0; chunkIndex < chunks.length; chunkIndex++) {
+                    const chunk = chunks[chunkIndex];
+                    const currentRecords = [...existingData.comparisonRecords, ...newComparisonRecords.slice(0, (chunkIndex + 1) * chunkSize)];
+                    
+                    // 更新进度
+                    const progress = ((chunkIndex + 1) / totalChunks) * 100;
+                    updateSaveProgress(progress);
+                    showDataStatus(`正在保存第 ${chunkIndex + 1}/${totalChunks} 块数据...`, 'loading');
+                    
+                    const success = await saveRemoteDataWithRetry(allSessions, currentRecords);
+                    
+                    if (!success) {
+                        throw new Error(`保存第 ${chunkIndex + 1} 块数据失败`);
+                    }
+                    
+                    savedChunks++;
+                    
+                    // 批次之间的延迟，避免过于频繁的请求
+                    if (chunkIndex < chunks.length - 1) {
+                        await sleep(CHUNKED_SAVE_CONFIG.batchDelay);
+                    }
+                }
+                
+                debugLog('✅ 所有数据分块保存成功');
+                showDataStatus('数据保存成功', 'success');
+                showSaveProgress(false);
+                setTimeout(hideDataStatus, 2000);
+                
+                // 更新缓存
+                remoteDataCache = {
+                    sessions: allSessions,
+                    comparisonRecords: existingData.comparisonRecords.concat(newComparisonRecords),
+                    lastUpdated: new Date().toISOString()
+                };
+                
+                return true;
+            } catch (error) {
+                debugLog(`❌ 分块保存数据失败: ${error.message}`);
+                showDataStatus('数据保存失败', 'error');
+                showSaveProgress(false);
+                setTimeout(hideDataStatus, 5000);
+                return false;
+            }
+        }
+
+        // 带重试机制的保存函数
+        async function saveRemoteDataWithRetry(sessions, comparisonRecords, retryCount = 0) {
+            try {
+                const data = {
+                    sessions: sessions,
+                    comparisonRecords: comparisonRecords,
+                    lastUpdated: new Date().toISOString(),
+                    version: '1.1'
+                };
+
+                const response = await fetch(`${JSONBIN_CONFIG.baseUrl}/b/${JSONBIN_CONFIG.binId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'X-Master-Key': JSONBIN_CONFIG.masterKey,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                return true;
+            } catch (error) {
+                if (retryCount < CHUNKED_SAVE_CONFIG.maxRetries) {
+                    debugLog(`❌ 保存失败，重试第 ${retryCount + 1} 次: ${error.message}`);
+                    await sleep(CHUNKED_SAVE_CONFIG.retryDelay * (retryCount + 1)); // 递增延迟
+                    return await saveRemoteDataWithRetry(sessions, comparisonRecords, retryCount + 1);
+                } else {
+                    debugLog(`❌ 保存失败，已达到最大重试次数: ${error.message}`);
+                    throw error;
+                }
+            }
+        }
+
+        // 原有的保存函数 - 保留作为后备
         async function saveRemoteData(sessions, comparisonRecords) {
             try {
                 showDataStatus('正在保存数据...', 'loading');
@@ -552,6 +685,27 @@
                 showDataStatus('数据保存失败', 'error');
                 setTimeout(hideDataStatus, 5000);
                 return false;
+            }
+        }
+
+        // 辅助函数
+        function sleep(ms) {
+            return new Promise(resolve => setTimeout(resolve, ms));
+        }
+
+        function showSaveProgress(show) {
+            const progressBar = document.getElementById('saveProgress');
+            if (show) {
+                progressBar.classList.remove('hidden');
+            } else {
+                progressBar.classList.add('hidden');
+            }
+        }
+
+        function updateSaveProgress(percentage) {
+            const progressFill = document.querySelector('.progress-fill');
+            if (progressFill) {
+                progressFill.style.width = `${percentage}%`;
             }
         }
 
@@ -632,61 +786,47 @@
             return 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
         }
 
+        // 优化的用户会话保存函数
         async function saveUserSession() {
             try {
-                // 获取当前远程数据
-                const remoteData = await fetchRemoteData();
+                debugLog(`💾 开始保存用户会话: ${sessionId}, 对比数量: ${comparisons.length}`);
                 
+                // 准备会话数据
                 const sessionData = {
                     sessionId: sessionId,
                     userData: userData,
                     groupsCompleted: currentGroupNumber,
                     totalComparisons: comparisons.length,
-                    comparisons: comparisons,
                     timestamp: new Date().toISOString(),
                     language: currentLanguage
                 };
                 
-                // 添加会话数据
-                remoteData.sessions.push(sessionData);
+                // 准备对比记录
+                const newComparisonRecords = comparisons.map(comparison => ({
+                    sessionId: sessionData.sessionId,
+                    nickname: sessionData.userData.nickname,
+                    gender: sessionData.userData.gender,
+                    age: sessionData.userData.age,
+                    isProfessional: sessionData.userData.isProfessional,
+                    groupNumber: comparison.groupNumber,
+                    comparisonIndex: comparison.comparisonIndex,
+                    image1_url: comparison.imageA.url,
+                    image2_url: comparison.imageB.url,
+                    image1_name: comparison.imageA.name,
+                    image2_name: comparison.imageB.name,
+                    sitting: comparison.answers.sitting ? (comparison.answers.sitting.choice === 'A' ? 0 : 1) : null,
+                    walking: comparison.answers.walking ? (comparison.answers.walking.choice === 'A' ? 0 : 1) : null,
+                    jogging: comparison.answers.jogging ? (comparison.answers.jogging.choice === 'A' ? 0 : 1) : null,
+                    gathering: comparison.answers.gathering ? (comparison.answers.gathering.choice === 'A' ? 0 : 1) : null,
+                    viewTime: comparison.viewTime || 0,
+                    timestamp: comparison.timestamp
+                }));
                 
-                // 更新对比记录
-                const newComparisonRecords = [...remoteData.comparisonRecords];
-                comparisons.forEach(comparison => {
-                    const record = {
-                        sessionId: sessionData.sessionId,
-                        nickname: sessionData.userData.nickname,
-                        gender: sessionData.userData.gender,
-                        age: sessionData.userData.age,
-                        isProfessional: sessionData.userData.isProfessional,
-                        groupNumber: comparison.groupNumber,
-                        comparisonIndex: comparison.comparisonIndex,
-                        image1_url: comparison.imageA.url,
-                        image2_url: comparison.imageB.url,
-                        image1_name: comparison.imageA.name,
-                        image2_name: comparison.imageB.name,
-                        sitting: comparison.answers.sitting ? (comparison.answers.sitting.choice === 'A' ? 0 : 1) : null,
-                        walking: comparison.answers.walking ? (comparison.answers.walking.choice === 'A' ? 0 : 1) : null,
-                        jogging: comparison.answers.jogging ? (comparison.answers.jogging.choice === 'A' ? 0 : 1) : null,
-                        gathering: comparison.answers.gathering ? (comparison.answers.gathering.choice === 'A' ? 0 : 1) : null,
-                        viewTime: comparison.viewTime || 0,
-                        timestamp: comparison.timestamp
-                    };
-                    newComparisonRecords.push(record);
-                });
-                
-                // 保存到远程
-                const saveSuccess = await saveRemoteData(remoteData.sessions, newComparisonRecords);
+                // 使用分块保存
+                const saveSuccess = await saveRemoteDataChunked([sessionData], newComparisonRecords);
                 
                 if (saveSuccess) {
-                    debugLog(`💾 用户会话已保存: ${sessionId}, 完成组数: ${currentGroupNumber}`);
-                    
-                    // 更新缓存
-                    remoteDataCache = {
-                        sessions: remoteData.sessions,
-                        comparisonRecords: newComparisonRecords,
-                        lastUpdated: new Date().toISOString()
-                    };
+                    debugLog(`✅ 用户会话保存成功: ${sessionId}, 完成组数: ${currentGroupNumber}`);
                 } else {
                     debugLog(`❌ 用户会话保存失败: ${sessionId}`);
                 }
