@@ -53,6 +53,15 @@
             align-items: center;
             gap: 8px;
         }
+        .consent-text {
+            max-height: 200px;
+            overflow-y: auto;
+            background-color: #f9fafb;
+            border: 1px solid #e5e7eb;
+            padding: 16px;
+            border-radius: 6px;
+            margin: 12px 0;
+        }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -94,11 +103,20 @@
 
     <!-- 基础信息收集页面 -->
     <div id="surveyPage" class="hidden min-h-screen bg-gray-100 p-4">
-        <div class="max-w-2xl mx-auto">
+        <div class="max-w-3xl mx-auto">
             <h1 id="surveyTitle" class="text-2xl font-bold text-center text-gray-800 mb-8">窗景感知问卷：第一部分</h1>
             
             <div class="bg-white rounded-lg shadow-lg p-6">
                 <div class="space-y-6">
+                    <!-- 昵称输入 -->
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-3">
+                            <span id="nicknameLabel">您的昵称是：</span> <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" id="nicknameInput" class="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500 focus:border-transparent" placeholder="">
+                        <p id="nicknameHint" class="text-sm text-gray-500 mt-1">用于兑换被试费用</p>
+                    </div>
+
                     <!-- 性别选择 -->
                     <div>
                         <label class="block text-gray-700 font-medium mb-3">
@@ -140,6 +158,39 @@
                             </label>
                         </div>
                     </div>
+
+                    <!-- 知情同意 -->
+                    <div>
+                        <label class="block text-gray-700 font-medium mb-3">
+                            <span id="consentTitle">实验知情同意</span> <span class="text-red-500">*</span>
+                        </label>
+                        <div class="consent-text">
+                            <div id="consentText">
+                                <p class="mb-3"><strong>实验主体：</strong>香港科技大学（广州）城市治理与设计学域</p>
+                                <p class="mb-3"><strong>实验目的：</strong>本实验旨在了解人们对不同街景环境中行为适宜性的感知和偏好。</p>
+                                <p class="mb-3"><strong>实验过程：</strong>在实验过程中，我们将记录：</p>
+                                <ul class="list-disc list-inside mb-3 ml-4">
+                                    <li>您的基本信息（昵称、性别、年龄、专业背景）</li>
+                                    <li>您对不同街景图片的行为适宜性选择</li>
+                                    <li>您的选择时间和浏览时长</li>
+                                    <li>参与实验的时间戳</li>
+                                </ul>
+                                <p class="mb-3"><strong>数据使用：</strong>收集的所有数据将仅用于城市设计和空间感知相关的科学研究。我们承诺：</p>
+                                <ul class="list-disc list-inside mb-3 ml-4">
+                                    <li>您的个人信息将被严格保密</li>
+                                    <li>数据仅用于学术研究目的</li>
+                                    <li>研究结果将以匿名化的形式发表</li>
+                                    <li>您有权在任何时候退出实验</li>
+                                </ul>
+                                <p class="mb-3"><strong>联系方式：</strong>如有任何疑问，请联系研究团队。</p>
+                                <p class="font-semibold">参与本实验即表示您已充分了解上述内容并自愿参加。</p>
+                            </div>
+                        </div>
+                        <label class="flex items-start mt-3">
+                            <input type="checkbox" id="consentCheckbox" class="mt-1 mr-3">
+                            <span id="consentAgree">我已阅读并理解上述说明，同意参与本实验</span>
+                        </label>
+                    </div>
                 </div>
 
                 <div class="mt-8 text-right">
@@ -169,14 +220,6 @@
                 <p id="instructions" class="text-sm text-gray-600">
                     在此调研中，您需要对每对图片回答四个不同的行为问题。请根据您的直觉选择您认为更加适合进行各种活动的街景。所有问题都必须回答完毕才能进入下一对图片。
                 </p>
-            </div>
-            
-            <!-- 时间提示 -->
-            <div id="timeWarning" class="timer-warning mb-4 hidden">
-                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                </svg>
-                <span id="timeWarningText">请仔细观察图片至少6秒后再进行选择</span>
             </div>
             
             <!-- 图片展示区域 -->
@@ -270,6 +313,14 @@
                 <button id="confirmButton" onclick="confirmAllSelections()" disabled class="px-8 py-3 bg-gray-400 text-white rounded-lg transition-colors font-medium cursor-not-allowed">
                     <span id="confirmButtonText">确认并继续</span>
                 </button>
+                
+                <!-- 时间提示 - 移动到确认按钮下方 -->
+                <div id="timeWarning" class="timer-warning mt-4 mx-auto max-w-md hidden">
+                    <svg class="w-5 h-5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                    </svg>
+                    <span id="timeWarningText">请仔细观察图片至少6秒后再进行选择</span>
+                </div>
             </div>
         </div>
     </div>
@@ -328,14 +379,14 @@
                         <p id="totalComparisons" class="text-2xl font-bold text-green-600">0</p>
                     </div>
                     <div class="bg-purple-100 p-4 rounded-lg">
-                        <h3 class="font-semibold text-purple-800">平均每人对比次数</h3>
+                        <h3 class="font-semibent text-purple-800">平均每人对比次数</h3>
                         <p id="avgGroups" class="text-2xl font-bold text-purple-600">0</p>
                     </div>
                 </div>
                 
                 <div class="flex space-x-4 mb-6">
                     <button onclick="exportData()" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
-                        导出数据
+                        导出对比数据表格
                     </button>
                     <button onclick="clearData()" class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600">
                         清空数据
@@ -346,30 +397,9 @@
                 </div>
                 
                 <div class="mb-6">
-                    <h3 class="text-lg font-semibold mb-4">分行为图片排名统计</h3>
-                    
-                    <!-- 行为标签页 -->
-                    <div class="flex space-x-1 mb-4 border-b">
-                        <button onclick="showBehaviorTab('sitting')" id="tab-sitting" class="px-4 py-2 text-sm font-medium bg-blue-500 text-white rounded-t">
-                            坐
-                        </button>
-                        <button onclick="showBehaviorTab('walking')" id="tab-walking" class="px-4 py-2 text-sm font-medium bg-gray-200 text-gray-700 rounded-t hover:bg-gray-300">
-                            行走
-                        </button>
-                        <button onclick="showBehaviorTab('jogging')" id="tab-jogging" class="px-4 py-2 text-sm font-medium bg-gray-200 text-gray-700 rounded-t hover:bg-gray-300">
-                            慢跑
-                        </button>
-                        <button onclick="showBehaviorTab('gathering')" id="tab-gathering" class="px-4 py-2 text-sm font-medium bg-gray-200 text-gray-700 rounded-t hover:bg-gray-300">
-                            集合
-                        </button>
-                        <button onclick="showBehaviorTab('overall')" id="tab-overall" class="px-4 py-2 text-sm font-medium bg-gray-200 text-gray-700 rounded-t hover:bg-gray-300">
-                            综合排名
-                        </button>
-                    </div>
-                    
-                    <!-- 各行为的排名显示区域 -->
-                    <div id="behaviorRankings" class="overflow-auto max-h-96">
-                        <!-- 行为排名将在这里显示 -->
+                    <h3 class="text-lg font-semibold mb-4">最近的对比数据</h3>
+                    <div id="comparisonData" class="overflow-auto max-h-96">
+                        <!-- 对比数据将在这里显示 -->
                     </div>
                 </div>
                 
@@ -389,7 +419,6 @@
         // ====================================================================
         const DEBUG_MODE = false; // 关闭调试模式
         let debugVisible = false;
-        let currentBehaviorTab = 'sitting'; // 当前选中的行为标签
 
         // 示例图片URL列表
         const DEMO_IMAGES = [
@@ -400,9 +429,8 @@
         let imageLibrary = [];
         let isImageLibraryLoaded = false;
         let currentLanguage = 'zh';
-        let userData = { gender: '', age: '', isProfessional: '' };
+        let userData = { nickname: '', gender: '', age: '', isProfessional: '' };
         let comparisons = [];
-        let imageRankings = {};
         let currentPair = { imageA: null, imageB: null };
         let selectedOption = null;
         let comparisonPairs = [];
@@ -429,7 +457,7 @@
             const sessionData = {
                 sessionId: sessionId,
                 userData: userData,
-                groupsCompleted: currentGroupNumber, // 修复Bug1：使用currentGroupNumber而不是currentGroupNumber-1
+                groupsCompleted: currentGroupNumber,
                 totalComparisons: comparisons.length,
                 comparisons: comparisons,
                 timestamp: new Date().toISOString(),
@@ -439,135 +467,45 @@
             sessions.push(sessionData);
             localStorage.setItem('surveySessionsData', JSON.stringify(sessions));
             
-            // 更新累计统计
-            updateCumulativeStats(sessionData);
+            // 更新累计对比数据
+            updateComparisonData(sessionData);
             
             debugLog(`💾 用户会话已保存: ${sessionId}, 完成组数: ${currentGroupNumber}`);
         }
 
-        function updateCumulativeStats(sessionData) {
-            let stats = JSON.parse(localStorage.getItem('surveyCumulativeStats') || '{}');
+        function updateComparisonData(sessionData) {
+            let comparisonRecords = JSON.parse(localStorage.getItem('comparisonRecords') || '[]');
             
-            // 初始化统计结构
-            if (!stats.imageWinCounts) stats.imageWinCounts = {};
-            if (!stats.imageLossCounts) stats.imageLossCounts = {};
-            if (!stats.imageRankings) stats.imageRankings = {};
-            if (!stats.behaviorStats) stats.behaviorStats = {};
-            if (!stats.totalUsers) stats.totalUsers = 0;
-            if (!stats.totalComparisons) stats.totalComparisons = 0;
-            if (!stats.userDemographics) stats.userDemographics = { male: 0, female: 0, professional: 0, nonProfessional: 0 };
-            
-            // 更新基础统计
-            stats.totalUsers += 1;
-            stats.totalComparisons += sessionData.comparisons.length;
-            
-            // 更新人口统计
-            if (sessionData.userData.gender === 'male') stats.userDemographics.male += 1;
-            if (sessionData.userData.gender === 'female') stats.userDemographics.female += 1;
-            if (sessionData.userData.isProfessional === 'yes') stats.userDemographics.professional += 1;
-            if (sessionData.userData.isProfessional === 'no') stats.userDemographics.nonProfessional += 1;
-            
-            // 更新图片胜负统计和行为统计
+            // 为每个对比记录创建一行数据
             sessionData.comparisons.forEach(comparison => {
-                // 处理每个行为的答案
-                Object.entries(comparison.answers).forEach(([behaviorKey, answer]) => {
-                    const behavior = answer.behavior;
-                    const winnerId = answer.winner;
-                    const loserId = answer.loser;
-                    
-                    // 更新总体图片统计
-                    if (!stats.imageWinCounts[winnerId]) stats.imageWinCounts[winnerId] = 0;
-                    if (!stats.imageLossCounts[winnerId]) stats.imageLossCounts[winnerId] = 0;
-                    if (!stats.imageWinCounts[loserId]) stats.imageWinCounts[loserId] = 0;
-                    if (!stats.imageLossCounts[loserId]) stats.imageLossCounts[loserId] = 0;
-                    
-                    stats.imageWinCounts[winnerId] += 1;
-                    stats.imageLossCounts[loserId] += 1;
-                    
-                    // 更新按行为分类的统计
-                    if (!stats.behaviorStats[behavior]) {
-                        stats.behaviorStats[behavior] = {
-                            imageWinCounts: {},
-                            imageLossCounts: {},
-                            imageRankings: {},
-                            totalComparisons: 0
-                        };
-                    }
-                    
-                    if (!stats.behaviorStats[behavior].imageWinCounts[winnerId]) {
-                        stats.behaviorStats[behavior].imageWinCounts[winnerId] = 0;
-                    }
-                    if (!stats.behaviorStats[behavior].imageLossCounts[loserId]) {
-                        stats.behaviorStats[behavior].imageLossCounts[loserId] = 0;
-                    }
-                    if (!stats.behaviorStats[behavior].imageLossCounts[winnerId]) {
-                        stats.behaviorStats[behavior].imageLossCounts[winnerId] = 0;
-                    }
-                    if (!stats.behaviorStats[behavior].imageWinCounts[loserId]) {
-                        stats.behaviorStats[behavior].imageWinCounts[loserId] = 0;
-                    }
-                    
-                    stats.behaviorStats[behavior].imageWinCounts[winnerId] += 1;
-                    stats.behaviorStats[behavior].imageLossCounts[loserId] += 1;
-                    stats.behaviorStats[behavior].totalComparisons += 1;
-                });
-            });
-            
-            // 重新计算每个行为的图片排名分数
-            Object.keys(stats.behaviorStats).forEach(behavior => {
-                const behaviorData = stats.behaviorStats[behavior];
-                const allImageIds = new Set([
-                    ...Object.keys(behaviorData.imageWinCounts),
-                    ...Object.keys(behaviorData.imageLossCounts)
-                ]);
-                
-                allImageIds.forEach(imageId => {
-                    const wins = behaviorData.imageWinCounts[imageId] || 0;
-                    const losses = behaviorData.imageLossCounts[imageId] || 0;
-                    const total = wins + losses;
-                    
-                    // 使用胜率计算分数，加上平滑因子避免极端值
-                    const winRate = total > 0 ? wins / total : 0.5;
-                    const score = winRate * 1000 + (wins - losses);
-                    
-                    if (!behaviorData.imageRankings) behaviorData.imageRankings = {};
-                    behaviorData.imageRankings[imageId] = {
-                        score: score,
-                        wins: wins,
-                        losses: losses,
-                        total: total,
-                        winRate: winRate
-                    };
-                });
-            });
-            
-            // 重新计算所有图片的综合排名分数
-            Object.keys(stats.imageWinCounts).forEach(imageId => {
-                const wins = stats.imageWinCounts[imageId] || 0;
-                const losses = stats.imageLossCounts[imageId] || 0;
-                const total = wins + losses;
-                
-                // 使用胜率计算分数，加上平滑因子避免极端值
-                const winRate = total > 0 ? wins / total : 0.5;
-                const score = winRate * 1000 + (wins - losses);
-                
-                stats.imageRankings[imageId] = {
-                    score: score,
-                    wins: wins,
-                    losses: losses,
-                    total: total,
-                    winRate: winRate
+                const record = {
+                    sessionId: sessionData.sessionId,
+                    nickname: sessionData.userData.nickname,
+                    gender: sessionData.userData.gender,
+                    age: sessionData.userData.age,
+                    isProfessional: sessionData.userData.isProfessional,
+                    groupNumber: comparison.groupNumber,
+                    comparisonIndex: comparison.comparisonIndex,
+                    image1_url: comparison.imageA.url,
+                    image2_url: comparison.imageB.url,
+                    image1_name: comparison.imageA.name,
+                    image2_name: comparison.imageB.name,
+                    sitting: comparison.answers.sitting ? (comparison.answers.sitting.choice === 'A' ? 0 : 1) : null,
+                    walking: comparison.answers.walking ? (comparison.answers.walking.choice === 'A' ? 0 : 1) : null,
+                    jogging: comparison.answers.jogging ? (comparison.answers.jogging.choice === 'A' ? 0 : 1) : null,
+                    gathering: comparison.answers.gathering ? (comparison.answers.gathering.choice === 'A' ? 0 : 1) : null,
+                    viewTime: comparison.viewTime || 0,
+                    timestamp: comparison.timestamp
                 };
+                comparisonRecords.push(record);
             });
             
-            stats.lastUpdated = new Date().toISOString();
-            localStorage.setItem('surveyCumulativeStats', JSON.stringify(stats));
-            
-            debugLog(`📊 累计统计已更新`);
+            localStorage.setItem('comparisonRecords', JSON.stringify(comparisonRecords));
+            debugLog(`📊 对比记录已更新，新增 ${sessionData.comparisons.length} 条记录`);
         }
 
-        function getCumulativeStats() {
-            return JSON.parse(localStorage.getItem('surveyCumulativeStats') || '{}');
+        function getComparisonRecords() {
+            return JSON.parse(localStorage.getItem('comparisonRecords') || '[]');
         }
 
         function getAllSessions() {
@@ -595,7 +533,7 @@
         }
 
         // ====================================================================
-        // 时间控制函数 (Bug2修复)
+        // 时间控制函数
         // ====================================================================
         function startComparisonTimer() {
             comparisonStartTime = Date.now();
@@ -679,8 +617,7 @@
             }));
             
             // 确保有足够的图片进行50组对比
-            // 需要50张图片，每张出现2次 = 100次出现 = 50对比
-            const minImagesNeeded = 50; // 50张图片每张出现2次 = 100次出现 = 50对比
+            const minImagesNeeded = 50;
             
             if (imageLibrary.length < minImagesNeeded) {
                 debugLog(`⚠️ 图片数量不足(${imageLibrary.length}张)，需要至少${minImagesNeeded}张`);
@@ -698,7 +635,7 @@
             }
             
             isImageLibraryLoaded = true;
-            debugLog(`✅ 图片库初始化完成，共 ${imageLibrary.length} 张图片，每组将产生 ${Math.floor(imageLibrary.length)} 对比`);
+            debugLog(`✅ 图片库初始化完成，共 ${imageLibrary.length} 张图片`);
         }
 
         async function loadImageUrlsFromFile() {
@@ -852,6 +789,8 @@
         const texts = {
             zh: {
                 surveyTitle: '街景感知问卷：第一部分',
+                nicknameLabel: '您的昵称是：',
+                nicknameHint: '用于兑换被试费用',
                 genderLabel: '您的性别是：',
                 maleLabel: '男',
                 femaleLabel: '女',
@@ -859,6 +798,8 @@
                 professionalLabel: '您来自城市规划/建筑/风景园林相关专业吗？',
                 yesLabel: '是',
                 noLabel: '否',
+                consentTitle: '实验知情同意',
+                consentAgree: '我已阅读并理解上述说明，同意参与本实验',
                 nextButton: '下一部分',
                 compareTitle: '以下两张街景中，您认为哪张更加适合"坐"的行为：',
                 hintTitle: '提示',
@@ -885,6 +826,8 @@
             },
             en: {
                 surveyTitle: 'Street View Perception Questionnaire: Part 1',
+                nicknameLabel: 'Your nickname is:',
+                nicknameHint: 'For reimbursement purposes',
                 genderLabel: 'Your gender is:',
                 maleLabel: 'Male',
                 femaleLabel: 'Female',
@@ -892,6 +835,8 @@
                 professionalLabel: 'Are you from urban planning/architecture/landscape architecture related majors?',
                 yesLabel: 'Yes',
                 noLabel: 'No',
+                consentTitle: 'Informed Consent',
+                consentAgree: 'I have read and understood the above information and agree to participate in this experiment',
                 nextButton: 'Next Part',
                 compareTitle: 'Which of the following two street views do you think is more suitable for sitting:',
                 hintTitle: 'Hint',
@@ -950,6 +895,30 @@
             optionBElements.forEach(element => {
                 element.textContent = t.optionB;
             });
+
+            // 更新知情同意书内容
+            if (currentLanguage === 'en') {
+                document.getElementById('consentText').innerHTML = `
+                    <p class="mb-3"><strong>Research Institution:</strong> School of Urban Governance and Design, Hong Kong University of Science and Technology (Guangzhou)</p>
+                    <p class="mb-3"><strong>Research Purpose:</strong> This experiment aims to understand people's perception and preference for behavioral suitability in different street environments.</p>
+                    <p class="mb-3"><strong>Data Collection:</strong> During the experiment, we will record:</p>
+                    <ul class="list-disc list-inside mb-3 ml-4">
+                        <li>Your basic information (nickname, gender, age, professional background)</li>
+                        <li>Your choices regarding behavioral suitability of different street view images</li>
+                        <li>Your response time and viewing duration</li>
+                        <li>Timestamps of your participation</li>
+                    </ul>
+                    <p class="mb-3"><strong>Data Usage:</strong> All collected data will be used solely for scientific research related to urban design and spatial perception. We commit to:</p>
+                    <ul class="list-disc list-inside mb-3 ml-4">
+                        <li>Strict confidentiality of your personal information</li>
+                        <li>Use of data for academic research purposes only</li>
+                        <li>Publication of research results in anonymized form</li>
+                        <li>Your right to withdraw from the experiment at any time</li>
+                    </ul>
+                    <p class="mb-3"><strong>Contact Information:</strong> If you have any questions, please contact the research team.</p>
+                    <p class="font-semibold">Participation in this experiment indicates that you have fully understood the above content and voluntarily participate.</p>
+                `;
+            }
         }
 
         function showPage(pageId) {
@@ -962,16 +931,19 @@
         }
 
         async function startComparisons() {
+            const nickname = document.getElementById('nicknameInput').value.trim();
             const gender = document.querySelector('input[name="gender"]:checked');
             const age = document.getElementById('ageInput').value;
             const professional = document.querySelector('input[name="professional"]:checked');
+            const consent = document.getElementById('consentCheckbox').checked;
 
-            if (!gender || !age || !professional) {
-                alert(currentLanguage === 'zh' ? '请完整填写所有必填项！' : 'Please fill in all required fields!');
+            if (!nickname || !gender || !age || !professional || !consent) {
+                alert(currentLanguage === 'zh' ? '请完整填写所有必填项并同意参与实验！' : 'Please fill in all required fields and agree to participate!');
                 return;
             }
 
             userData = {
+                nickname: nickname,
                 gender: gender.value,
                 age: age,
                 isProfessional: professional.value
@@ -993,7 +965,6 @@
             // 清空预加载缓存
             preloadedImages.clear();
             
-            initializeRankings();
             generateComparisonPairs();
             currentComparisonIndex = 0;
             comparisons = []; // 重置当前组的对比记录
@@ -1023,7 +994,7 @@
                 [imagePool[i], imagePool[j]] = [imagePool[j], imagePool[i]];
             }
             
-            debugLog(`📊 图片池创建完成，共 ${imagePool.length} 个图片实例 (${imageLibrary.length} 张图片 × 2)`);
+            debugLog(`📊 图片池创建完成，共 ${imagePool.length} 个图片实例`);
             
             // 成对组合，确保每对不是同一张图片
             for (let i = 0; i < imagePool.length - 1; i += 2) {
@@ -1032,7 +1003,6 @@
                 
                 // 如果是同一张图片，尝试与后面的图片交换
                 if (imageAId === imageBId && i + 2 < imagePool.length) {
-                    // 寻找下一个不同的图片进行交换
                     for (let k = i + 2; k < imagePool.length; k++) {
                         if (imagePool[k] !== imageAId) {
                             [imagePool[i + 1], imagePool[k]] = [imagePool[k], imagePool[i + 1]];
@@ -1042,7 +1012,7 @@
                     }
                 }
                 
-                // 如果仍然是同一张图片，跳过这一对（理论上很少发生）
+                // 如果仍然是同一张图片，跳过这一对
                 if (imageAId !== imageBId) {
                     const imageA = imageLibrary.find(img => img.id === imageAId);
                     const imageB = imageLibrary.find(img => img.id === imageBId);
@@ -1059,35 +1029,10 @@
             }
             
             debugLog(`✅ 第${currentGroupNumber}组生成了 ${comparisonPairs.length} 组配对`);
-            
-            // 验证每张图片的出现次数
-            if (DEBUG_MODE) {
-                const imageCount = {};
-                comparisonPairs.forEach(pair => {
-                    imageCount[pair.imageA.id] = (imageCount[pair.imageA.id] || 0) + 1;
-                    imageCount[pair.imageB.id] = (imageCount[pair.imageB.id] || 0) + 1;
-                });
-                
-                debugLog('📋 图片出现次数统计:');
-                Object.entries(imageCount).forEach(([id, count]) => {
-                    const imageName = imageLibrary.find(img => img.id == id)?.name || id;
-                    debugLog(`  图片 ${imageName}: ${count} 次`);
-                    if (count !== 2) {
-                        debugLog(`  ⚠️ 警告: 图片 ${imageName} 出现 ${count} 次，不符合预期的2次`);
-                    }
-                });
-            }
-        }
-
-        function initializeRankings() {
-            imageRankings = {};
-            imageLibrary.forEach(img => {
-                imageRankings[img.id] = { score: 1000, wins: 0, losses: 0 };
-            });
         }
 
         function generateNewComparison() {
-            if (currentComparisonIndex >= 50) { // 确保恰好50组对比
+            if (currentComparisonIndex >= 50) {
                 completeCurrentGroup();
                 return;
             }
@@ -1111,7 +1056,7 @@
             
             resetAllSelections();
             
-            // 启动计时器 (Bug2修复)
+            // 启动计时器
             startComparisonTimer();
         }
 
@@ -1151,7 +1096,7 @@
         }
 
         function confirmAllSelections() {
-            // 检查最小观看时间 (Bug2修复)
+            // 检查最小观看时间
             if (!checkMinimumViewTime()) {
                 showTimeWarning();
                 return;
@@ -1183,24 +1128,6 @@
                 alert(currentLanguage === 'zh' ? '请回答所有问题！' : 'Please answer all questions!');
                 return;
             }
-
-            // 为每个行为更新排名
-            Object.values(answers).forEach(answer => {
-                const winnerId = answer.winner;
-                const loserId = answer.loser;
-                
-                // 更新本组排名
-                const K = 32;
-                const winnerRating = imageRankings[winnerId].score;
-                const loserRating = imageRankings[loserId].score;
-                
-                const expectedWinner = 1 / (1 + Math.pow(10, (loserRating - winnerRating) / 400));
-                
-                imageRankings[winnerId].score += K * (1 - expectedWinner);
-                imageRankings[loserId].score += K * (0 - expectedWinner);
-                imageRankings[winnerId].wins += 1;
-                imageRankings[loserId].losses += 1;
-            });
 
             // 记录对比结果
             comparisons.push({
@@ -1241,9 +1168,8 @@
         }
 
         function restart() {
-            userData = { gender: '', age: '', isProfessional: '' };
+            userData = { nickname: '', gender: '', age: '', isProfessional: '' };
             comparisons = [];
-            imageRankings = {};
             currentPair = { imageA: null, imageB: null };
             selectedOption = null;
             comparisonPairs = [];
@@ -1255,7 +1181,9 @@
             timeWarningShown = false;
             
             document.querySelectorAll('input[type="radio"]').forEach(input => input.checked = false);
+            document.getElementById('nicknameInput').value = '';
             document.getElementById('ageInput').value = '';
+            document.getElementById('consentCheckbox').checked = false;
             
             showPage('languagePage');
         }
@@ -1270,7 +1198,6 @@
             const password = prompt('请输入管理员密码：');
             
             if (password === null) {
-                // 用户取消了输入
                 return;
             }
             
@@ -1289,112 +1216,70 @@
         }
 
         function refreshStats() {
-            const stats = getCumulativeStats();
             const sessions = getAllSessions();
+            const comparisonRecords = getComparisonRecords();
             
             // 更新基本统计
-            document.getElementById('totalUsers').textContent = stats.totalUsers || 0;
-            document.getElementById('totalComparisons').textContent = stats.totalComparisons || 0;
+            document.getElementById('totalUsers').textContent = sessions.length;
+            document.getElementById('totalComparisons').textContent = comparisonRecords.length;
             
-            const avgComparisonsPerUser = stats.totalUsers > 0 ? (stats.totalComparisons / stats.totalUsers).toFixed(1) : '0';
+            const avgComparisonsPerUser = sessions.length > 0 ? (comparisonRecords.length / sessions.length).toFixed(1) : '0';
             document.getElementById('avgGroups').textContent = avgComparisonsPerUser;
             
-            // 显示当前选中行为的排名
-            displayBehaviorRankings(stats, currentBehaviorTab);
+            // 显示对比数据
+            displayComparisonData(comparisonRecords);
             
             // 更新用户详情
             displayUserDetails(sessions);
         }
 
-        function showBehaviorTab(behaviorKey) {
-            currentBehaviorTab = behaviorKey;
+        function displayComparisonData(records) {
+            const comparisonData = document.getElementById('comparisonData');
             
-            // 更新标签样式
-            const tabs = ['sitting', 'walking', 'jogging', 'gathering', 'overall'];
-            tabs.forEach(tab => {
-                const tabElement = document.getElementById(`tab-${tab}`);
-                if (tab === behaviorKey) {
-                    tabElement.classList.remove('bg-gray-200', 'text-gray-700', 'hover:bg-gray-300');
-                    tabElement.classList.add('bg-blue-500', 'text-white');
-                } else {
-                    tabElement.classList.remove('bg-blue-500', 'text-white');
-                    tabElement.classList.add('bg-gray-200', 'text-gray-700', 'hover:bg-gray-300');
-                }
-            });
-            
-            // 显示对应的排名数据
-            const stats = getCumulativeStats();
-            displayBehaviorRankings(stats, behaviorKey);
-        }
-
-        function displayBehaviorRankings(stats, behaviorKey) {
-            const behaviorRankings = document.getElementById('behaviorRankings');
-            
-            // 获取图片名称的辅助函数
-            function getImageName(imageId) {
-                const image = imageLibrary.find(img => img.id == imageId);
-                return image ? image.name : `图片${imageId}`;
-            }
-            
-            let rankings = [];
-            let behaviorName = '';
-            
-            if (behaviorKey === 'overall') {
-                // 显示综合排名
-                behaviorName = '综合排名';
-                if (stats.imageRankings && Object.keys(stats.imageRankings).length > 0) {
-                    rankings = Object.entries(stats.imageRankings)
-                        .sort(([,a], [,b]) => b.winRate - a.winRate)
-                        .slice(0, 20);
-                }
-            } else {
-                // 显示特定行为的排名
-                const behaviorNames = {
-                    'sitting': '坐',
-                    'walking': '行走', 
-                    'jogging': '慢跑',
-                    'gathering': '集合'
-                };
-                behaviorName = behaviorNames[behaviorKey] || behaviorKey;
-                
-                const behaviorData = stats.behaviorStats && stats.behaviorStats[behaviorName];
-                if (behaviorData && behaviorData.imageRankings && Object.keys(behaviorData.imageRankings).length > 0) {
-                    rankings = Object.entries(behaviorData.imageRankings)
-                        .sort(([,a], [,b]) => b.winRate - a.winRate)
-                        .slice(0, 20);
-                }
-            }
-            
-            if (rankings.length === 0) {
-                behaviorRankings.innerHTML = `<p class="text-gray-500">暂无${behaviorName}的统计数据</p>`;
+            if (records.length === 0) {
+                comparisonData.innerHTML = '<p class="text-gray-500">暂无对比数据</p>';
                 return;
             }
             
+            // 显示最近的20条记录
+            const recentRecords = records.slice(-20).reverse();
+            
             const html = `
                 <div class="space-y-2">
-                    <h4 class="font-semibold text-gray-800 mb-3">${behaviorName}排名</h4>
-                    <div class="grid grid-cols-5 gap-2 text-sm font-semibold text-gray-700 border-b pb-2">
-                        <div>排名</div>
-                        <div>图片名称</div>
-                        <div>胜率</div>
-                        <div>胜场</div>
-                        <div>负场</div>
+                    <h4 class="font-semibold text-gray-800 mb-3">最近20条对比记录</h4>
+                    <div class="grid grid-cols-10 gap-1 text-xs font-semibold text-gray-700 border-b pb-2">
+                        <div>昵称</div>
+                        <div>组序</div>
+                        <div>图片1</div>
+                        <div>图片2</div>
+                        <div>坐</div>
+                        <div>行走</div>
+                        <div>慢跑</div>
+                        <div>集合</div>
+                        <div>时长(s)</div>
+                        <div>时间</div>
                     </div>
-                    ${rankings.map(([imageId, data], index) => {
-                        const imageName = getImageName(imageId);
-                        return `
-                        <div class="grid grid-cols-5 gap-2 text-sm">
-                            <div class="font-medium text-green-600">#${index + 1}</div>
-                            <div class="truncate" title="${imageName}">${imageName}</div>
-                            <div class="font-semibold text-blue-600">${(data.winRate * 100).toFixed(1)}%</div>
-                            <div>${data.wins}</div>
-                            <div>${data.losses}</div>
+                    ${recentRecords.map(record => `
+                        <div class="grid grid-cols-10 gap-1 text-xs">
+                            <div class="truncate" title="${record.nickname}">${record.nickname}</div>
+                            <div>${record.groupNumber}-${record.comparisonIndex}</div>
+                            <div class="truncate" title="${record.image1_name}">${record.image1_name.substring(0, 8)}...</div>
+                            <div class="truncate" title="${record.image2_name}">${record.image2_name.substring(0, 8)}...</div>
+                            <div class="text-center ${record.sitting === 0 ? 'text-green-600' : 'text-blue-600'}">${record.sitting}</div>
+                            <div class="text-center ${record.walking === 0 ? 'text-green-600' : 'text-blue-600'}">${record.walking}</div>
+                            <div class="text-center ${record.jogging === 0 ? 'text-green-600' : 'text-blue-600'}">${record.jogging}</div>
+                            <div class="text-center ${record.gathering === 0 ? 'text-green-600' : 'text-blue-600'}">${record.gathering}</div>
+                            <div>${(record.viewTime / 1000).toFixed(1)}</div>
+                            <div>${new Date(record.timestamp).toLocaleDateString()}</div>
                         </div>
-                    `}).join('')}
+                    `).join('')}
+                </div>
+                <div class="mt-4 text-sm text-gray-600">
+                    <p><span class="text-green-600">0</span> = 选择图片1，<span class="text-blue-600">1</span> = 选择图片2</p>
                 </div>
             `;
             
-            behaviorRankings.innerHTML = html;
+            comparisonData.innerHTML = html;
         }
 
         function displayUserDetails(sessions) {
@@ -1408,7 +1293,7 @@
             const html = `
                 <div class="space-y-2">
                     <div class="grid grid-cols-6 gap-2 text-sm font-semibold text-gray-700 border-b pb-2">
-                        <div>会话ID</div>
+                        <div>昵称</div>
                         <div>性别</div>
                         <div>年龄</div>
                         <div>专业</div>
@@ -1417,7 +1302,7 @@
                     </div>
                     ${sessions.slice(-20).map(session => `
                         <div class="grid grid-cols-6 gap-2 text-sm">
-                            <div class="truncate">${session.sessionId.substr(-8)}</div>
+                            <div class="truncate">${session.userData.nickname}</div>
                             <div>${session.userData.gender === 'male' ? '男' : '女'}</div>
                             <div>${session.userData.age}</div>
                             <div>${session.userData.isProfessional === 'yes' ? '是' : '否'}</div>
@@ -1432,37 +1317,62 @@
         }
 
         function exportData() {
-            const stats = getCumulativeStats();
-            const sessions = getAllSessions();
+            const comparisonRecords = getComparisonRecords();
             
-            const exportData = {
-                exportTime: new Date().toISOString(),
-                cumulativeStats: stats,
-                allSessions: sessions,
-                summary: {
-                    totalUsers: stats.totalUsers || 0,
-                    totalComparisons: stats.totalComparisons || 0,
-                    averageComparisonsPerUser: stats.totalUsers > 0 ? (stats.totalComparisons / stats.totalUsers) : 0
-                }
-            };
+            if (comparisonRecords.length === 0) {
+                alert('暂无数据可导出！');
+                return;
+            }
             
-            const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+            // 创建CSV内容
+            const headers = [
+                'sessionId', 'nickname', 'gender', 'age', 'isProfessional',
+                'groupNumber', 'comparisonIndex', 'image1_url', 'image2_url',
+                'image1_name', 'image2_name', 'sitting', 'walking', 'jogging', 'gathering',
+                'viewTime_ms', 'timestamp'
+            ];
+            
+            const csvContent = [
+                headers.join(','),
+                ...comparisonRecords.map(record => [
+                    record.sessionId,
+                    `"${record.nickname}"`,
+                    record.gender,
+                    record.age,
+                    record.isProfessional,
+                    record.groupNumber,
+                    record.comparisonIndex,
+                    `"${record.image1_url}"`,
+                    `"${record.image2_url}"`,
+                    `"${record.image1_name}"`,
+                    `"${record.image2_name}"`,
+                    record.sitting,
+                    record.walking,
+                    record.jogging,
+                    record.gathering,
+                    record.viewTime,
+                    record.timestamp
+                ].join(','))
+            ].join('\n');
+            
+            // 下载CSV文件
+            const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `街景问卷数据_${new Date().toISOString().split('T')[0]}.json`;
+            a.download = `街景问卷对比数据_${new Date().toISOString().split('T')[0]}.csv`;
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
             URL.revokeObjectURL(url);
             
-            alert('数据已导出！');
+            alert('数据已导出为CSV格式！');
         }
 
         function clearData() {
             if (confirm('确定要清空所有数据吗？此操作不可恢复！')) {
                 localStorage.removeItem('surveySessionsData');
-                localStorage.removeItem('surveyCumulativeStats');
+                localStorage.removeItem('comparisonRecords');
                 refreshStats();
                 alert('数据已清空！');
             }
@@ -1472,7 +1382,7 @@
         // 页面初始化
         // ====================================================================
         document.addEventListener('DOMContentLoaded', async function() {
-            debugLog('🚀 街景问卷系统启动 - 后台存储版');
+            debugLog('🚀 街景问卷系统启动 - 改进版');
             
             await initializeImageLibrary();
             
