@@ -62,6 +62,44 @@
             border-radius: 6px;
             margin: 12px 0;
         }
+        .loading-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+        }
+        .spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid #f3f3f3;
+            border-top: 2px solid #3498db;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .status-indicator {
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+        .status-success {
+            background-color: #d1fae5;
+            color: #065f46;
+        }
+        .status-error {
+            background-color: #fee2e2;
+            color: #991b1b;
+        }
+        .status-warning {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -77,6 +115,14 @@
         <div>🔧 调试信息</div>
         <div id="debugLog"></div>
         <button onclick="toggleDebug()" style="background: #333; color: #fff; border: none; padding: 2px 5px; margin-top: 5px;">隐藏</button>
+    </div>
+
+    <!-- 数据状态指示器 -->
+    <div id="dataStatusIndicator" class="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 hidden">
+        <div class="status-indicator">
+            <div class="spinner"></div>
+            <span id="dataStatusText">正在保存数据...</span>
+        </div>
     </div>
 
     <!-- 语言选择页面 -->
@@ -369,29 +415,37 @@
             </div>
             
             <div class="p-6">
+                <!-- 数据库状态 -->
+                <div id="databaseStatus" class="mb-6">
+                    <div class="loading-indicator">
+                        <div class="spinner"></div>
+                        <span>正在连接数据库...</span>
+                    </div>
+                </div>
+
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                     <div class="bg-blue-100 p-4 rounded-lg">
                         <h3 class="font-semibold text-blue-800">总参与人数</h3>
-                        <p id="totalUsers" class="text-2xl font-bold text-blue-600">0</p>
+                        <p id="totalUsers" class="text-2xl font-bold text-blue-600">-</p>
                     </div>
                     <div class="bg-green-100 p-4 rounded-lg">
                         <h3 class="font-semibold text-green-800">总对比次数</h3>
-                        <p id="totalComparisons" class="text-2xl font-bold text-green-600">0</p>
+                        <p id="totalComparisons" class="text-2xl font-bold text-green-600">-</p>
                     </div>
                     <div class="bg-purple-100 p-4 rounded-lg">
                         <h3 class="font-semibent text-purple-800">平均每人对比次数</h3>
-                        <p id="avgGroups" class="text-2xl font-bold text-purple-600">0</p>
+                        <p id="avgGroups" class="text-2xl font-bold text-purple-600">-</p>
                     </div>
                 </div>
                 
                 <div class="flex space-x-4 mb-6">
-                    <button onclick="exportData()" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
+                    <button onclick="exportData()" id="exportButton" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-400" disabled>
                         导出对比数据表格
                     </button>
-                    <button onclick="clearData()" class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600">
+                    <button onclick="clearData()" id="clearButton" class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 disabled:bg-gray-400" disabled>
                         清空数据
                     </button>
-                    <button onclick="refreshStats()" class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">
+                    <button onclick="refreshStats()" id="refreshButton" class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">
                         刷新统计
                     </button>
                 </div>
@@ -399,14 +453,14 @@
                 <div class="mb-6">
                     <h3 class="text-lg font-semibold mb-4">最近的对比数据</h3>
                     <div id="comparisonData" class="overflow-auto max-h-96">
-                        <!-- 对比数据将在这里显示 -->
+                        <div class="text-gray-500">加载中...</div>
                     </div>
                 </div>
                 
                 <div>
                     <h3 class="text-lg font-semibold mb-4">用户详情</h3>
                     <div id="userDetails" class="overflow-auto max-h-64">
-                        <!-- 用户详情将在这里显示 -->
+                        <div class="text-gray-500">加载中...</div>
                     </div>
                 </div>
             </div>
@@ -414,6 +468,129 @@
     </div>
 
     <script>
+        // ====================================================================
+        // JSONBin.io 配置和远程数据存储
+        // ====================================================================
+        const JSONBIN_CONFIG = {
+            binId: '68af17fed0ea881f40683b2d',
+            masterKey: '$2a$10$u8PqVScW17.v1t5MSYIwJedLOM/xcoGe2dEOpJ98Xn2kyJs3AzDgK',
+            baseUrl: 'https://api.jsonbin.io/v3'
+        };
+
+        // 远程数据操作函数
+        async function fetchRemoteData() {
+            try {
+                showDataStatus('正在加载数据...', 'loading');
+                debugLog('🔄 正在从JSONBin.io获取数据...');
+                
+                const response = await fetch(`${JSONBIN_CONFIG.baseUrl}/b/${JSONBIN_CONFIG.binId}`, {
+                    method: 'GET',
+                    headers: {
+                        'X-Master-Key': JSONBIN_CONFIG.masterKey,
+                        'Content-Type': 'application/json'
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const result = await response.json();
+                debugLog('✅ 远程数据获取成功');
+                hideDataStatus();
+                
+                // 确保数据结构存在
+                return {
+                    sessions: result.record?.sessions || [],
+                    comparisonRecords: result.record?.comparisonRecords || [],
+                    lastUpdated: result.record?.lastUpdated || new Date().toISOString()
+                };
+            } catch (error) {
+                debugLog(`❌ 获取远程数据失败: ${error.message}`);
+                showDataStatus('数据加载失败', 'error');
+                
+                // 返回空数据结构
+                return {
+                    sessions: [],
+                    comparisonRecords: [],
+                    lastUpdated: new Date().toISOString()
+                };
+            }
+        }
+
+        async function saveRemoteData(sessions, comparisonRecords) {
+            try {
+                showDataStatus('正在保存数据...', 'loading');
+                debugLog('🔄 正在保存数据到JSONBin.io...');
+
+                const data = {
+                    sessions: sessions,
+                    comparisonRecords: comparisonRecords,
+                    lastUpdated: new Date().toISOString(),
+                    version: '1.0'
+                };
+
+                const response = await fetch(`${JSONBIN_CONFIG.baseUrl}/b/${JSONBIN_CONFIG.binId}`, {
+                    method: 'PUT',
+                    headers: {
+                        'X-Master-Key': JSONBIN_CONFIG.masterKey,
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                debugLog('✅ 数据保存成功');
+                showDataStatus('数据保存成功', 'success');
+                setTimeout(hideDataStatus, 2000);
+                return true;
+            } catch (error) {
+                debugLog(`❌ 保存数据失败: ${error.message}`);
+                showDataStatus('数据保存失败', 'error');
+                setTimeout(hideDataStatus, 5000);
+                return false;
+            }
+        }
+
+        // 数据状态显示函数
+        function showDataStatus(message, type = 'loading') {
+            const indicator = document.getElementById('dataStatusIndicator');
+            const statusDiv = indicator.querySelector('.status-indicator');
+            const textElement = document.getElementById('dataStatusText');
+            const spinner = statusDiv.querySelector('.spinner');
+
+            // 重置所有状态类
+            statusDiv.className = 'status-indicator';
+            
+            switch (type) {
+                case 'loading':
+                    statusDiv.classList.add('status-warning');
+                    spinner.style.display = 'block';
+                    break;
+                case 'success':
+                    statusDiv.classList.add('status-success');
+                    spinner.style.display = 'none';
+                    break;
+                case 'error':
+                    statusDiv.classList.add('status-error');
+                    spinner.style.display = 'none';
+                    break;
+                default:
+                    statusDiv.classList.add('status-warning');
+                    spinner.style.display = 'block';
+            }
+
+            textElement.textContent = message;
+            indicator.classList.remove('hidden');
+        }
+
+        function hideDataStatus() {
+            document.getElementById('dataStatusIndicator').classList.add('hidden');
+        }
+
         // ====================================================================
         // 配置和全局变量
         // ====================================================================
@@ -444,72 +621,121 @@
         let minimumViewTime = 6000; // 6秒最小观看时间
         let timeWarningShown = false;
 
+        // 缓存的远程数据
+        let remoteDataCache = null;
+        let lastDataFetch = null;
+
         // ====================================================================
-        // 数据存储管理
+        // 数据存储管理 - 使用远程存储
         // ====================================================================
         function generateSessionId() {
             return 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
         }
 
-        function saveUserSession() {
-            const sessions = JSON.parse(localStorage.getItem('surveySessionsData') || '[]');
-            
-            const sessionData = {
-                sessionId: sessionId,
-                userData: userData,
-                groupsCompleted: currentGroupNumber,
-                totalComparisons: comparisons.length,
-                comparisons: comparisons,
-                timestamp: new Date().toISOString(),
-                language: currentLanguage
-            };
-            
-            sessions.push(sessionData);
-            localStorage.setItem('surveySessionsData', JSON.stringify(sessions));
-            
-            // 更新累计对比数据
-            updateComparisonData(sessionData);
-            
-            debugLog(`💾 用户会话已保存: ${sessionId}, 完成组数: ${currentGroupNumber}`);
-        }
-
-        function updateComparisonData(sessionData) {
-            let comparisonRecords = JSON.parse(localStorage.getItem('comparisonRecords') || '[]');
-            
-            // 为每个对比记录创建一行数据
-            sessionData.comparisons.forEach(comparison => {
-                const record = {
-                    sessionId: sessionData.sessionId,
-                    nickname: sessionData.userData.nickname,
-                    gender: sessionData.userData.gender,
-                    age: sessionData.userData.age,
-                    isProfessional: sessionData.userData.isProfessional,
-                    groupNumber: comparison.groupNumber,
-                    comparisonIndex: comparison.comparisonIndex,
-                    image1_url: comparison.imageA.url,
-                    image2_url: comparison.imageB.url,
-                    image1_name: comparison.imageA.name,
-                    image2_name: comparison.imageB.name,
-                    sitting: comparison.answers.sitting ? (comparison.answers.sitting.choice === 'A' ? 0 : 1) : null,
-                    walking: comparison.answers.walking ? (comparison.answers.walking.choice === 'A' ? 0 : 1) : null,
-                    jogging: comparison.answers.jogging ? (comparison.answers.jogging.choice === 'A' ? 0 : 1) : null,
-                    gathering: comparison.answers.gathering ? (comparison.answers.gathering.choice === 'A' ? 0 : 1) : null,
-                    viewTime: comparison.viewTime || 0,
-                    timestamp: comparison.timestamp
+        async function saveUserSession() {
+            try {
+                // 获取当前远程数据
+                const remoteData = await fetchRemoteData();
+                
+                const sessionData = {
+                    sessionId: sessionId,
+                    userData: userData,
+                    groupsCompleted: currentGroupNumber,
+                    totalComparisons: comparisons.length,
+                    comparisons: comparisons,
+                    timestamp: new Date().toISOString(),
+                    language: currentLanguage
                 };
-                comparisonRecords.push(record);
-            });
-            
-            localStorage.setItem('comparisonRecords', JSON.stringify(comparisonRecords));
-            debugLog(`📊 对比记录已更新，新增 ${sessionData.comparisons.length} 条记录`);
+                
+                // 添加会话数据
+                remoteData.sessions.push(sessionData);
+                
+                // 更新对比记录
+                const newComparisonRecords = [...remoteData.comparisonRecords];
+                comparisons.forEach(comparison => {
+                    const record = {
+                        sessionId: sessionData.sessionId,
+                        nickname: sessionData.userData.nickname,
+                        gender: sessionData.userData.gender,
+                        age: sessionData.userData.age,
+                        isProfessional: sessionData.userData.isProfessional,
+                        groupNumber: comparison.groupNumber,
+                        comparisonIndex: comparison.comparisonIndex,
+                        image1_url: comparison.imageA.url,
+                        image2_url: comparison.imageB.url,
+                        image1_name: comparison.imageA.name,
+                        image2_name: comparison.imageB.name,
+                        sitting: comparison.answers.sitting ? (comparison.answers.sitting.choice === 'A' ? 0 : 1) : null,
+                        walking: comparison.answers.walking ? (comparison.answers.walking.choice === 'A' ? 0 : 1) : null,
+                        jogging: comparison.answers.jogging ? (comparison.answers.jogging.choice === 'A' ? 0 : 1) : null,
+                        gathering: comparison.answers.gathering ? (comparison.answers.gathering.choice === 'A' ? 0 : 1) : null,
+                        viewTime: comparison.viewTime || 0,
+                        timestamp: comparison.timestamp
+                    };
+                    newComparisonRecords.push(record);
+                });
+                
+                // 保存到远程
+                const saveSuccess = await saveRemoteData(remoteData.sessions, newComparisonRecords);
+                
+                if (saveSuccess) {
+                    debugLog(`💾 用户会话已保存: ${sessionId}, 完成组数: ${currentGroupNumber}`);
+                    
+                    // 更新缓存
+                    remoteDataCache = {
+                        sessions: remoteData.sessions,
+                        comparisonRecords: newComparisonRecords,
+                        lastUpdated: new Date().toISOString()
+                    };
+                } else {
+                    debugLog(`❌ 用户会话保存失败: ${sessionId}`);
+                }
+                
+                return saveSuccess;
+            } catch (error) {
+                debugLog(`❌ 保存用户会话时发生错误: ${error.message}`);
+                return false;
+            }
         }
 
-        function getComparisonRecords() {
-            return JSON.parse(localStorage.getItem('comparisonRecords') || '[]');
+        async function getComparisonRecords() {
+            try {
+                // 如果有缓存且不超过5分钟，使用缓存
+                if (remoteDataCache && lastDataFetch && (Date.now() - lastDataFetch < 5 * 60 * 1000)) {
+                    return remoteDataCache.comparisonRecords || [];
+                }
+                
+                const remoteData = await fetchRemoteData();
+                
+                // 更新缓存
+                remoteDataCache = remoteData;
+                lastDataFetch = Date.now();
+                
+                return remoteData.comparisonRecords || [];
+            } catch (error) {
+                debugLog(`❌ 获取对比记录失败: ${error.message}`);
+                return [];
+            }
         }
 
-        function getAllSessions() {
-            return JSON.parse(localStorage.getItem('surveySessionsData') || '[]');
+        async function getAllSessions() {
+            try {
+                // 如果有缓存且不超过5分钟，使用缓存
+                if (remoteDataCache && lastDataFetch && (Date.now() - lastDataFetch < 5 * 60 * 1000)) {
+                    return remoteDataCache.sessions || [];
+                }
+                
+                const remoteData = await fetchRemoteData();
+                
+                // 更新缓存
+                remoteDataCache = remoteData;
+                lastDataFetch = Date.now();
+                
+                return remoteData.sessions || [];
+            } catch (error) {
+                debugLog(`❌ 获取会话记录失败: ${error.message}`);
+                return [];
+            }
         }
 
         // ====================================================================
@@ -903,7 +1129,7 @@
                     <p class="mb-3"><strong>Research Purpose:</strong> This experiment aims to understand people's perception and preference for behavioral suitability in different street environments. Through systematic comparison of street view images, we seek to identify patterns in how individuals assess spatial affordances for various human activities, contributing to evidence-based urban design practices.</p>
                     <p class="mb-3"><strong>Experimental Process:</strong> During the experiment, we will record:</p>
                     <ul class="list-disc list-inside mb-3 ml-4">
-                        <li>Your basic information (nickname, gender, age, professional background)</li>hrust
+                        <li>Your basic information (nickname, gender, age, professional background)</li>
                         <li>Your choices regarding behavioral suitability of different street view images</li>
                         <li>Your response time and viewing duration</li>
                         <li>Timestamps of your participation</li>
@@ -1096,7 +1322,7 @@
             }
         }
 
-        function confirmAllSelections() {
+        async function confirmAllSelections() {
             // 检查最小观看时间
             if (!checkMinimumViewTime()) {
                 showTimeWarning();
@@ -1149,11 +1375,28 @@
             generateNewComparison();
         }
 
-        function completeCurrentGroup() {
+        async function completeCurrentGroup() {
             debugLog(`✅ 第${currentGroupNumber}组对比完成，共${comparisons.length}次对比`);
             
-            // 保存当前组数据
-            saveUserSession();
+            // 保存当前组数据到远程
+            const saveSuccess = await saveUserSession();
+            
+            if (!saveSuccess) {
+                // 保存失败，给用户提示
+                const retryMessage = currentLanguage === 'zh' ? 
+                    '数据保存失败，请检查网络连接。是否重试？' : 
+                    'Data save failed, please check your internet connection. Retry?';
+                
+                if (confirm(retryMessage)) {
+                    const retrySaveSuccess = await saveUserSession();
+                    if (!retrySaveSuccess) {
+                        alert(currentLanguage === 'zh' ? 
+                            '数据保存失败，请联系研究人员。' : 
+                            'Data save failed, please contact the researchers.');
+                        return;
+                    }
+                }
+            }
             
             // 显示继续询问页面
             showPage('continuePage');
@@ -1180,6 +1423,8 @@
             preloadedImages.clear(); // 清空预加载缓存
             comparisonStartTime = null; // 重置时间
             timeWarningShown = false;
+            remoteDataCache = null; // 清空数据缓存
+            lastDataFetch = null;
             
             document.querySelectorAll('input[type="radio"]').forEach(input => input.checked = false);
             document.getElementById('nicknameInput').value = '';
@@ -1194,7 +1439,7 @@
         // ====================================================================
         const ADMIN_PASSWORD = 'UMS2025ygs';
         
-        function showAdminPanel() {
+        async function showAdminPanel() {
             // 密码验证
             const password = prompt('请输入管理员密码：');
             
@@ -1208,30 +1453,106 @@
             }
             
             // 密码正确，显示管理员界面
-            refreshStats();
             document.getElementById('adminPanel').classList.remove('hidden');
+            await refreshStats();
         }
 
         function hideAdminPanel() {
             document.getElementById('adminPanel').classList.add('hidden');
         }
 
-        function refreshStats() {
-            const sessions = getAllSessions();
-            const comparisonRecords = getComparisonRecords();
+        async function refreshStats() {
+            try {
+                // 显示加载状态
+                updateDatabaseStatus('正在连接数据库...', 'loading');
+                disableAdminButtons(true);
+                
+                // 获取数据
+                const sessions = await getAllSessions();
+                const comparisonRecords = await getComparisonRecords();
+                
+                // 更新数据库状态
+                updateDatabaseStatus(`数据库连接成功 (最后更新: ${new Date().toLocaleString()})`, 'success');
+                
+                // 更新基本统计
+                document.getElementById('totalUsers').textContent = sessions.length;
+                document.getElementById('totalComparisons').textContent = comparisonRecords.length;
+                
+                const avgComparisonsPerUser = sessions.length > 0 ? (comparisonRecords.length / sessions.length).toFixed(1) : '0';
+                document.getElementById('avgGroups').textContent = avgComparisonsPerUser;
+                
+                // 显示对比数据
+                displayComparisonData(comparisonRecords);
+                
+                // 更新用户详情
+                displayUserDetails(sessions);
+                
+                // 启用按钮
+                disableAdminButtons(false);
+                
+            } catch (error) {
+                console.error('刷新统计失败:', error);
+                updateDatabaseStatus(`数据库连接失败: ${error.message}`, 'error');
+                
+                // 显示空数据
+                document.getElementById('totalUsers').textContent = '错误';
+                document.getElementById('totalComparisons').textContent = '错误';
+                document.getElementById('avgGroups').textContent = '错误';
+                
+                document.getElementById('comparisonData').innerHTML = '<p class="text-red-500">加载失败</p>';
+                document.getElementById('userDetails').innerHTML = '<p class="text-red-500">加载失败</p>';
+            }
+        }
+
+        function updateDatabaseStatus(message, type = 'loading') {
+            const statusDiv = document.getElementById('databaseStatus');
             
-            // 更新基本统计
-            document.getElementById('totalUsers').textContent = sessions.length;
-            document.getElementById('totalComparisons').textContent = comparisonRecords.length;
+            let html = '';
+            switch (type) {
+                case 'loading':
+                    html = `
+                        <div class="loading-indicator">
+                            <div class="spinner"></div>
+                            <span>${message}</span>
+                        </div>
+                    `;
+                    break;
+                case 'success':
+                    html = `
+                        <div class="status-indicator status-success">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            <span>${message}</span>
+                        </div>
+                    `;
+                    break;
+                case 'error':
+                    html = `
+                        <div class="status-indicator status-error">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                            <span>${message}</span>
+                        </div>
+                    `;
+                    break;
+            }
             
-            const avgComparisonsPerUser = sessions.length > 0 ? (comparisonRecords.length / sessions.length).toFixed(1) : '0';
-            document.getElementById('avgGroups').textContent = avgComparisonsPerUser;
+            statusDiv.innerHTML = html;
+        }
+
+        function disableAdminButtons(disabled) {
+            document.getElementById('exportButton').disabled = disabled;
+            document.getElementById('clearButton').disabled = disabled;
             
-            // 显示对比数据
-            displayComparisonData(comparisonRecords);
-            
-            // 更新用户详情
-            displayUserDetails(sessions);
+            if (disabled) {
+                document.getElementById('exportButton').classList.add('disabled:bg-gray-400');
+                document.getElementById('clearButton').classList.add('disabled:bg-gray-400');
+            } else {
+                document.getElementById('exportButton').classList.remove('disabled:bg-gray-400');
+                document.getElementById('clearButton').classList.remove('disabled:bg-gray-400');
+            }
         }
 
         function displayComparisonData(records) {
@@ -1317,65 +1638,82 @@
             userDetails.innerHTML = html;
         }
 
-        function exportData() {
-            const comparisonRecords = getComparisonRecords();
-            
-            if (comparisonRecords.length === 0) {
-                alert('暂无数据可导出！');
-                return;
+        async function exportData() {
+            try {
+                const comparisonRecords = await getComparisonRecords();
+                
+                if (comparisonRecords.length === 0) {
+                    alert('暂无数据可导出！');
+                    return;
+                }
+                
+                // 创建CSV内容
+                const headers = [
+                    'sessionId', 'nickname', 'gender', 'age', 'isProfessional',
+                    'groupNumber', 'comparisonIndex', 'image1_url', 'image2_url',
+                    'image1_name', 'image2_name', 'sitting', 'walking', 'jogging', 'gathering',
+                    'viewTime_ms', 'timestamp'
+                ];
+                
+                const csvContent = [
+                    headers.join(','),
+                    ...comparisonRecords.map(record => [
+                        record.sessionId,
+                        `"${record.nickname}"`,
+                        record.gender,
+                        record.age,
+                        record.isProfessional,
+                        record.groupNumber,
+                        record.comparisonIndex,
+                        `"${record.image1_url}"`,
+                        `"${record.image2_url}"`,
+                        `"${record.image1_name}"`,
+                        `"${record.image2_name}"`,
+                        record.sitting,
+                        record.walking,
+                        record.jogging,
+                        record.gathering,
+                        record.viewTime,
+                        record.timestamp
+                    ].join(','))
+                ].join('\n');
+                
+                // 下载CSV文件
+                const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `街景问卷对比数据_${new Date().toISOString().split('T')[0]}.csv`;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+                URL.revokeObjectURL(url);
+                
+                alert('数据已导出为CSV格式！');
+            } catch (error) {
+                console.error('导出数据失败:', error);
+                alert('导出失败：' + error.message);
             }
-            
-            // 创建CSV内容
-            const headers = [
-                'sessionId', 'nickname', 'gender', 'age', 'isProfessional',
-                'groupNumber', 'comparisonIndex', 'image1_url', 'image2_url',
-                'image1_name', 'image2_name', 'sitting', 'walking', 'jogging', 'gathering',
-                'viewTime_ms', 'timestamp'
-            ];
-            
-            const csvContent = [
-                headers.join(','),
-                ...comparisonRecords.map(record => [
-                    record.sessionId,
-                    `"${record.nickname}"`,
-                    record.gender,
-                    record.age,
-                    record.isProfessional,
-                    record.groupNumber,
-                    record.comparisonIndex,
-                    `"${record.image1_url}"`,
-                    `"${record.image2_url}"`,
-                    `"${record.image1_name}"`,
-                    `"${record.image2_name}"`,
-                    record.sitting,
-                    record.walking,
-                    record.jogging,
-                    record.gathering,
-                    record.viewTime,
-                    record.timestamp
-                ].join(','))
-            ].join('\n');
-            
-            // 下载CSV文件
-            const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `街景问卷对比数据_${new Date().toISOString().split('T')[0]}.csv`;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-            URL.revokeObjectURL(url);
-            
-            alert('数据已导出为CSV格式！');
         }
 
-        function clearData() {
+        async function clearData() {
             if (confirm('确定要清空所有数据吗？此操作不可恢复！')) {
-                localStorage.removeItem('surveySessionsData');
-                localStorage.removeItem('comparisonRecords');
-                refreshStats();
-                alert('数据已清空！');
+                try {
+                    const success = await saveRemoteData([], []);
+                    if (success) {
+                        // 清空缓存
+                        remoteDataCache = null;
+                        lastDataFetch = null;
+                        
+                        await refreshStats();
+                        alert('数据已清空！');
+                    } else {
+                        alert('清空数据失败，请稍后重试！');
+                    }
+                } catch (error) {
+                    console.error('清空数据失败:', error);
+                    alert('清空失败：' + error.message);
+                }
             }
         }
 
@@ -1383,7 +1721,7 @@
         // 页面初始化
         // ====================================================================
         document.addEventListener('DOMContentLoaded', async function() {
-            debugLog('🚀 街景问卷系统启动 - 改进版');
+            debugLog('🚀 街景问卷系统启动 - 远程数据存储版');
             
             await initializeImageLibrary();
             
@@ -1400,6 +1738,14 @@
                 debugLog(`✅ 系统就绪，图片库包含 ${imageLibrary.length} 张图片`);
             } else {
                 debugLog('⚠️ 图片库初始化有问题，但系统仍可运行');
+            }
+            
+            // 测试远程连接
+            try {
+                await fetchRemoteData();
+                debugLog('✅ 远程数据库连接测试成功');
+            } catch (error) {
+                debugLog(`❌ 远程数据库连接测试失败: ${error.message}`);
             }
         });
     </script>
