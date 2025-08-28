@@ -271,7 +271,7 @@
                     <span id="groupCounter">第 1 组</span>
                 </div>
                 <div>
-                    <span id="progressCounter">1/50</span>
+                    <span id="progressCounter">1/20</span>
                 </div>
             </div>
             
@@ -390,7 +390,7 @@
     <div id="continuePage" class="hidden min-h-screen bg-gray-100 flex items-center justify-center p-4">
         <div class="bg-white rounded-lg shadow-lg p-8 text-center max-w-md w-full">
             <h2 id="continueTitle" class="text-2xl font-bold text-gray-800 mb-4">本组对比已完成</h2>
-            <p id="continueMessage" class="text-gray-600 mb-8">您已完成了50组图片对比，感谢您的参与！<br>是否继续进行下一组对比？</p>
+            <p id="continueMessage" class="text-gray-600 mb-8">您已完成了20组图片对比，感谢您的参与！<br>是否继续进行下一组对比？</p>
             
             <div class="flex justify-center space-x-4">
                 <button onclick="continueNextGroup()" id="continueButton" class="px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors font-medium">
@@ -492,9 +492,9 @@
             baseUrl: 'https://api.jsonbin.io/v3'
         };
 
-        // 分块保存配置
+        // 分块保存配置 - 改为20张一个chunk
         const CHUNKED_SAVE_CONFIG = {
-            chunkSize: 25, // 每次保存25个对比记录
+            chunkSize: 20, // 每次保存20个对比记录
             maxRetries: 3,
             retryDelay: 1000, // 1秒
             batchDelay: 500 // 批次之间的延迟
@@ -982,8 +982,8 @@
                 fallbackUrl: buildFallbackUrl(url)
             }));
             
-            // 确保有足够的图片进行50组对比
-            const minImagesNeeded = 50;
+            // 确保有足够的图片进行20组对比
+            const minImagesNeeded = 20;
             
             if (imageLibrary.length < minImagesNeeded) {
                 debugLog(`⚠️ 图片数量不足(${imageLibrary.length}张)，需要至少${minImagesNeeded}张`);
@@ -992,11 +992,11 @@
                 while (imageLibrary.length < minImagesNeeded) {
                     imageLibrary.push(...originalLibrary);
                 }
-                // 截取到恰好50张
+                // 截取到恰好20张
                 imageLibrary = imageLibrary.slice(0, minImagesNeeded);
                 debugLog(`✅ 已调整图片库到${imageLibrary.length}张图片`);
             } else {
-                // 随机选择50张图片用于对比
+                // 随机选择20张图片用于对比
                 imageLibrary = imageLibrary.sort(() => 0.5 - Math.random()).slice(0, minImagesNeeded);
             }
             
@@ -1171,7 +1171,7 @@
                 hintTitle: '提示',
                 instructions: '在此调研中，您需要对每对图片回答四个不同的行为问题。请根据您的直觉选择您认为更加适合进行各种活动的街景。所有问题都必须回答完毕才能进入下一对图片。',
                 continueTitle: '本组对比已完成',
-                continueMessage: '您已完成了50组图片对比，感谢您的参与！<br>是否继续进行下一组对比？',
+                continueMessage: '您已完成了20组图片对比，感谢您的参与！<br>是否继续进行下一组对比？',
                 continueButton: '继续下一组',
                 finishButton: '结束调研',
                 thankYouTitle: '感谢您的参与！',
@@ -1208,7 +1208,7 @@
                 hintTitle: 'Hint',
                 instructions: 'In this survey, you need to answer four different behavioral questions for each pair of images. Please choose the street view you think is more suitable for various activities based on your intuition. All questions must be answered before proceeding to the next pair of images.',
                 continueTitle: 'Group Comparison Completed',
-                continueMessage: 'You have completed 50 image comparisons, thank you for your participation!<br>Would you like to continue with the next group?',
+                continueMessage: 'You have completed 20 image comparisons, thank you for your participation!<br>Would you like to continue with the next group?',
                 continueButton: 'Continue Next Group',
                 finishButton: 'Finish Survey',
                 thankYouTitle: 'Thank You for Your Participation!',
@@ -1389,8 +1389,8 @@
                     }
                 }
                 
-                // 确保不超过50组对比
-                if (comparisonPairs.length >= 50) {
+                // 确保不超过20组对比
+                if (comparisonPairs.length >= 20) {
                     break;
                 }
             }
@@ -1399,7 +1399,7 @@
         }
 
         function generateNewComparison() {
-            if (currentComparisonIndex >= 50) {
+            if (currentComparisonIndex >= 20) {
                 completeCurrentGroup();
                 return;
             }
@@ -1419,7 +1419,7 @@
             // 开始预加载下一对图片
             preloadNextPair();
 
-            document.getElementById('progressCounter').textContent = `${currentComparisonIndex + 1}/50`;
+            document.getElementById('progressCounter').textContent = `${currentComparisonIndex + 1}/20`;
             
             resetAllSelections();
             
