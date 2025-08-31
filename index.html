@@ -160,6 +160,20 @@
             transition: width 0.3s ease;
             border-radius: 10px;
         }
+        .user-nickname-highlight {
+            background: linear-gradient(45deg, #fef3c7, #f3e8ff);
+            border: 2px solid #059669;
+            border-radius: 12px;
+            padding: 16px;
+            margin: 16px 0;
+            text-align: center;
+        }
+        .user-nickname-highlight .nickname {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #059669;
+            margin-bottom: 8px;
+        }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -500,9 +514,15 @@
         </div>
     </div>
 
-    <!-- 感谢页面 -->
+    <!-- 感谢页面 - 修复：添加用户昵称显示 -->
     <div id="thankYouPage" class="hidden min-h-screen bg-gray-100 flex items-center justify-center p-4">
         <div class="bg-white rounded-lg shadow-lg p-8 text-center max-w-md w-full">
+            <!-- 用户昵称高亮显示 -->
+            <div class="user-nickname-highlight">
+                <div class="nickname" id="thankYouNickname">用户昵称</div>
+                <p id="nicknameConfirmText" class="text-sm text-gray-600">感谢您的参与！</p>
+            </div>
+            
             <h2 id="thankYouTitle" class="text-2xl font-bold text-gray-800 mb-4">🎉 感谢您的参与！</h2>
             <p id="thankYouMessage" class="text-gray-600 mb-8">您已成功完成全部5组实验，数据已提交！<br><br>感谢您为街景感知研究做出的贡献！请联系研究人员兑换报酬。</p>
             
@@ -638,7 +658,7 @@
             }
         }
 
-        // 优化的数据保存函数 - 分块保存
+        // 修复：优化的数据保存函数 - 防止重复用户记录
         async function saveRemoteDataChunked(sessionData, newComparisonRecords) {
             try {
                 showDataStatus('正在保存数据...', 'loading');
@@ -647,19 +667,16 @@
                 // 获取现有数据
                 const existingData = await fetchRemoteData();
                 
-                // 更新或添加会话数据 - 修复重复用户问题
+                // 修复：确保每个用户只有一个最终的session记录
                 let allSessions = [...existingData.sessions];
-                const existingSessionIndex = allSessions.findIndex(s => s.sessionId === sessionData.sessionId);
                 
-                if (existingSessionIndex >= 0) {
-                    // 更新现有会话
-                    allSessions[existingSessionIndex] = sessionData;
-                    debugLog(`✅ 更新现有会话: ${sessionData.sessionId}, 组数: ${sessionData.groupsCompleted}`);
-                } else {
-                    // 添加新会话
-                    allSessions.push(sessionData);
-                    debugLog(`✅ 添加新会话: ${sessionData.sessionId}, 组数: ${sessionData.groupsCompleted}`);
-                }
+                // 移除同一个昵称的所有旧记录（防止重复用户）
+                allSessions = allSessions.filter(s => s.userData.nickname !== sessionData.userData.nickname);
+                
+                // 添加当前用户的最新记录
+                allSessions.push(sessionData);
+                
+                debugLog(`✅ 用户会话更新: ${sessionData.userData.nickname}, 组数: ${sessionData.groupsCompleted}`);
                 
                 // 分块保存对比记录
                 const chunkSize = CHUNKED_SAVE_CONFIG.chunkSize;
@@ -1190,7 +1207,7 @@
                 
                 imgElement.onerror = function() {
                     debugLog(`❌ 图片 ${imageData.name} 所有源都无法加载`);
-                    imgElement.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjY2IiBoZWlnaHQ9IjUwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNiIgZmlsbD0iIzk5YTNhZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPuWbvueJh+aaguaXoOazleWKoOi9rTwvdGV4dD48L3N2Zz4=';
+                    imgElement.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjY2IiBoZWlnaHQ9IjUwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNiIgZmlsbD0iIzk5YTNhZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPuWbvueJh+aauOaXoOazleWKoOi9rTwvdGV4dD48L3N2Zz4=';
                     if (callback) callback(false);
                 };
                 
@@ -1362,6 +1379,7 @@
                 thankYouTitle: '🎉 感谢您的参与！',
                 thankYouMessage: '您已成功完成全部5组实验，数据已提交！\n\n感谢您为街景感知研究做出的贡献！请联系研究人员兑换报酬。',
                 restartButton: '重新开始',
+                nicknameConfirmText: '感谢您的参与！',
                 // 图片和选项标签
                 imageALabel: '图片 A',
                 imageBLabel: '图片 B',
@@ -1406,6 +1424,7 @@
                 thankYouTitle: '🎉 Thank You for Your Participation!',
                 thankYouMessage: 'You have successfully completed all 5 groups! Your data has been submitted.\n\nThank you for contributing to street view perception research! Please contact the researchers to claim your compensation.',
                 restartButton: 'Start Over',
+                nicknameConfirmText: 'Thank you for your participation!',
                 // 图片和选项标签
                 imageALabel: 'Image A',
                 imageBLabel: 'Image B',
@@ -1810,6 +1829,7 @@
             restart();
         }
 
+        // 修复：在感谢页面显示用户昵称
         function finishSurvey() {
             if (currentGroupNumber < MAX_GROUPS) {
                 // 如果没有完成所有组，显示警告
@@ -1817,7 +1837,25 @@
                 return;
             }
             
+            // 更新感谢页面的昵称显示
+            updateThankYouPageWithNickname();
             showPage('thankYouPage');
+        }
+
+        // 新增：更新感谢页面显示用户昵称的函数
+        function updateThankYouPageWithNickname() {
+            const nicknameElement = document.getElementById('thankYouNickname');
+            const confirmTextElement = document.getElementById('nicknameConfirmText');
+            
+            if (userData.nickname) {
+                nicknameElement.textContent = userData.nickname;
+                
+                if (currentLanguage === 'zh') {
+                    confirmTextElement.textContent = `感谢您的参与，${userData.nickname}！`;
+                } else {
+                    confirmTextElement.textContent = `Thank you for your participation, ${userData.nickname}!`;
+                }
+            }
         }
 
         function restart() {
@@ -1883,8 +1921,8 @@
                 // 更新数据库状态
                 updateDatabaseStatus(`数据库连接成功 (最后更新: ${new Date().toLocaleString()})`, 'success');
                 
-                // 修复：按 sessionId 去重计算真实用户数
-                const uniqueUsers = getUniqueUsers(sessions);
+                // 修复：按昵称去重计算真实用户数（因为每个用户可能有多个session记录）
+                const uniqueUsers = getUniqueUsersByNickname(sessions);
                 document.getElementById('totalUsers').textContent = uniqueUsers.length;
                 document.getElementById('totalComparisons').textContent = comparisonRecords.length;
                 
@@ -1914,14 +1952,17 @@
             }
         }
 
-        // 新增函数：从sessions中获取唯一用户（每个sessionId只保留最新记录）
-        function getUniqueUsers(sessions) {
+        // 修复：按昵称去重获取唯一用户（每个昵称只保留最新记录）
+        function getUniqueUsersByNickname(sessions) {
             const userMap = new Map();
             
             sessions.forEach(session => {
-                const existing = userMap.get(session.sessionId);
-                if (!existing || new Date(session.timestamp) > new Date(existing.timestamp)) {
-                    userMap.set(session.sessionId, session);
+                if (session.userData && session.userData.nickname) {
+                    const nickname = session.userData.nickname;
+                    const existing = userMap.get(nickname);
+                    if (!existing || new Date(session.timestamp) > new Date(existing.timestamp)) {
+                        userMap.set(nickname, session);
+                    }
                 }
             });
             
