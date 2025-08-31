@@ -855,7 +855,8 @@
             'https://res.cloudinary.com/dw3huanrk/image/upload/my_website_images/batch_upload/fff11158-a3d5-4e96-9c02-92dd8a42566a_5344.png'
         ];
 
-        let imageLibrary = [];
+        let fullImageLibrary = []; // 存储完整的图片列表
+        let imageLibrary = []; // 存储当前组使用的图片列表
         let isImageLibraryLoaded = false;
         let currentLanguage = 'zh';
         let userData = { nickname: '', gender: '', age: '', isProfessional: '' };
@@ -1064,7 +1065,7 @@
         // 图片库初始化
         // ====================================================================
         async function initializeImageLibrary() {
-            debugLog('🚀 初始化图片库...');
+            debugLog('🚀 初始化完整图片库...');
             
             let imageUrls = await loadImageUrlsFromFile();
             
@@ -1073,33 +1074,60 @@
                 imageUrls = DEMO_IMAGES;
             }
             
-            imageLibrary = imageUrls.map((url, index) => ({
+            // 存储完整的图片库
+            fullImageLibrary = imageUrls.map((url, index) => ({
                 id: index + 1,
                 name: extractImageName(url),
                 url: url.trim(),
                 fallbackUrl: buildFallbackUrl(url)
             }));
             
-            // 确保有足够的图片进行20组对比
+            // 确保有足够的图片
             const minImagesNeeded = 20;
-            
-            if (imageLibrary.length < minImagesNeeded) {
-                debugLog(`⚠️ 图片数量不足(${imageLibrary.length}张)，需要至少${minImagesNeeded}张`);
+            if (fullImageLibrary.length < minImagesNeeded) {
+                debugLog(`⚠️ 图片数量不足(${fullImageLibrary.length}张)，需要至少${minImagesNeeded}张`);
                 // 重复图片库直到达到最少要求
-                const originalLibrary = [...imageLibrary];
-                while (imageLibrary.length < minImagesNeeded) {
-                    imageLibrary.push(...originalLibrary);
+                const originalLibrary = [...fullImageLibrary];
+                while (fullImageLibrary.length < minImagesNeeded) {
+                    fullImageLibrary.push(...originalLibrary.map((img, index) => ({
+                        ...img,
+                        id: fullImageLibrary.length + index + 1 // 确保ID唯一
+                    })));
                 }
-                // 截取到恰好20张
-                imageLibrary = imageLibrary.slice(0, minImagesNeeded);
-                debugLog(`✅ 已调整图片库到${imageLibrary.length}张图片`);
-            } else {
-                // 随机选择20张图片用于对比
-                imageLibrary = imageLibrary.sort(() => 0.5 - Math.random()).slice(0, minImagesNeeded);
+                debugLog(`✅ 已调整完整图片库到${fullImageLibrary.length}张图片`);
             }
             
             isImageLibraryLoaded = true;
-            debugLog(`✅ 图片库初始化完成，共 ${imageLibrary.length} 张图片`);
+            debugLog(`✅ 完整图片库初始化完成，共 ${fullImageLibrary.length} 张图片`);
+        }
+
+        // 为当前组选择图片的新函数
+        function selectImagesForCurrentGroup() {
+            debugLog(`🎲 为第${currentGroupNumber}组选择新的图片...`);
+            
+            const minImagesNeeded = 20;
+            
+            if (fullImageLibrary.length >= minImagesNeeded) {
+                // 从完整库中随机选择20张不同的图片
+                const shuffled = [...fullImageLibrary].sort(() => 0.5 - Math.random());
+                imageLibrary = shuffled.slice(0, minImagesNeeded);
+            } else {
+                // 如果图片不够20张，重复使用并重新分配ID
+                imageLibrary = [];
+                const originalCount = fullImageLibrary.length;
+                for (let i = 0; i < minImagesNeeded; i++) {
+                    const originalImg = fullImageLibrary[i % originalCount];
+                    imageLibrary.push({
+                        ...originalImg,
+                        id: i + 1 // 重新分配ID确保每组内ID唯一
+                    });
+                }
+                // 随机打乱
+                imageLibrary.sort(() => 0.5 - Math.random());
+            }
+            
+            debugLog(`✅ 第${currentGroupNumber}组图片选择完成，共 ${imageLibrary.length} 张图片`);
+            debugLog(`📋 本组使用的图片: ${imageLibrary.map(img => img.name.substring(0, 8)).join(', ')}`);
         }
 
         async function loadImageUrlsFromFile() {
@@ -1497,7 +1525,7 @@
                 await initializeImageLibrary();
             }
 
-            if (imageLibrary.length < 2) {
+            if (fullImageLibrary.length < 2) {
                 alert(currentLanguage === 'zh' ? '图片库加载失败或图片数量不足！' : 'Image library failed to load or insufficient images!');
                 return;
             }
@@ -1508,6 +1536,9 @@
         function startNewGroup() {
             // 清空预加载缓存
             preloadedImages.clear();
+            
+            // 为当前组选择新的图片
+            selectImagesForCurrentGroup();
             
             generateComparisonPairs();
             currentComparisonIndex = 0;
@@ -2102,7 +2133,7 @@
             });
             
             if (isImageLibraryLoaded) {
-                debugLog(`✅ 系统就绪，图片库包含 ${imageLibrary.length} 张图片`);
+                debugLog(`✅ 系统就绪，完整图片库包含 ${fullImageLibrary.length} 张图片`);
             } else {
                 debugLog('⚠️ 图片库初始化有问题，但系统仍可运行');
             }
