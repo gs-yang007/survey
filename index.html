@@ -545,7 +545,7 @@
                         <p id="totalComparisons" class="text-2xl font-bold text-green-600">-</p>
                     </div>
                     <div class="bg-purple-100 p-4 rounded-lg">
-                        <h3 class="font-semibent text-purple-800">平均每人对比次数</h3>
+                        <h3 class="font-semibold text-purple-800">平均每人对比次数</h3>
                         <p id="avgGroups" class="text-2xl font-bold text-purple-600">-</p>
                     </div>
                 </div>
@@ -639,7 +639,7 @@
         }
 
         // 优化的数据保存函数 - 分块保存
-        async function saveRemoteDataChunked(sessions, newComparisonRecords) {
+        async function saveRemoteDataChunked(sessionData, newComparisonRecords) {
             try {
                 showDataStatus('正在保存数据...', 'loading');
                 debugLog('🔄 开始分块保存数据到JSONBin.io...');
@@ -647,8 +647,19 @@
                 // 获取现有数据
                 const existingData = await fetchRemoteData();
                 
-                // 合并会话数据
-                const allSessions = [...existingData.sessions, ...sessions];
+                // 更新或添加会话数据 - 修复重复用户问题
+                let allSessions = [...existingData.sessions];
+                const existingSessionIndex = allSessions.findIndex(s => s.sessionId === sessionData.sessionId);
+                
+                if (existingSessionIndex >= 0) {
+                    // 更新现有会话
+                    allSessions[existingSessionIndex] = sessionData;
+                    debugLog(`✅ 更新现有会话: ${sessionData.sessionId}, 组数: ${sessionData.groupsCompleted}`);
+                } else {
+                    // 添加新会话
+                    allSessions.push(sessionData);
+                    debugLog(`✅ 添加新会话: ${sessionData.sessionId}, 组数: ${sessionData.groupsCompleted}`);
+                }
                 
                 // 分块保存对比记录
                 const chunkSize = CHUNKED_SAVE_CONFIG.chunkSize;
@@ -922,7 +933,7 @@
                 }));
                 
                 // 使用分块保存
-                const saveSuccess = await saveRemoteDataChunked([sessionData], newComparisonRecords);
+                const saveSuccess = await saveRemoteDataChunked(sessionData, newComparisonRecords);
                 
                 if (saveSuccess) {
                     debugLog(`✅ 用户会话保存成功: ${sessionId}, 完成组数: ${currentGroupNumber}`);
@@ -1872,18 +1883,19 @@
                 // 更新数据库状态
                 updateDatabaseStatus(`数据库连接成功 (最后更新: ${new Date().toLocaleString()})`, 'success');
                 
-                // 更新基本统计
-                document.getElementById('totalUsers').textContent = sessions.length;
+                // 修复：按 sessionId 去重计算真实用户数
+                const uniqueUsers = getUniqueUsers(sessions);
+                document.getElementById('totalUsers').textContent = uniqueUsers.length;
                 document.getElementById('totalComparisons').textContent = comparisonRecords.length;
                 
-                const avgComparisonsPerUser = sessions.length > 0 ? (comparisonRecords.length / sessions.length).toFixed(1) : '0';
+                const avgComparisonsPerUser = uniqueUsers.length > 0 ? (comparisonRecords.length / uniqueUsers.length).toFixed(1) : '0';
                 document.getElementById('avgGroups').textContent = avgComparisonsPerUser;
                 
                 // 显示对比数据
                 displayComparisonData(comparisonRecords);
                 
-                // 更新用户详情
-                displayUserDetails(sessions);
+                // 更新用户详情 - 只显示每个用户的最终状态
+                displayUserDetails(uniqueUsers);
                 
                 // 启用按钮
                 disableAdminButtons(false);
@@ -1900,6 +1912,20 @@
                 document.getElementById('comparisonData').innerHTML = '<p class="text-red-500">加载失败</p>';
                 document.getElementById('userDetails').innerHTML = '<p class="text-red-500">加载失败</p>';
             }
+        }
+
+        // 新增函数：从sessions中获取唯一用户（每个sessionId只保留最新记录）
+        function getUniqueUsers(sessions) {
+            const userMap = new Map();
+            
+            sessions.forEach(session => {
+                const existing = userMap.get(session.sessionId);
+                if (!existing || new Date(session.timestamp) > new Date(existing.timestamp)) {
+                    userMap.set(session.sessionId, session);
+                }
+            });
+            
+            return Array.from(userMap.values());
         }
 
         function updateDatabaseStatus(message, type = 'loading') {
@@ -2002,13 +2028,16 @@
             comparisonData.innerHTML = html;
         }
 
-        function displayUserDetails(sessions) {
+        function displayUserDetails(uniqueUsers) {
             const userDetails = document.getElementById('userDetails');
             
-            if (sessions.length === 0) {
+            if (uniqueUsers.length === 0) {
                 userDetails.innerHTML = '<p class="text-gray-500">暂无用户数据</p>';
                 return;
             }
+            
+            // 按时间排序，最新的在前
+            const sortedUsers = uniqueUsers.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
             
             const html = `
                 <div class="space-y-2">
@@ -2020,16 +2049,19 @@
                         <div>完成组数</div>
                         <div>时间</div>
                     </div>
-                    ${sessions.slice(-20).map(session => `
+                    ${sortedUsers.slice(0, 20).map(session => `
                         <div class="grid grid-cols-6 gap-2 text-sm">
                             <div class="truncate">${session.userData.nickname}</div>
                             <div>${session.userData.gender === 'male' ? '男' : '女'}</div>
                             <div>${session.userData.age}</div>
                             <div>${session.userData.isProfessional === 'yes' ? '是' : '否'}</div>
-                            <div>${session.groupsCompleted}</div>
+                            <div class="${session.groupsCompleted >= 5 ? 'text-green-600 font-semibold' : 'text-orange-600'}">${session.groupsCompleted}/5</div>
                             <div>${new Date(session.timestamp).toLocaleDateString()}</div>
                         </div>
                     `).join('')}
+                </div>
+                <div class="mt-4 text-sm text-gray-600">
+                    <p><span class="text-green-600">绿色</span> = 已完成全部实验，<span class="text-orange-600">橙色</span> = 实验进行中</p>
                 </div>
             `;
             
