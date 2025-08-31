@@ -112,6 +112,54 @@
             background-color: #10b981;
             transition: width 0.3s ease;
         }
+        .experiment-reminder {
+            background-color: #fef3c7;
+            border: 1px solid #f59e0b;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 16px 0;
+        }
+        .experiment-reminder h4 {
+            color: #92400e;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        .experiment-reminder p {
+            color: #92400e;
+            margin-bottom: 8px;
+            line-height: 1.5;
+        }
+        .experiment-reminder ul {
+            color: #92400e;
+            margin-left: 20px;
+            line-height: 1.5;
+        }
+        .progress-indicator {
+            background-color: #e0f2fe;
+            border: 1px solid #0284c7;
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 16px;
+            text-align: center;
+        }
+        .progress-indicator h3 {
+            color: #0369a1;
+            font-weight: 600;
+            margin-bottom: 8px;
+        }
+        .progress-bar-container {
+            background-color: #e5e7eb;
+            border-radius: 10px;
+            height: 8px;
+            overflow: hidden;
+            margin: 8px 0;
+        }
+        .progress-bar-fill {
+            background-color: #059669;
+            height: 100%;
+            transition: width 0.3s ease;
+            border-radius: 10px;
+        }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -168,6 +216,13 @@
             <h1 id="surveyTitle" class="text-2xl font-bold text-center text-gray-800 mb-8">窗景感知问卷：第一部分</h1>
             
             <div class="bg-white rounded-lg shadow-lg p-6">
+                <!-- 实验提醒 -->
+                <div id="experimentReminder" class="experiment-reminder">
+                    <h4 id="reminderTitle">🔔 实验提醒</h4>
+                    <p id="reminderText">请认真作答。本实验需要完成5组，每组20次图片对比，耗时约20分钟，才能获得最终报酬。</p>
+                    <p id="reminderDevice">为保证实验效果，请使用电脑或平板电脑作答。</p>
+                </div>
+
                 <div class="space-y-6">
                     <!-- 昵称输入 -->
                     <div>
@@ -266,6 +321,16 @@
     <!-- 图片对比页面 -->
     <div id="comparisonPage" class="hidden min-h-screen bg-gray-100 p-4">
         <div class="max-w-6xl mx-auto">
+            <!-- 进度指示器 -->
+            <div id="overallProgressIndicator" class="progress-indicator">
+                <h3 id="overallProgressTitle">实验进度</h3>
+                <p id="overallProgressText">第 1 组 / 共 5 组</p>
+                <div class="progress-bar-container">
+                    <div id="overallProgressFill" class="progress-bar-fill" style="width: 20%"></div>
+                </div>
+                <p id="overallProgressDetail" class="text-sm mt-2">当前组进度: 1/20</p>
+            </div>
+
             <div class="flex justify-between text-gray-800 mb-4">
                 <div>
                     <span id="groupCounter">第 1 组</span>
@@ -390,14 +455,46 @@
     <div id="continuePage" class="hidden min-h-screen bg-gray-100 flex items-center justify-center p-4">
         <div class="bg-white rounded-lg shadow-lg p-8 text-center max-w-md w-full">
             <h2 id="continueTitle" class="text-2xl font-bold text-gray-800 mb-4">本组对比已完成</h2>
-            <p id="continueMessage" class="text-gray-600 mb-8">您已完成了20组图片对比，感谢您的参与！<br>是否继续进行下一组对比？</p>
+            <p id="continueMessage" class="text-gray-600 mb-8">您已完成了第1组图片对比！<br>还需要完成4组才能获得报酬。</p>
             
-            <div class="flex justify-center space-x-4">
+            <!-- 整体进度条 -->
+            <div class="mb-6">
+                <div class="progress-bar-container">
+                    <div id="continueProgressFill" class="progress-bar-fill" style="width: 20%"></div>
+                </div>
+                <p id="continueProgressText" class="text-sm text-gray-600 mt-2">已完成 1/5 组</p>
+            </div>
+            
+            <div id="continueButtons" class="flex justify-center space-x-4">
                 <button onclick="continueNextGroup()" id="continueButton" class="px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors font-medium">
                     继续下一组
                 </button>
-                <button onclick="finishSurvey()" id="finishButton" class="px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors font-medium">
-                    结束调研
+                <button onclick="showExitWarning()" id="exitButton" class="px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors font-medium">
+                    退出实验
+                </button>
+            </div>
+            
+            <!-- 完成全部实验的按钮（仅在完成5组后显示） -->
+            <div id="finishButtons" class="hidden flex justify-center space-x-4">
+                <button onclick="finishSurvey()" id="finishButton" class="px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors font-medium">
+                    完成实验
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 退出警告页面 -->
+    <div id="exitWarningPage" class="hidden min-h-screen bg-gray-100 flex items-center justify-center p-4">
+        <div class="bg-white rounded-lg shadow-lg p-8 text-center max-w-md w-full">
+            <h2 id="exitWarningTitle" class="text-2xl font-bold text-gray-800 mb-4">⚠️ 退出警告</h2>
+            <p id="exitWarningMessage" class="text-gray-600 mb-8">您还未完成全部5组实验，现在退出将无法获得报酬。<br><br>确定要退出吗？</p>
+            
+            <div class="flex justify-center space-x-4">
+                <button onclick="backToContinue()" id="backButton" class="px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors font-medium">
+                    返回继续实验
+                </button>
+                <button onclick="forceExit()" id="forceExitButton" class="px-6 py-3 bg-red-500 text-white rounded-lg hover:bg-red-600 transition-colors font-medium">
+                    确定退出
                 </button>
             </div>
         </div>
@@ -406,8 +503,8 @@
     <!-- 感谢页面 -->
     <div id="thankYouPage" class="hidden min-h-screen bg-gray-100 flex items-center justify-center p-4">
         <div class="bg-white rounded-lg shadow-lg p-8 text-center max-w-md w-full">
-            <h2 id="thankYouTitle" class="text-2xl font-bold text-gray-800 mb-4">感谢您的参与！</h2>
-            <p id="thankYouMessage" class="text-gray-600 mb-8">您的数据已成功提交，感谢您为街景感知研究做出的贡献！</p>
+            <h2 id="thankYouTitle" class="text-2xl font-bold text-gray-800 mb-4">🎉 感谢您的参与！</h2>
+            <p id="thankYouMessage" class="text-gray-600 mb-8">您已成功完成全部5组实验，数据已提交！<br><br>感谢您为街景感知研究做出的贡献！请联系研究人员兑换报酬。</p>
             
             <button onclick="restart()" id="restartButton" class="px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors font-medium">
                 重新开始
@@ -749,6 +846,7 @@
         // 配置和全局变量
         // ====================================================================
         const DEBUG_MODE = false; // 关闭调试模式
+        const MAX_GROUPS = 5; // 必须完成的组数
         let debugVisible = false;
 
         // 示例图片URL列表
@@ -1150,11 +1248,55 @@
         }
 
         // ====================================================================
+        // 进度更新函数
+        // ====================================================================
+        function updateOverallProgress() {
+            const overallProgressTitle = document.getElementById('overallProgressTitle');
+            const overallProgressText = document.getElementById('overallProgressText');
+            const overallProgressDetail = document.getElementById('overallProgressDetail');
+            const overallProgressFill = document.getElementById('overallProgressFill');
+            
+            if (currentLanguage === 'zh') {
+                overallProgressTitle.textContent = '实验进度';
+                overallProgressText.textContent = `第 ${currentGroupNumber} 组 / 共 ${MAX_GROUPS} 组`;
+                overallProgressDetail.textContent = `当前组进度: ${currentComparisonIndex + 1}/20`;
+            } else {
+                overallProgressTitle.textContent = 'Experiment Progress';
+                overallProgressText.textContent = `Group ${currentGroupNumber} / ${MAX_GROUPS}`;
+                overallProgressDetail.textContent = `Current group: ${currentComparisonIndex + 1}/20`;
+            }
+            
+            // 计算整体进度百分比
+            const groupProgress = (currentGroupNumber - 1) / MAX_GROUPS;
+            const currentGroupProgress = (currentComparisonIndex + 1) / 20 / MAX_GROUPS;
+            const totalProgress = (groupProgress + currentGroupProgress) * 100;
+            
+            overallProgressFill.style.width = `${Math.min(totalProgress, 100)}%`;
+        }
+
+        function updateContinueProgress() {
+            const continueProgressText = document.getElementById('continueProgressText');
+            const continueProgressFill = document.getElementById('continueProgressFill');
+            
+            if (currentLanguage === 'zh') {
+                continueProgressText.textContent = `已完成 ${currentGroupNumber}/${MAX_GROUPS} 组`;
+            } else {
+                continueProgressText.textContent = `Completed ${currentGroupNumber}/${MAX_GROUPS} groups`;
+            }
+            
+            const progressPercentage = (currentGroupNumber / MAX_GROUPS) * 100;
+            continueProgressFill.style.width = `${progressPercentage}%`;
+        }
+
+        // ====================================================================
         // 问卷逻辑
         // ====================================================================
         const texts = {
             zh: {
                 surveyTitle: '街景感知问卷：第一部分',
+                reminderTitle: '🔔 实验提醒',
+                reminderText: '请认真作答。本实验需要完成5组，每组20次图片对比，耗时约20分钟，才能获得最终报酬。',
+                reminderDevice: '为保证实验效果，请使用电脑或平板电脑作答。',
                 nicknameLabel: '您的昵称是：',
                 nicknameHint: '请记忆，以用于兑换被试费用',
                 genderLabel: '您的性别是：',
@@ -1171,11 +1313,15 @@
                 hintTitle: '提示',
                 instructions: '在此调研中，您需要对每对图片回答四个不同的行为问题。请根据您的直觉选择您认为更加适合进行各种活动的街景。所有问题都必须回答完毕才能进入下一对图片。',
                 continueTitle: '本组对比已完成',
-                continueMessage: '您已完成了20组图片对比，感谢您的参与！<br>是否继续进行下一组对比？',
                 continueButton: '继续下一组',
-                finishButton: '结束调研',
-                thankYouTitle: '感谢您的参与！',
-                thankYouMessage: '您的数据已成功提交，感谢您为街景感知研究做出的贡献！',
+                exitButton: '退出实验',
+                exitWarningTitle: '⚠️ 退出警告',
+                exitWarningMessage: '您还未完成全部5组实验，现在退出将无法获得报酬。\n\n确定要退出吗？',
+                backButton: '返回继续实验',
+                forceExitButton: '确定退出',
+                finishButton: '完成实验',
+                thankYouTitle: '🎉 感谢您的参与！',
+                thankYouMessage: '您已成功完成全部5组实验，数据已提交！\n\n感谢您为街景感知研究做出的贡献！请联系研究人员兑换报酬。',
                 restartButton: '重新开始',
                 // 图片和选项标签
                 imageALabel: '图片 A',
@@ -1192,6 +1338,9 @@
             },
             en: {
                 surveyTitle: 'Street View Perception Questionnaire: Part 1',
+                reminderTitle: '🔔 Experiment Reminder',
+                reminderText: 'Please answer carefully. This experiment requires completing 5 groups, with 20 image comparisons each, taking about 20 minutes total to receive the final compensation.',
+                reminderDevice: 'For best results, please use a computer or tablet.',
                 nicknameLabel: 'Your nickname is:',
                 nicknameHint: 'Keep this in mind for getting the participant fees',
                 genderLabel: 'Your gender is:',
@@ -1208,11 +1357,15 @@
                 hintTitle: 'Hint',
                 instructions: 'In this survey, you need to answer four different behavioral questions for each pair of images. Please choose the street view you think is more suitable for various activities based on your intuition. All questions must be answered before proceeding to the next pair of images.',
                 continueTitle: 'Group Comparison Completed',
-                continueMessage: 'You have completed 20 image comparisons, thank you for your participation!<br>Would you like to continue with the next group?',
                 continueButton: 'Continue Next Group',
-                finishButton: 'Finish Survey',
-                thankYouTitle: 'Thank You for Your Participation!',
-                thankYouMessage: 'Your data has been successfully submitted. Thank you for contributing to street view perception research!',
+                exitButton: 'Exit Experiment',
+                exitWarningTitle: '⚠️ Exit Warning',
+                exitWarningMessage: 'You have not completed all 5 groups yet. Exiting now means you will not receive compensation.\n\nAre you sure you want to exit?',
+                backButton: 'Return to Continue',
+                forceExitButton: 'Confirm Exit',
+                finishButton: 'Complete Experiment',
+                thankYouTitle: '🎉 Thank You for Your Participation!',
+                thankYouMessage: 'You have successfully completed all 5 groups! Your data has been submitted.\n\nThank you for contributing to street view perception research! Please contact the researchers to claim your compensation.',
                 restartButton: 'Start Over',
                 // 图片和选项标签
                 imageALabel: 'Image A',
@@ -1242,8 +1395,8 @@
             Object.keys(t).forEach(key => {
                 const element = document.getElementById(key);
                 if (element) {
-                    if (key === 'continueMessage' || key === 'thankYouMessage') {
-                        element.innerHTML = t[key];
+                    if (key === 'continueMessage' || key === 'thankYouMessage' || key === 'exitWarningMessage') {
+                        element.innerHTML = t[key].replace(/\n/g, '<br>');
                     } else {
                         element.textContent = t[key];
                     }
@@ -1286,10 +1439,34 @@
                     <p class="font-semibold">Participation in this experiment indicates that you have fully understood the above content and voluntarily participate.</p>
                 `;
             }
+
+            // 更新继续页面消息
+            updateContinueMessage();
+        }
+
+        function updateContinueMessage() {
+            const continueMessage = document.getElementById('continueMessage');
+            if (!continueMessage) return;
+
+            const remainingGroups = MAX_GROUPS - currentGroupNumber;
+            
+            if (currentLanguage === 'zh') {
+                if (currentGroupNumber < MAX_GROUPS) {
+                    continueMessage.innerHTML = `您已完成了第${currentGroupNumber}组图片对比！<br>还需要完成${remainingGroups}组才能获得报酬。`;
+                } else {
+                    continueMessage.innerHTML = `恭喜！您已完成全部${MAX_GROUPS}组实验！<br>可以提交数据并获得报酬了。`;
+                }
+            } else {
+                if (currentGroupNumber < MAX_GROUPS) {
+                    continueMessage.innerHTML = `You have completed group ${currentGroupNumber}!<br>You need to complete ${remainingGroups} more groups to receive compensation.`;
+                } else {
+                    continueMessage.innerHTML = `Congratulations! You have completed all ${MAX_GROUPS} groups!<br>You can now submit your data and receive compensation.`;
+                }
+            }
         }
 
         function showPage(pageId) {
-            const pages = ['languagePage', 'surveyPage', 'comparisonPage', 'continuePage', 'thankYouPage'];
+            const pages = ['languagePage', 'surveyPage', 'comparisonPage', 'continuePage', 'exitWarningPage', 'thankYouPage'];
             pages.forEach(page => {
                 document.getElementById(page).classList.add('hidden');
             });
@@ -1338,6 +1515,7 @@
             generateNewComparison();
             showPage('comparisonPage');
             updateGroupCounter();
+            updateOverallProgress();
         }
 
         function updateGroupCounter() {
@@ -1425,6 +1603,9 @@
             
             // 启动计时器
             startComparisonTimer();
+            
+            // 更新整体进度
+            updateOverallProgress();
         }
 
         function resetAllSelections() {
@@ -1538,16 +1719,62 @@
                 }
             }
             
+            // 更新继续页面的进度和消息
+            updateContinueProgress();
+            updateContinueMessage();
+            
+            // 检查是否完成了所有组
+            if (currentGroupNumber >= MAX_GROUPS) {
+                // 完成了所有组，显示完成按钮而不是继续按钮
+                document.getElementById('continueButtons').classList.add('hidden');
+                document.getElementById('finishButtons').classList.remove('hidden');
+            } else {
+                // 还有组要完成，显示继续按钮
+                document.getElementById('continueButtons').classList.remove('hidden');
+                document.getElementById('finishButtons').classList.add('hidden');
+            }
+            
             // 显示继续询问页面
             showPage('continuePage');
         }
 
         function continueNextGroup() {
+            if (currentGroupNumber >= MAX_GROUPS) {
+                // 已经完成所有组，直接跳转到感谢页面
+                finishSurvey();
+                return;
+            }
+            
             currentGroupNumber++;
             startNewGroup();
         }
 
+        function showExitWarning() {
+            if (currentGroupNumber >= MAX_GROUPS) {
+                // 已经完成所有组，直接完成实验
+                finishSurvey();
+                return;
+            }
+            
+            showPage('exitWarningPage');
+        }
+
+        function backToContinue() {
+            showPage('continuePage');
+        }
+
+        function forceExit() {
+            // 强制退出，不保存数据，直接回到开始页面
+            restart();
+        }
+
         function finishSurvey() {
+            if (currentGroupNumber < MAX_GROUPS) {
+                // 如果没有完成所有组，显示警告
+                showExitWarning();
+                return;
+            }
+            
             showPage('thankYouPage');
         }
 
