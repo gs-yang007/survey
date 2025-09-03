@@ -406,11 +406,11 @@
                         <h3 id="question2" class="font-bold text-gray-800 mb-3">以下两张街景中，您认为哪张更加适合"漫步"的行为：</h3>
                         <div class="flex space-x-6">
                             <label class="flex items-center">
-                                <input type="radio" name="walking" value="A" class="mr-2">
+                                <input type="radio" name="strolling" value="A" class="mr-2">
                                 <span class="optionA">图片 A</span>
                             </label>
                             <label class="flex items-center">
-                                <input type="radio" name="walking" value="B" class="mr-2">
+                                <input type="radio" name="strolling" value="B" class="mr-2">
                                 <span class="optionB">图片 B</span>
                             </label>
                         </div>
@@ -928,7 +928,7 @@
                     language: currentLanguage
                 };
                 
-                // 准备对比记录
+                // 准备对比记录 - 更新字段名从 walking 改为 strolling
                 const newComparisonRecords = comparisons.map(comparison => ({
                     sessionId: sessionData.sessionId,
                     nickname: sessionData.userData.nickname,
@@ -942,7 +942,7 @@
                     image1_name: comparison.imageA.name,
                     image2_name: comparison.imageB.name,
                     sitting: comparison.answers.sitting ? (comparison.answers.sitting.choice === 'A' ? 0 : 1) : null,
-                    walking: comparison.answers.walking ? (comparison.answers.walking.choice === 'A' ? 0 : 1) : null,
+                    strolling: comparison.answers.strolling ? (comparison.answers.strolling.choice === 'A' ? 0 : 1) : null,
                     jogging: comparison.answers.jogging ? (comparison.answers.jogging.choice === 'A' ? 0 : 1) : null,
                     gathering: comparison.answers.gathering ? (comparison.answers.gathering.choice === 'A' ? 0 : 1) : null,
                     viewTime: comparison.viewTime || 0,
@@ -1385,7 +1385,7 @@
                 imageBLabel: '图片 B',
                 optionA: '图片 A',
                 optionB: '图片 B',
-                // 四个问题
+                // 四个问题 - 更新了问题2为漫步
                 question1: '以下两张街景中，您认为哪张更加适合"坐憩"的行为：',
                 question2: '以下两张街景中，您认为哪张更加适合"漫步"的行为：',
                 question3: '以下两张街景中，您认为哪张更加适合"慢跑"的行为：',
@@ -1430,7 +1430,7 @@
                 imageBLabel: 'Image B',
                 optionA: 'Image A',
                 optionB: 'Image B',
-                // 四个问题
+                // 四个问题 - 更新了问题2为strolling
                 question1: 'Which of the following two street views do you think is more suitable for "sitting":',
                 question2: 'Which of the following two street views do you think is more suitable for "strolling":',
                 question3: 'Which of the following two street views do you think is more suitable for "jogging":',
@@ -1670,8 +1670,8 @@
         }
 
         function resetAllSelections() {
-            // 重置所有单选按钮
-            const radioGroups = ['sitting', 'walking', 'jogging', 'gathering'];
+            // 重置所有单选按钮 - 更新了 walking 为 strolling
+            const radioGroups = ['sitting', 'strolling', 'jogging', 'gathering'];
             radioGroups.forEach(group => {
                 const radios = document.querySelectorAll(`input[name="${group}"]`);
                 radios.forEach(radio => {
@@ -1687,7 +1687,8 @@
         }
 
         function checkAllAnswered() {
-            const radioGroups = ['sitting', 'walking', 'jogging', 'gathering'];
+            // 更新了 walking 为 strolling
+            const radioGroups = ['sitting', 'strolling', 'jogging', 'gathering'];
             const allAnswered = radioGroups.every(group => {
                 return document.querySelector(`input[name="${group}"]:checked`) !== null;
             });
@@ -1711,9 +1712,9 @@
                 return;
             }
             
-            // 收集所有问题的答案
-            const radioGroups = ['sitting', 'walking', 'jogging', 'gathering'];
-            const behaviors = ['坐憩', '漫步', '慢跑', '集合'];
+            // 收集所有问题的答案 - 更新了行为名称
+            const radioGroups = ['sitting', 'strolling', 'jogging', 'gathering'];
+            const behaviors = ['坐憩', '漫步', '慢跑', '聚会或聚集'];
             const answers = {};
             
             let allAnswered = true;
@@ -2040,9 +2041,9 @@
                         <div>图片1</div>
                         <div>图片2</div>
                         <div>坐</div>
-                        <div>行走</div>
+                        <div>漫步</div>
                         <div>慢跑</div>
-                        <div>集合</div>
+                        <div>聚集</div>
                         <div>时长(s)</div>
                         <div>时间</div>
                     </div>
@@ -2053,7 +2054,7 @@
                             <div class="truncate" title="${record.image1_name}">${record.image1_name.substring(0, 8)}...</div>
                             <div class="truncate" title="${record.image2_name}">${record.image2_name.substring(0, 8)}...</div>
                             <div class="text-center ${record.sitting === 0 ? 'text-green-600' : 'text-blue-600'}">${record.sitting}</div>
-                            <div class="text-center ${record.walking === 0 ? 'text-green-600' : 'text-blue-600'}">${record.walking}</div>
+                            <div class="text-center ${record.strolling === 0 ? 'text-green-600' : 'text-blue-600'}">${record.strolling}</div>
                             <div class="text-center ${record.jogging === 0 ? 'text-green-600' : 'text-blue-600'}">${record.jogging}</div>
                             <div class="text-center ${record.gathering === 0 ? 'text-green-600' : 'text-blue-600'}">${record.gathering}</div>
                             <div>${(record.viewTime / 1000).toFixed(1)}</div>
@@ -2118,7 +2119,7 @@
                     return;
                 }
                 
-                // 创建CSV内容
+                // 创建CSV内容 - 更新了列名 walking 为 strolling
                 const headers = [
                     'sessionId', 'nickname', 'gender', 'age', 'isProfessional',
                     'groupNumber', 'comparisonIndex', 'image1_url', 'image2_url',
@@ -2196,8 +2197,8 @@
             
             await initializeImageLibrary();
             
-            // 添加事件监听器到所有单选按钮
-            const radioGroups = ['sitting', 'walking', 'jogging', 'gathering'];
+            // 添加事件监听器到所有单选按钮 - 更新了 walking 为 strolling
+            const radioGroups = ['sitting', 'strolling', 'jogging', 'gathering'];
             radioGroups.forEach(group => {
                 const radios = document.querySelectorAll(`input[name="${group}"]`);
                 radios.forEach(radio => {
