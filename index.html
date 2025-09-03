@@ -386,9 +386,9 @@
             <!-- 问题区域 -->
             <div class="bg-white rounded-lg p-6 mb-6">
                 <div class="space-y-6">
-                    <!-- 问题1：坐 -->
+                    <!-- 问题1：坐憩 -->
                     <div class="border-b border-gray-200 pb-4">
-                        <h3 id="question1" class="font-bold text-gray-800 mb-3">以下两张街景中，您认为哪张更加适合"坐"的行为：</h3>
+                        <h3 id="question1" class="font-bold text-gray-800 mb-3">以下两张街景中，您认为哪张更加适合"坐憩"的行为：</h3>
                         <div class="flex space-x-6">
                             <label class="flex items-center">
                                 <input type="radio" name="sitting" value="A" class="mr-2">
@@ -401,9 +401,9 @@
                         </div>
                     </div>
                     
-                    <!-- 问题2：行走 -->
+                    <!-- 问题2：漫步 -->
                     <div class="border-b border-gray-200 pb-4">
-                        <h3 id="question2" class="font-bold text-gray-800 mb-3">以下两张街景中，您认为哪张更加适合"行走"的行为：</h3>
+                        <h3 id="question2" class="font-bold text-gray-800 mb-3">以下两张街景中，您认为哪张更加适合"漫步"的行为：</h3>
                         <div class="flex space-x-6">
                             <label class="flex items-center">
                                 <input type="radio" name="walking" value="A" class="mr-2">
@@ -431,9 +431,9 @@
                         </div>
                     </div>
                     
-                    <!-- 问题4：集合 -->
+                    <!-- 问题4：聚会或聚集 -->
                     <div>
-                        <h3 id="question4" class="font-bold text-gray-800 mb-3">以下两张街景中，您认为哪张更加适合"集合"的行为：</h3>
+                        <h3 id="question4" class="font-bold text-gray-800 mb-3">以下两张街景中，您认为哪张更加适合"聚会或聚集"的行为：</h3>
                         <div class="flex space-x-6">
                             <label class="flex items-center">
                                 <input type="radio" name="gathering" value="A" class="mr-2">
@@ -1386,10 +1386,10 @@
                 optionA: '图片 A',
                 optionB: '图片 B',
                 // 四个问题
-                question1: '以下两张街景中，您认为哪张更加适合"坐"的行为：',
-                question2: '以下两张街景中，您认为哪张更加适合"行走"的行为：',
+                question1: '以下两张街景中，您认为哪张更加适合"坐憩"的行为：',
+                question2: '以下两张街景中，您认为哪张更加适合"漫步"的行为：',
                 question3: '以下两张街景中，您认为哪张更加适合"慢跑"的行为：',
-                question4: '以下两张街景中，您认为哪张更加适合"集合"的行为：',
+                question4: '以下两张街景中，您认为哪张更加适合"聚会或聚集"的行为：',
                 confirmButtonText: '确认并继续',
                 timeWarningText: '请仔细观察图片至少6秒后再进行选择'
             },
@@ -1432,7 +1432,7 @@
                 optionB: 'Image B',
                 // 四个问题
                 question1: 'Which of the following two street views do you think is more suitable for "sitting":',
-                question2: 'Which of the following two street views do you think is more suitable for "walking":',
+                question2: 'Which of the following two street views do you think is more suitable for "strolling":',
                 question3: 'Which of the following two street views do you think is more suitable for "jogging":',
                 question4: 'Which of the following two street views do you think is more suitable for "gathering":',
                 confirmButtonText: 'Confirm and Continue',
@@ -1713,7 +1713,7 @@
             
             // 收集所有问题的答案
             const radioGroups = ['sitting', 'walking', 'jogging', 'gathering'];
-            const behaviors = ['坐', '行走', '慢跑', '集合'];
+            const behaviors = ['坐憩', '漫步', '慢跑', '集合'];
             const answers = {};
             
             let allAnswered = true;
@@ -2122,7 +2122,7 @@
                 const headers = [
                     'sessionId', 'nickname', 'gender', 'age', 'isProfessional',
                     'groupNumber', 'comparisonIndex', 'image1_url', 'image2_url',
-                    'image1_name', 'image2_name', 'sitting', 'walking', 'jogging', 'gathering',
+                    'image1_name', 'image2_name', 'sitting', 'strolling', 'jogging', 'gathering',
                     'viewTime_ms', 'timestamp'
                 ];
                 
@@ -2141,7 +2141,7 @@
                         `"${record.image1_name}"`,
                         `"${record.image2_name}"`,
                         record.sitting,
-                        record.walking,
+                        record.strolling,
                         record.jogging,
                         record.gathering,
                         record.viewTime,
