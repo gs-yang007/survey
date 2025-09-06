@@ -1883,9 +1883,15 @@
         }
 
         // ====================================================================
-        // 管理员界面
+        // 管理员界面 - Base64密码保护
         // ====================================================================
-        const ADMIN_PASSWORD = 'UMS2025ygs';
+        // Base64编码的管理员密码（原密码：UMS2025ygs）
+        const ENCODED_ADMIN_KEY = 'VU1TMjAyNXlncw==';
+        
+        // 解码获取管理员密码的函数
+        function getAdminPassword() {
+            return atob(ENCODED_ADMIN_KEY);
+        }
         
         async function showAdminPanel() {
             // 密码验证
@@ -1895,7 +1901,7 @@
                 return;
             }
             
-            if (password !== ADMIN_PASSWORD) {
+            if (password !== getAdminPassword()) {
                 alert('密码错误！');
                 return;
             }
