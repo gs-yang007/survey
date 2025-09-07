@@ -1855,93 +1855,49 @@
                     return;
                 }
                 
-                // 创建用户汇总表格
-                const uniqueSessions = new Map();
-                (data.sessions || []).forEach(session => {
-                    if (!uniqueSessions.has(session.sessionId) || 
-                        session.groupsCompleted > uniqueSessions.get(session.sessionId).groupsCompleted) {
-                        uniqueSessions.set(session.sessionId, session);
-                    }
-                });
-                
-                // 导出用户汇总数据
-                const userSummaryHeaders = [
-                    '会话ID', '昵称', '性别', '年龄', '专业背景', '完成组数', '总对比次数', '语言', '完成状态', '开始时间', '最后更新'
+                // 按照您指定的字段格式创建CSV
+                const headers = [
+                    'sessionId', 'nickname', 'gender', 'age', 'isProfessional', 
+                    'groupNumber', 'comparisonIndex', 'image1_url', 'image2_url', 
+                    'image1_name', 'image2_name', 'sitting', 'strolling', 
+                    'jogging', 'gathering', 'viewTime_ms', 'timestamp'
                 ];
                 
-                let userSummaryCsv = userSummaryHeaders.join(',') + '\n';
-                
-                Array.from(uniqueSessions.values()).forEach(session => {
-                    const isComplete = session.groupsCompleted >= 5;
-                    const row = [
-                        session.sessionId,
-                        `"${session.userData.nickname}"`,
-                        session.userData.gender === 'male' ? '男' : '女',
-                        session.userData.age,
-                        session.userData.isProfessional === 'yes' ? '是' : '否',
-                        session.groupsCompleted,
-                        session.totalComparisons || 0,
-                        session.language === 'zh' ? '中文' : 'English',
-                        isComplete ? '已完成' : '进行中',
-                        `"${session.timestamp}"`,
-                        `"${session.lastUpdated || session.timestamp}"`
-                    ];
-                    userSummaryCsv += row.join(',') + '\n';
-                });
-                
-                // 创建详细对比数据CSV
-                const detailHeaders = [
-                    '会话ID', '昵称', '性别', '年龄', '专业背景', '组号', '对比序号',
-                    '图片A名称', '图片B名称', '图片A链接', '图片B链接',
-                    '坐憩选择', '漫步选择', '慢跑选择', '聚集选择', '观看时长', '时间戳'
-                ];
-                
-                let detailCsv = detailHeaders.join(',') + '\n';
+                let csvContent = headers.join(',') + '\n';
                 
                 data.comparisons.forEach(comp => {
                     const row = [
                         comp.sessionId,
-                        `"${comp.nickname}"`,
-                        comp.gender === 'male' ? '男' : '女',
+                        comp.nickname,
+                        comp.gender,
                         comp.age,
-                        comp.isProfessional === 'yes' ? '是' : '否',
+                        comp.isProfessional,
                         comp.groupNumber,
                         comp.comparisonIndex,
-                        `"${comp.image1_name}"`,
-                        `"${comp.image2_name}"`,
                         `"${comp.image1_url}"`,
                         `"${comp.image2_url}"`,
-                        comp.sitting === 0 ? 'A' : 'B',
-                        comp.strolling === 0 ? 'A' : 'B',
-                        comp.jogging === 0 ? 'A' : 'B',
-                        comp.gathering === 0 ? 'A' : 'B',
+                        comp.image1_name,
+                        comp.image2_name,
+                        comp.sitting,
+                        comp.strolling,
+                        comp.jogging,
+                        comp.gathering,
                         comp.viewTime || 0,
-                        `"${comp.timestamp}"`
+                        comp.timestamp
                     ];
-                    detailCsv += row.join(',') + '\n';
+                    csvContent += row.join(',') + '\n';
                 });
                 
-                // 下载用户汇总文件
-                const userBlob = new Blob([userSummaryCsv], { type: 'text/csv;charset=utf-8;' });
-                const userLink = document.createElement('a');
-                const userUrl = URL.createObjectURL(userBlob);
-                userLink.setAttribute('href', userUrl);
-                userLink.setAttribute('download', `用户汇总_${new Date().toISOString().split('T')[0]}.csv`);
-                userLink.style.visibility = 'hidden';
-                document.body.appendChild(userLink);
-                userLink.click();
-                document.body.removeChild(userLink);
-                
-                // 下载详细对比文件
-                const detailBlob = new Blob([detailCsv], { type: 'text/csv;charset=utf-8;' });
-                const detailLink = document.createElement('a');
-                const detailUrl = URL.createObjectURL(detailBlob);
-                detailLink.setAttribute('href', detailUrl);
-                detailLink.setAttribute('download', `详细对比数据_${new Date().toISOString().split('T')[0]}.csv`);
-                detailLink.style.visibility = 'hidden';
-                document.body.appendChild(detailLink);
-                detailLink.click();
-                document.body.removeChild(detailLink);
+                // 下载文件
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                const url = URL.createObjectURL(blob);
+                link.setAttribute('href', url);
+                link.setAttribute('download', `街景问卷对比数据_${new Date().toISOString().split('T')[0]}.csv`);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
                 
                 updateDatabaseStatus('数据导出完成', 'success');
                 setTimeout(() => {
