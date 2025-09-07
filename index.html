@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>街景行为问卷调研</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- 腾讯云COS SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/cos-js-sdk-v5@1.4.6/dist/cos-js-sdk-v5.min.js"></script>
     <style>
         .hidden { display: none; }
         .fade-in { animation: fadeIn 0.3s ease-in; }
@@ -551,7 +553,7 @@
                 <div id="databaseStatus" class="mb-6">
                     <div class="loading-indicator">
                         <div class="spinner"></div>
-                        <span>正在连接数据库...</span>
+                        <span>正在连接腾讯云...</span>
                     </div>
                 </div>
 
@@ -601,55 +603,83 @@
 
     <script>
         // ====================================================================
-        // JSONBin.io 配置和远程数据存储
+        // 腾讯云COS配置和远程数据存储
         // ====================================================================
-        const JSONBIN_CONFIG = {
-            binId: '68af17fed0ea881f40683b2d',
-            masterKey: '$2a$10$BBcDpoJ9fYY0c3xkth3aM.UsL3kMY1SjrqgnbeaxjWNXH4Uwqz5H.',
-            baseUrl: 'https://api.jsonbin.io/v3'
+        const TENCENT_COS_CONFIG = {
+            SecretId: 'AKIDYzNkvtd9SXP3UhgS0RlvvpjXAZmonaAX',
+            SecretKey: 'FG6q6FIH9sTzQm1ADC3nQvJerzzqkY9X',
+            Region: 'ap-guangzhou',
+            Bucket: 'umssurvey-data-1377726259',
+            Key: 'survey-data.json'
         };
 
-        // 分块保存配置 - 修改为10条数据一个chunk
-        const CHUNKED_SAVE_CONFIG = {
-            chunkSize: 10, // 每次保存10个对比记录
-            maxRetries: 3,
-            retryDelay: 1000, // 1秒
-            batchDelay: 500 // 批次之间的延迟
-        };
+        // 腾讯云COS客户端
+        let cosClient = null;
 
-        // 远程数据操作函数
+        // 初始化COS客户端
+        function initializeCOSClient() {
+            try {
+                cosClient = new COS({
+                    SecretId: TENCENT_COS_CONFIG.SecretId,
+                    SecretKey: TENCENT_COS_CONFIG.SecretKey
+                });
+                debugLog('✅ 腾讯云COS客户端初始化成功');
+                return true;
+            } catch (error) {
+                debugLog(`❌ COS客户端初始化失败: ${error.message}`);
+                return false;
+            }
+        }
+
+        // 从腾讯云COS获取数据
         async function fetchRemoteData() {
             try {
-                showDataStatus('正在加载数据...', 'loading');
-                debugLog('🔄 正在从JSONBin.io获取数据...');
+                showDataStatus('正在从腾讯云加载数据...', 'loading');
+                debugLog('🔄 正在从腾讯云COS获取数据...');
                 
-                const response = await fetch(`${JSONBIN_CONFIG.baseUrl}/b/${JSONBIN_CONFIG.binId}`, {
-                    method: 'GET',
-                    headers: {
-                        'X-Master-Key': JSONBIN_CONFIG.masterKey,
-                        'Content-Type': 'application/json'
-                    }
-                });
-
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                if (!cosClient && !initializeCOSClient()) {
+                    throw new Error('COS客户端初始化失败');
                 }
-
-                const result = await response.json();
-                debugLog('✅ 远程数据获取成功');
-                hideDataStatus();
                 
-                // 确保数据结构存在
-                return {
-                    sessions: result.record?.sessions || [],
-                    comparisonRecords: result.record?.comparisonRecords || [],
-                    lastUpdated: result.record?.lastUpdated || new Date().toISOString()
-                };
+                return new Promise((resolve, reject) => {
+                    cosClient.getObject({
+                        Bucket: TENCENT_COS_CONFIG.Bucket,
+                        Region: TENCENT_COS_CONFIG.Region,
+                        Key: TENCENT_COS_CONFIG.Key
+                    }, function(err, data) {
+                        if (err) {
+                            if (err.statusCode === 404) {
+                                debugLog('📁 数据文件不存在，创建新的数据结构');
+                                resolve({
+                                    sessions: [],
+                                    comparisonRecords: [],
+                                    lastUpdated: new Date().toISOString()
+                                });
+                            } else {
+                                debugLog(`❌ 获取COS数据失败: ${err.message}`);
+                                reject(err);
+                            }
+                        } else {
+                            try {
+                                const jsonData = JSON.parse(data.Body.toString());
+                                debugLog('✅ COS数据获取成功');
+                                hideDataStatus();
+                                resolve({
+                                    sessions: jsonData.sessions || [],
+                                    comparisonRecords: jsonData.comparisonRecords || [],
+                                    lastUpdated: jsonData.lastUpdated || new Date().toISOString()
+                                });
+                            } catch (parseError) {
+                                debugLog(`❌ 解析COS数据失败: ${parseError.message}`);
+                                reject(parseError);
+                            }
+                        }
+                    });
+                });
             } catch (error) {
-                debugLog(`❌ 获取远程数据失败: ${error.message}`);
+                debugLog(`❌ 获取COS数据异常: ${error.message}`);
                 showDataStatus('数据加载失败', 'error');
                 
-                // 返回空数据结构
                 return {
                     sessions: [],
                     comparisonRecords: [],
@@ -658,154 +688,85 @@
             }
         }
 
-        // 修复：优化的数据保存函数 - 防止重复用户记录
-        async function saveRemoteDataChunked(sessionData, newComparisonRecords) {
+        // 保存数据到腾讯云COS
+        async function saveRemoteData(sessions, comparisonRecords) {
             try {
-                showDataStatus('正在保存数据...', 'loading');
-                debugLog('🔄 开始分块保存数据到JSONBin.io...');
+                showDataStatus('正在保存数据到腾讯云...', 'loading');
+                debugLog('🔄 正在保存数据到腾讯云COS...');
 
-                // 获取现有数据
-                const existingData = await fetchRemoteData();
-                
-                // 修复：确保每个用户只有一个最终的session记录
-                let allSessions = [...existingData.sessions];
-                
-                // 移除同一个昵称的所有旧记录（防止重复用户）
-                allSessions = allSessions.filter(s => s.userData.nickname !== sessionData.userData.nickname);
-                
-                // 添加当前用户的最新记录
-                allSessions.push(sessionData);
-                
-                debugLog(`✅ 用户会话更新: ${sessionData.userData.nickname}, 组数: ${sessionData.groupsCompleted}`);
-                
-                // 分块保存对比记录
-                const chunkSize = CHUNKED_SAVE_CONFIG.chunkSize;
-                const chunks = [];
-                
-                for (let i = 0; i < newComparisonRecords.length; i += chunkSize) {
-                    chunks.push(newComparisonRecords.slice(i, i + chunkSize));
+                if (!cosClient && !initializeCOSClient()) {
+                    throw new Error('COS客户端初始化失败');
                 }
-                
-                debugLog(`📦 将 ${newComparisonRecords.length} 条记录分为 ${chunks.length} 个块 (每块${chunkSize}条)`);
-                
-                // 显示进度条
-                showSaveProgress(true);
-                
-                let savedChunks = 0;
-                const totalChunks = chunks.length;
-                
-                for (let chunkIndex = 0; chunkIndex < chunks.length; chunkIndex++) {
-                    const chunk = chunks[chunkIndex];
-                    const currentRecords = [...existingData.comparisonRecords, ...newComparisonRecords.slice(0, (chunkIndex + 1) * chunkSize)];
-                    
-                    // 更新进度
-                    const progress = ((chunkIndex + 1) / totalChunks) * 100;
-                    updateSaveProgress(progress);
-                    showDataStatus(`正在保存第 ${chunkIndex + 1}/${totalChunks} 块数据 (${chunk.length}条记录)...`, 'loading');
-                    
-                    const success = await saveRemoteDataWithRetry(allSessions, currentRecords);
-                    
-                    if (!success) {
-                        throw new Error(`保存第 ${chunkIndex + 1} 块数据失败`);
-                    }
-                    
-                    savedChunks++;
-                    debugLog(`✅ 第 ${chunkIndex + 1}/${totalChunks} 块数据保存成功`);
-                    
-                    // 批次之间的延迟，避免过于频繁的请求
-                    if (chunkIndex < chunks.length - 1) {
-                        await sleep(CHUNKED_SAVE_CONFIG.batchDelay);
-                    }
-                }
-                
-                debugLog('✅ 所有数据分块保存成功');
-                showDataStatus('数据保存成功', 'success');
-                showSaveProgress(false);
-                setTimeout(hideDataStatus, 2000);
-                
-                // 更新缓存
-                remoteDataCache = {
-                    sessions: allSessions,
-                    comparisonRecords: existingData.comparisonRecords.concat(newComparisonRecords),
-                    lastUpdated: new Date().toISOString()
+
+                const data = {
+                    sessions: sessions,
+                    comparisonRecords: comparisonRecords,
+                    lastUpdated: new Date().toISOString(),
+                    version: '2.0_tencent_cos',
+                    totalSessions: sessions.length,
+                    totalComparisons: comparisonRecords.length
                 };
-                
-                return true;
+
+                const jsonString = JSON.stringify(data, null, 2);
+
+                return new Promise((resolve, reject) => {
+                    cosClient.putObject({
+                        Bucket: TENCENT_COS_CONFIG.Bucket,
+                        Region: TENCENT_COS_CONFIG.Region,
+                        Key: TENCENT_COS_CONFIG.Key,
+                        Body: jsonString,
+                        ContentType: 'application/json'
+                    }, function(err, data) {
+                        if (err) {
+                            debugLog(`❌ 保存到COS失败: ${err.message}`);
+                            showDataStatus('数据保存失败', 'error');
+                            setTimeout(hideDataStatus, 5000);
+                            reject(err);
+                        } else {
+                            debugLog('✅ 数据保存到COS成功');
+                            showDataStatus('数据保存成功', 'success');
+                            setTimeout(hideDataStatus, 2000);
+                            resolve(true);
+                        }
+                    });
+                });
             } catch (error) {
-                debugLog(`❌ 分块保存数据失败: ${error.message}`);
+                debugLog(`❌ 保存数据失败: ${error.message}`);
                 showDataStatus('数据保存失败', 'error');
-                showSaveProgress(false);
                 setTimeout(hideDataStatus, 5000);
                 return false;
             }
         }
 
-        // 带重试机制的保存函数
-        async function saveRemoteDataWithRetry(sessions, comparisonRecords, retryCount = 0) {
-            try {
-                const data = {
-                    sessions: sessions,
-                    comparisonRecords: comparisonRecords,
-                    lastUpdated: new Date().toISOString(),
-                    version: '1.1'
-                };
-
-                const response = await fetch(`${JSONBIN_CONFIG.baseUrl}/b/${JSONBIN_CONFIG.binId}`, {
-                    method: 'PUT',
-                    headers: {
-                        'X-Master-Key': JSONBIN_CONFIG.masterKey,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(data)
-                });
-
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
-
-                return true;
-            } catch (error) {
-                if (retryCount < CHUNKED_SAVE_CONFIG.maxRetries) {
-                    debugLog(`❌ 保存失败，重试第 ${retryCount + 1} 次: ${error.message}`);
-                    await sleep(CHUNKED_SAVE_CONFIG.retryDelay * (retryCount + 1)); // 递增延迟
-                    return await saveRemoteDataWithRetry(sessions, comparisonRecords, retryCount + 1);
-                } else {
-                    debugLog(`❌ 保存失败，已达到最大重试次数: ${error.message}`);
-                    throw error;
-                }
-            }
-        }
-
-        // 原有的保存函数 - 保留作为后备
-        async function saveRemoteData(sessions, comparisonRecords) {
+        // 分块保存数据（实际上COS不需要分块，但保持接口一致性）
+        async function saveRemoteDataChunked(sessionData, newComparisonRecords) {
             try {
                 showDataStatus('正在保存数据...', 'loading');
-                debugLog('🔄 正在保存数据到JSONBin.io...');
+                debugLog('🔄 开始保存数据到腾讯云COS...');
 
-                const data = {
-                    sessions: sessions,
-                    comparisonRecords: comparisonRecords,
-                    lastUpdated: new Date().toISOString(),
-                    version: '1.0'
-                };
-
-                const response = await fetch(`${JSONBIN_CONFIG.baseUrl}/b/${JSONBIN_CONFIG.binId}`, {
-                    method: 'PUT',
-                    headers: {
-                        'X-Master-Key': JSONBIN_CONFIG.masterKey,
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify(data)
-                });
-
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                const existingData = await fetchRemoteData();
+                
+                let allSessions = [...existingData.sessions];
+                allSessions = allSessions.filter(s => s.userData.nickname !== sessionData.userData.nickname);
+                allSessions.push(sessionData);
+                
+                const allComparisons = [...existingData.comparisonRecords, ...newComparisonRecords];
+                
+                debugLog(`✅ 用户会话更新: ${sessionData.userData.nickname}, 组数: ${sessionData.groupsCompleted}`);
+                debugLog(`📊 总计: ${allSessions.length} 个会话, ${allComparisons.length} 条对比记录`);
+                
+                const success = await saveRemoteData(allSessions, allComparisons);
+                
+                if (success) {
+                    remoteDataCache = {
+                        sessions: allSessions,
+                        comparisonRecords: allComparisons,
+                        lastUpdated: new Date().toISOString()
+                    };
                 }
-
-                debugLog('✅ 数据保存成功');
-                showDataStatus('数据保存成功', 'success');
-                setTimeout(hideDataStatus, 2000);
-                return true;
+                
+                return success;
+                
             } catch (error) {
                 debugLog(`❌ 保存数据失败: ${error.message}`);
                 showDataStatus('数据保存失败', 'error');
@@ -842,7 +803,6 @@
             const textElement = document.getElementById('dataStatusText');
             const spinner = statusDiv.querySelector('.spinner');
 
-            // 重置所有状态类
             statusDiv.className = 'status-indicator';
             
             switch (type) {
@@ -874,18 +834,17 @@
         // ====================================================================
         // 配置和全局变量
         // ====================================================================
-        const DEBUG_MODE = false; // 关闭调试模式
-        const MAX_GROUPS = 5; // 必须完成的组数
+        const DEBUG_MODE = false;
+        const MAX_GROUPS = 5;
         let debugVisible = false;
 
-        // 示例图片URL列表
         const DEMO_IMAGES = [
             'https://res.cloudinary.com/dw3huanrk/image/upload/my_website_images/batch_upload/fff7d0a1-08b4-4bb4-8e89-50936e51f395_5345.png',
             'https://res.cloudinary.com/dw3huanrk/image/upload/my_website_images/batch_upload/fff11158-a3d5-4e96-9c02-92dd8a42566a_5344.png'
         ];
 
-        let fullImageLibrary = []; // 存储完整的图片列表
-        let imageLibrary = []; // 存储当前组使用的图片列表
+        let fullImageLibrary = [];
+        let imageLibrary = [];
         let isImageLibraryLoaded = false;
         let currentLanguage = 'zh';
         let userData = { nickname: '', gender: '', age: '', isProfessional: '' };
@@ -896,30 +855,26 @@
         let currentComparisonIndex = 0;
         let currentGroupNumber = 1;
         let sessionId = generateSessionId();
-        let preloadedImages = new Map(); // 存储预加载的图片
+        let preloadedImages = new Map();
         
-        // 时间控制变量
         let comparisonStartTime = null;
-        let minimumViewTime = 6000; // 6秒最小观看时间
+        let minimumViewTime = 6000;
         let timeWarningShown = false;
 
-        // 缓存的远程数据
         let remoteDataCache = null;
         let lastDataFetch = null;
 
         // ====================================================================
-        // 数据存储管理 - 使用远程存储
+        // 数据存储管理
         // ====================================================================
         function generateSessionId() {
             return 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
         }
 
-        // 优化的用户会话保存函数
         async function saveUserSession() {
             try {
                 debugLog(`💾 开始保存用户会话: ${sessionId}, 对比数量: ${comparisons.length}`);
                 
-                // 准备会话数据
                 const sessionData = {
                     sessionId: sessionId,
                     userData: userData,
@@ -929,7 +884,6 @@
                     language: currentLanguage
                 };
                 
-                // 准备对比记录 - 更新字段名从 walking 改为 strolling
                 const newComparisonRecords = comparisons.map(comparison => ({
                     sessionId: sessionData.sessionId,
                     nickname: sessionData.userData.nickname,
@@ -950,7 +904,6 @@
                     timestamp: comparison.timestamp
                 }));
                 
-                // 使用分块保存
                 const saveSuccess = await saveRemoteDataChunked(sessionData, newComparisonRecords);
                 
                 if (saveSuccess) {
@@ -968,14 +921,12 @@
 
         async function getComparisonRecords() {
             try {
-                // 如果有缓存且不超过5分钟，使用缓存
                 if (remoteDataCache && lastDataFetch && (Date.now() - lastDataFetch < 5 * 60 * 1000)) {
                     return remoteDataCache.comparisonRecords || [];
                 }
                 
                 const remoteData = await fetchRemoteData();
                 
-                // 更新缓存
                 remoteDataCache = remoteData;
                 lastDataFetch = Date.now();
                 
@@ -988,14 +939,12 @@
 
         async function getAllSessions() {
             try {
-                // 如果有缓存且不超过5分钟，使用缓存
                 if (remoteDataCache && lastDataFetch && (Date.now() - lastDataFetch < 5 * 60 * 1000)) {
                     return remoteDataCache.sessions || [];
                 }
                 
                 const remoteData = await fetchRemoteData();
                 
-                // 更新缓存
                 remoteDataCache = remoteData;
                 lastDataFetch = Date.now();
                 
@@ -1055,7 +1004,6 @@
             warning.classList.remove('hidden');
             timeWarningShown = true;
             
-            // 3秒后自动隐藏警告
             setTimeout(() => {
                 hideTimeWarning();
             }, 3000);
@@ -1103,7 +1051,6 @@
                 imageUrls = DEMO_IMAGES;
             }
             
-            // 存储完整的图片库
             fullImageLibrary = imageUrls.map((url, index) => ({
                 id: index + 1,
                 name: extractImageName(url),
@@ -1111,16 +1058,14 @@
                 fallbackUrl: buildFallbackUrl(url)
             }));
             
-            // 确保有足够的图片
             const minImagesNeeded = 20;
             if (fullImageLibrary.length < minImagesNeeded) {
                 debugLog(`⚠️ 图片数量不足(${fullImageLibrary.length}张)，需要至少${minImagesNeeded}张`);
-                // 重复图片库直到达到最少要求
                 const originalLibrary = [...fullImageLibrary];
                 while (fullImageLibrary.length < minImagesNeeded) {
                     fullImageLibrary.push(...originalLibrary.map((img, index) => ({
                         ...img,
-                        id: fullImageLibrary.length + index + 1 // 确保ID唯一
+                        id: fullImageLibrary.length + index + 1
                     })));
                 }
                 debugLog(`✅ 已调整完整图片库到${fullImageLibrary.length}张图片`);
@@ -1130,28 +1075,24 @@
             debugLog(`✅ 完整图片库初始化完成，共 ${fullImageLibrary.length} 张图片`);
         }
 
-        // 为当前组选择图片的新函数
         function selectImagesForCurrentGroup() {
             debugLog(`🎲 为第${currentGroupNumber}组选择新的图片...`);
             
             const minImagesNeeded = 20;
             
             if (fullImageLibrary.length >= minImagesNeeded) {
-                // 从完整库中随机选择20张不同的图片
                 const shuffled = [...fullImageLibrary].sort(() => 0.5 - Math.random());
                 imageLibrary = shuffled.slice(0, minImagesNeeded);
             } else {
-                // 如果图片不够20张，重复使用并重新分配ID
                 imageLibrary = [];
                 const originalCount = fullImageLibrary.length;
                 for (let i = 0; i < minImagesNeeded; i++) {
                     const originalImg = fullImageLibrary[i % originalCount];
                     imageLibrary.push({
                         ...originalImg,
-                        id: i + 1 // 重新分配ID确保每组内ID唯一
+                        id: i + 1
                     });
                 }
-                // 随机打乱
                 imageLibrary.sort(() => 0.5 - Math.random());
             }
             
@@ -1181,7 +1122,6 @@
         function loadImageWithFallback(imgElement, imageData, callback) {
             debugLog(`🖼️ 加载图片: ${imageData.name}`);
             
-            // 检查是否已有预加载的图片
             const preloadedImageKey = `${imageData.id}_${imageData.url}`;
             if (preloadedImages.has(preloadedImageKey)) {
                 const preloadedImg = preloadedImages.get(preloadedImageKey);
@@ -1218,12 +1158,10 @@
             imgElement.src = imageData.url;
         }
 
-        // 预加载图片函数
         function preloadImage(imageData) {
             return new Promise((resolve) => {
                 const preloadedImageKey = `${imageData.id}_${imageData.url}`;
                 
-                // 如果已经预加载过，直接返回
                 if (preloadedImages.has(preloadedImageKey)) {
                     resolve(preloadedImages.get(preloadedImageKey));
                     return;
@@ -1240,7 +1178,6 @@
                 img.onerror = function() {
                     debugLog(`❌ 预加载原始URL失败，尝试备用URL: ${imageData.name}`);
                     
-                    // 尝试备用URL
                     const fallbackImg = new Image();
                     fallbackImg.onload = function() {
                         debugLog(`🚀 预加载备用URL成功: ${imageData.name}`);
@@ -1260,14 +1197,12 @@
             });
         }
 
-        // 预加载下一对图片
         function preloadNextPair() {
             const nextIndex = currentComparisonIndex + 1;
             if (nextIndex < comparisonPairs.length) {
                 const nextPair = comparisonPairs[nextIndex];
                 debugLog(`🔄 开始预加载下一对图片 (${nextIndex + 1}/${comparisonPairs.length})`);
                 
-                // 同时预加载两张图片
                 Promise.all([
                     preloadImage(nextPair.imageA),
                     preloadImage(nextPair.imageB)
@@ -1279,9 +1214,7 @@
             }
         }
 
-        // 清理预加载缓存（避免内存占用过多）
         function cleanupPreloadCache() {
-            // 只保留当前和下一对的预加载图片
             const keepKeys = new Set();
             
             if (currentComparisonIndex < comparisonPairs.length) {
@@ -1296,7 +1229,6 @@
                 keepKeys.add(`${nextPair.imageB.id}_${nextPair.imageB.url}`);
             }
             
-            // 删除不需要的预加载图片
             for (const key of preloadedImages.keys()) {
                 if (!keepKeys.has(key)) {
                     preloadedImages.delete(key);
@@ -1323,7 +1255,6 @@
                 overallProgressDetail.textContent = `Current group: ${currentComparisonIndex + 1}/20`;
             }
             
-            // 计算整体进度百分比
             const groupProgress = (currentGroupNumber - 1) / MAX_GROUPS;
             const currentGroupProgress = (currentComparisonIndex + 1) / 20 / MAX_GROUPS;
             const totalProgress = (groupProgress + currentGroupProgress) * 100;
@@ -1381,12 +1312,10 @@
                 thankYouMessage: '您已成功完成全部5组实验，数据已提交！\n\n感谢您为街景感知研究做出的贡献！请联系研究人员兑换报酬。',
                 restartButton: '重新开始',
                 nicknameConfirmText: '感谢您的参与！',
-                // 图片和选项标签
                 imageALabel: '图片 A',
                 imageBLabel: '图片 B',
                 optionA: '图片 A',
                 optionB: '图片 B',
-                // 四个问题 - 更新了问题2为漫步
                 question1: '以下两张街景中，您认为哪张更加适合"坐憩"的行为：',
                 question2: '以下两张街景中，您认为哪张更加适合"漫步"的行为：',
                 question3: '以下两张街景中，您认为哪张更加适合"慢跑"的行为：',
@@ -1426,12 +1355,10 @@
                 thankYouMessage: 'You have successfully completed all 5 groups! Your data has been submitted.\n\nThank you for contributing to street view perception research! Please contact the researchers to claim your compensation.',
                 restartButton: 'Start Over',
                 nicknameConfirmText: 'Thank you for your participation!',
-                // 图片和选项标签
                 imageALabel: 'Image A',
                 imageBLabel: 'Image B',
                 optionA: 'Image A',
                 optionB: 'Image B',
-                // 四个问题 - 更新了问题2为strolling
                 question1: 'Which of the following two street views do you think is more suitable for "sitting":',
                 question2: 'Which of the following two street views do you think is more suitable for "strolling":',
                 question3: 'Which of the following two street views do you think is more suitable for "jogging":',
@@ -1450,7 +1377,6 @@
         function updateTexts() {
             const t = texts[currentLanguage];
             
-            // 更新基础文本元素
             Object.keys(t).forEach(key => {
                 const element = document.getElementById(key);
                 if (element) {
@@ -1462,7 +1388,6 @@
                 }
             });
             
-            // 更新选项文字（使用类选择器）
             const optionAElements = document.querySelectorAll('.optionA');
             const optionBElements = document.querySelectorAll('.optionB');
             
@@ -1474,7 +1399,6 @@
                 element.textContent = t.optionB;
             });
 
-            // 更新知情同意书内容
             if (currentLanguage === 'en') {
                 document.getElementById('consentText').innerHTML = `
                     <p class="mb-3"><strong>Research Institution:</strong> Urban Morphology Studio (UMS), Urban Governance and Design Thrust, Hong Kong University of Science and Technology (Guangzhou)</p>
@@ -1499,7 +1423,6 @@
                 `;
             }
 
-            // 更新继续页面消息
             updateContinueMessage();
         }
 
@@ -1565,15 +1488,11 @@
         }
 
         function startNewGroup() {
-            // 清空预加载缓存
             preloadedImages.clear();
-            
-            // 为当前组选择新的图片
             selectImagesForCurrentGroup();
-            
             generateComparisonPairs();
             currentComparisonIndex = 0;
-            comparisons = []; // 重置当前组的对比记录
+            comparisons = [];
             generateNewComparison();
             showPage('comparisonPage');
             updateGroupCounter();
@@ -1588,14 +1507,12 @@
         function generateComparisonPairs() {
             comparisonPairs = [];
             
-            // 创建一个数组，每张图片的ID出现恰好2次
             let imagePool = [];
             imageLibrary.forEach(img => {
                 imagePool.push(img.id);
                 imagePool.push(img.id);
             });
             
-            // 随机打乱图片池
             for (let i = imagePool.length - 1; i > 0; i--) {
                 const j = Math.floor(Math.random() * (i + 1));
                 [imagePool[i], imagePool[j]] = [imagePool[j], imagePool[i]];
@@ -1603,12 +1520,10 @@
             
             debugLog(`📊 图片池创建完成，共 ${imagePool.length} 个图片实例`);
             
-            // 成对组合，确保每对不是同一张图片
             for (let i = 0; i < imagePool.length - 1; i += 2) {
                 let imageAId = imagePool[i];
                 let imageBId = imagePool[i + 1];
                 
-                // 如果是同一张图片，尝试与后面的图片交换
                 if (imageAId === imageBId && i + 2 < imagePool.length) {
                     for (let k = i + 2; k < imagePool.length; k++) {
                         if (imagePool[k] !== imageAId) {
@@ -1619,7 +1534,6 @@
                     }
                 }
                 
-                // 如果仍然是同一张图片，跳过这一对
                 if (imageAId !== imageBId) {
                     const imageA = imageLibrary.find(img => img.id === imageAId);
                     const imageB = imageLibrary.find(img => img.id === imageBId);
@@ -1629,7 +1543,6 @@
                     }
                 }
                 
-                // 确保不超过20组对比
                 if (comparisonPairs.length >= 20) {
                     break;
                 }
@@ -1652,26 +1565,19 @@
             imageA_img.alt = currentPair.imageA.name;
             imageB_img.alt = currentPair.imageB.name;
 
-            // 加载当前图片
             loadImageWithFallback(imageA_img, currentPair.imageA);
             loadImageWithFallback(imageB_img, currentPair.imageB);
 
-            // 开始预加载下一对图片
             preloadNextPair();
 
             document.getElementById('progressCounter').textContent = `${currentComparisonIndex + 1}/20`;
             
             resetAllSelections();
-            
-            // 启动计时器
             startComparisonTimer();
-            
-            // 更新整体进度
             updateOverallProgress();
         }
 
         function resetAllSelections() {
-            // 重置所有单选按钮 - 更新了 walking 为 strolling
             const radioGroups = ['sitting', 'strolling', 'jogging', 'gathering'];
             radioGroups.forEach(group => {
                 const radios = document.querySelectorAll(`input[name="${group}"]`);
@@ -1680,7 +1586,6 @@
                 });
             });
             
-            // 重置确认按钮
             const confirmButton = document.getElementById('confirmButton');
             confirmButton.disabled = true;
             confirmButton.classList.remove('bg-green-600', 'hover:bg-green-700', 'cursor-pointer');
@@ -1688,7 +1593,6 @@
         }
 
         function checkAllAnswered() {
-            // 更新了 walking 为 strolling
             const radioGroups = ['sitting', 'strolling', 'jogging', 'gathering'];
             const allAnswered = radioGroups.every(group => {
                 return document.querySelector(`input[name="${group}"]:checked`) !== null;
@@ -1707,13 +1611,11 @@
         }
 
         async function confirmAllSelections() {
-            // 检查最小观看时间
             if (!checkMinimumViewTime()) {
                 showTimeWarning();
                 return;
             }
             
-            // 收集所有问题的答案 - 更新了行为名称
             const radioGroups = ['sitting', 'strolling', 'jogging', 'gathering'];
             const behaviors = ['坐憩', '漫步', '慢跑', '聚会或聚集'];
             const answers = {};
@@ -1740,7 +1642,6 @@
                 return;
             }
 
-            // 记录对比结果
             comparisons.push({
                 imageA: currentPair.imageA,
                 imageB: currentPair.imageB,
@@ -1748,25 +1649,20 @@
                 timestamp: new Date().toISOString(),
                 groupNumber: currentGroupNumber,
                 comparisonIndex: currentComparisonIndex + 1,
-                viewTime: Date.now() - comparisonStartTime // 记录观看时间
+                viewTime: Date.now() - comparisonStartTime
             });
 
             currentComparisonIndex++;
-            
-            // 清理预加载缓存，避免内存占用过多
             cleanupPreloadCache();
-            
             generateNewComparison();
         }
 
         async function completeCurrentGroup() {
             debugLog(`✅ 第${currentGroupNumber}组对比完成，共${comparisons.length}次对比`);
             
-            // 保存当前组数据到远程
             const saveSuccess = await saveUserSession();
             
             if (!saveSuccess) {
-                // 保存失败，给用户提示
                 const retryMessage = currentLanguage === 'zh' ? 
                     '数据保存失败，请检查网络连接。是否重试？' : 
                     'Data save failed, please check your internet connection. Retry?';
@@ -1782,28 +1678,22 @@
                 }
             }
             
-            // 更新继续页面的进度和消息
             updateContinueProgress();
             updateContinueMessage();
             
-            // 检查是否完成了所有组
             if (currentGroupNumber >= MAX_GROUPS) {
-                // 完成了所有组，显示完成按钮而不是继续按钮
                 document.getElementById('continueButtons').classList.add('hidden');
                 document.getElementById('finishButtons').classList.remove('hidden');
             } else {
-                // 还有组要完成，显示继续按钮
                 document.getElementById('continueButtons').classList.remove('hidden');
                 document.getElementById('finishButtons').classList.add('hidden');
             }
             
-            // 显示继续询问页面
             showPage('continuePage');
         }
 
         function continueNextGroup() {
             if (currentGroupNumber >= MAX_GROUPS) {
-                // 已经完成所有组，直接跳转到感谢页面
                 finishSurvey();
                 return;
             }
@@ -1814,7 +1704,6 @@
 
         function showExitWarning() {
             if (currentGroupNumber >= MAX_GROUPS) {
-                // 已经完成所有组，直接完成实验
                 finishSurvey();
                 return;
             }
@@ -1827,24 +1716,19 @@
         }
 
         function forceExit() {
-            // 强制退出，不保存数据，直接回到开始页面
             restart();
         }
 
-        // 修复：在感谢页面显示用户昵称
         function finishSurvey() {
             if (currentGroupNumber < MAX_GROUPS) {
-                // 如果没有完成所有组，显示警告
                 showExitWarning();
                 return;
             }
             
-            // 更新感谢页面的昵称显示
             updateThankYouPageWithNickname();
             showPage('thankYouPage');
         }
 
-        // 新增：更新感谢页面显示用户昵称的函数
         function updateThankYouPageWithNickname() {
             const nicknameElement = document.getElementById('thankYouNickname');
             const confirmTextElement = document.getElementById('nicknameConfirmText');
@@ -1869,10 +1753,10 @@
             currentComparisonIndex = 0;
             currentGroupNumber = 1;
             sessionId = generateSessionId();
-            preloadedImages.clear(); // 清空预加载缓存
-            comparisonStartTime = null; // 重置时间
+            preloadedImages.clear();
+            comparisonStartTime = null;
             timeWarningShown = false;
-            remoteDataCache = null; // 清空数据缓存
+            remoteDataCache = null;
             lastDataFetch = null;
             
             document.querySelectorAll('input[type="radio"]').forEach(input => input.checked = false);
@@ -1884,18 +1768,15 @@
         }
 
         // ====================================================================
-        // 管理员界面 - Base64密码保护
+        // 管理员界面
         // ====================================================================
-        // Base64编码的管理员密码（原密码：UMS2025ygs）
         const ENCODED_ADMIN_KEY = 'VU1TMjAyNXlncw==';
         
-        // 解码获取管理员密码的函数
         function getAdminPassword() {
             return atob(ENCODED_ADMIN_KEY);
         }
         
         async function showAdminPanel() {
-            // 密码验证
             const password = prompt('请输入管理员密码：');
             
             if (password === null) {
@@ -1907,7 +1788,6 @@
                 return;
             }
             
-            // 密码正确，显示管理员界面
             document.getElementById('adminPanel').classList.remove('hidden');
             await refreshStats();
         }
@@ -1918,18 +1798,14 @@
 
         async function refreshStats() {
             try {
-                // 显示加载状态
-                updateDatabaseStatus('正在连接数据库...', 'loading');
+                updateDatabaseStatus('正在连接腾讯云...', 'loading');
                 disableAdminButtons(true);
                 
-                // 获取数据
                 const sessions = await getAllSessions();
                 const comparisonRecords = await getComparisonRecords();
                 
-                // 更新数据库状态
-                updateDatabaseStatus(`数据库连接成功 (最后更新: ${new Date().toLocaleString()})`, 'success');
+                updateDatabaseStatus(`腾讯云连接成功 (最后更新: ${new Date().toLocaleString()})`, 'success');
                 
-                // 修复：按昵称去重计算真实用户数（因为每个用户可能有多个session记录）
                 const uniqueUsers = getUniqueUsersByNickname(sessions);
                 document.getElementById('totalUsers').textContent = uniqueUsers.length;
                 document.getElementById('totalComparisons').textContent = comparisonRecords.length;
@@ -1937,20 +1813,14 @@
                 const avgComparisonsPerUser = uniqueUsers.length > 0 ? (comparisonRecords.length / uniqueUsers.length).toFixed(1) : '0';
                 document.getElementById('avgGroups').textContent = avgComparisonsPerUser;
                 
-                // 显示对比数据
                 displayComparisonData(comparisonRecords);
-                
-                // 更新用户详情 - 只显示每个用户的最终状态
                 displayUserDetails(uniqueUsers);
-                
-                // 启用按钮
                 disableAdminButtons(false);
                 
             } catch (error) {
                 console.error('刷新统计失败:', error);
-                updateDatabaseStatus(`数据库连接失败: ${error.message}`, 'error');
+                updateDatabaseStatus(`腾讯云连接失败: ${error.message}`, 'error');
                 
-                // 显示空数据
                 document.getElementById('totalUsers').textContent = '错误';
                 document.getElementById('totalComparisons').textContent = '错误';
                 document.getElementById('avgGroups').textContent = '错误';
@@ -1960,7 +1830,6 @@
             }
         }
 
-        // 修复：按昵称去重获取唯一用户（每个昵称只保留最新记录）
         function getUniqueUsersByNickname(sessions) {
             const userMap = new Map();
             
@@ -2036,7 +1905,6 @@
                 return;
             }
             
-            // 显示最近的20条记录
             const recentRecords = records.slice(-20).reverse();
             
             const html = `
@@ -2085,7 +1953,6 @@
                 return;
             }
             
-            // 按时间排序，最新的在前
             const sortedUsers = uniqueUsers.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
             
             const html = `
@@ -2126,7 +1993,6 @@
                     return;
                 }
                 
-                // 创建CSV内容 - 更新了列名 walking 为 strolling
                 const headers = [
                     'sessionId', 'nickname', 'gender', 'age', 'isProfessional',
                     'groupNumber', 'comparisonIndex', 'image1_url', 'image2_url',
@@ -2157,7 +2023,6 @@
                     ].join(','))
                 ].join('\n');
                 
-                // 下载CSV文件
                 const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
@@ -2180,7 +2045,6 @@
                 try {
                     const success = await saveRemoteData([], []);
                     if (success) {
-                        // 清空缓存
                         remoteDataCache = null;
                         lastDataFetch = null;
                         
@@ -2200,11 +2064,10 @@
         // 页面初始化
         // ====================================================================
         document.addEventListener('DOMContentLoaded', async function() {
-            debugLog('🚀 街景问卷系统启动 - 远程数据存储版');
+            debugLog('🚀 街景问卷系统启动 - 腾讯云COS存储版');
             
             await initializeImageLibrary();
             
-            // 添加事件监听器到所有单选按钮 - 更新了 walking 为 strolling
             const radioGroups = ['sitting', 'strolling', 'jogging', 'gathering'];
             radioGroups.forEach(group => {
                 const radios = document.querySelectorAll(`input[name="${group}"]`);
@@ -2219,12 +2082,15 @@
                 debugLog('⚠️ 图片库初始化有问题，但系统仍可运行');
             }
             
-            // 测试远程连接
+            // 测试腾讯云COS连接
             try {
-                await fetchRemoteData();
-                debugLog('✅ 远程数据库连接测试成功');
+                if (initializeCOSClient()) {
+                    debugLog('✅ 腾讯云COS连接测试成功');
+                    await fetchRemoteData();
+                    debugLog('✅ 腾讯云COS读取权限正常');
+                }
             } catch (error) {
-                debugLog(`❌ 远程数据库连接测试失败: ${error.message}`);
+                debugLog(`❌ 腾讯云COS连接测试失败: ${error.message}`);
             }
         });
     </script>
