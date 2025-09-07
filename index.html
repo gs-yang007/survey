@@ -609,9 +609,9 @@
             baseUrl: 'https://api.jsonbin.io/v3'
         };
 
-        // 分块保存配置 - 改为20张一个chunk
+        // 分块保存配置 - 修改为10条数据一个chunk
         const CHUNKED_SAVE_CONFIG = {
-            chunkSize: 20, // 每次保存20个对比记录
+            chunkSize: 10, // 每次保存10个对比记录
             maxRetries: 3,
             retryDelay: 1000, // 1秒
             batchDelay: 500 // 批次之间的延迟
@@ -686,7 +686,7 @@
                     chunks.push(newComparisonRecords.slice(i, i + chunkSize));
                 }
                 
-                debugLog(`📦 将 ${newComparisonRecords.length} 条记录分为 ${chunks.length} 个块`);
+                debugLog(`📦 将 ${newComparisonRecords.length} 条记录分为 ${chunks.length} 个块 (每块${chunkSize}条)`);
                 
                 // 显示进度条
                 showSaveProgress(true);
@@ -701,7 +701,7 @@
                     // 更新进度
                     const progress = ((chunkIndex + 1) / totalChunks) * 100;
                     updateSaveProgress(progress);
-                    showDataStatus(`正在保存第 ${chunkIndex + 1}/${totalChunks} 块数据...`, 'loading');
+                    showDataStatus(`正在保存第 ${chunkIndex + 1}/${totalChunks} 块数据 (${chunk.length}条记录)...`, 'loading');
                     
                     const success = await saveRemoteDataWithRetry(allSessions, currentRecords);
                     
@@ -710,6 +710,7 @@
                     }
                     
                     savedChunks++;
+                    debugLog(`✅ 第 ${chunkIndex + 1}/${totalChunks} 块数据保存成功`);
                     
                     // 批次之间的延迟，避免过于频繁的请求
                     if (chunkIndex < chunks.length - 1) {
