@@ -572,7 +572,7 @@
                 
                 <div class="flex space-x-4 mb-6">
                     <button onclick="exportData()" id="exportButton" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:bg-gray-400" disabled>
-                        导出对比数据表格
+                        导出数据表格
                     </button>
                     <button onclick="clearData()" id="clearButton" class="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 disabled:bg-gray-400" disabled>
                         清空数据
@@ -697,21 +697,22 @@
             try {
                 debugLog(`💾 开始提交用户会话: ${sessionId}, 对比数量: ${comparisons.length}`);
                 
-                const sessionData = {
+                const newSessionData = {
                     sessionId: sessionId,
                     userData: userData,
                     groupsCompleted: currentGroupNumber,
                     totalComparisons: comparisons.length,
                     timestamp: new Date().toISOString(),
-                    language: currentLanguage
+                    language: currentLanguage,
+                    lastUpdated: new Date().toISOString()
                 };
                 
                 const newComparisonRecords = comparisons.map(comparison => ({
-                    sessionId: sessionData.sessionId,
-                    nickname: sessionData.userData.nickname,
-                    gender: sessionData.userData.gender,
-                    age: sessionData.userData.age,
-                    isProfessional: sessionData.userData.isProfessional,
+                    sessionId: sessionId,
+                    nickname: userData.nickname,
+                    gender: userData.gender,
+                    age: userData.age,
+                    isProfessional: userData.isProfessional,
                     groupNumber: comparison.groupNumber,
                     comparisonIndex: comparison.comparisonIndex,
                     image1_url: comparison.imageA.url,
@@ -731,9 +732,30 @@
                 // 读取现有数据
                 const existingData = await readFromJsonBin();
                 
-                // 合并新数据
+                // 检查是否已存在该用户的会话记录
+                const existingSessions = existingData.sessions || [];
+                const existingSessionIndex = existingSessions.findIndex(session => session.sessionId === sessionId);
+                
+                let updatedSessions;
+                if (existingSessionIndex !== -1) {
+                    // 更新现有会话记录
+                    updatedSessions = [...existingSessions];
+                    updatedSessions[existingSessionIndex] = {
+                        ...updatedSessions[existingSessionIndex],
+                        groupsCompleted: currentGroupNumber,
+                        totalComparisons: updatedSessions[existingSessionIndex].totalComparisons + comparisons.length,
+                        lastUpdated: new Date().toISOString()
+                    };
+                    debugLog(`✅ 更新现有用户会话: ${userData.nickname}, 组数: ${currentGroupNumber}`);
+                } else {
+                    // 创建新会话记录
+                    updatedSessions = [...existingSessions, newSessionData];
+                    debugLog(`✅ 创建新用户会话: ${userData.nickname}, 组数: ${currentGroupNumber}`);
+                }
+                
+                // 合并新的对比数据
                 const updatedData = {
-                    sessions: [...(existingData.sessions || []), sessionData],
+                    sessions: updatedSessions,
                     comparisons: [...(existingData.comparisons || []), ...newComparisonRecords],
                     lastUpdated: new Date().toISOString()
                 };
@@ -1641,7 +1663,16 @@
                 updateDatabaseStatus('JSONBin连接成功', 'success');
                 disableAdminButtons(false);
                 
-                const totalUsers = (data.sessions || []).length;
+                // 计算独特用户数（基于sessionId去重）
+                const uniqueSessions = new Map();
+                (data.sessions || []).forEach(session => {
+                    if (!uniqueSessions.has(session.sessionId) || 
+                        session.groupsCompleted > uniqueSessions.get(session.sessionId).groupsCompleted) {
+                        uniqueSessions.set(session.sessionId, session);
+                    }
+                });
+                
+                const totalUsers = uniqueSessions.size;
                 const totalComparisons = (data.comparisons || []).length;
                 const avgGroups = totalUsers > 0 ? (totalComparisons / totalUsers / 20).toFixed(1) : '0';
                 
@@ -1650,7 +1681,7 @@
                 document.getElementById('avgGroups').textContent = avgGroups;
                 
                 displayRecentComparisons(data.comparisons || []);
-                displayUserDetails(data.sessions || []);
+                displayUserDetails(Array.from(uniqueSessions.values()));
                 
             } catch (error) {
                 console.error('刷新失败:', error);
@@ -1715,6 +1746,11 @@
                 return;
             }
             
+            // 按最后更新时间排序
+            const sortedSessions = sessions.sort((a, b) => 
+                new Date(b.lastUpdated || b.timestamp) - new Date(a.lastUpdated || a.timestamp)
+            );
+            
             let html = `
                 <table class="w-full text-sm border-collapse border border-gray-300">
                     <thead>
@@ -1724,15 +1760,20 @@
                             <th class="border border-gray-300 p-2">年龄</th>
                             <th class="border border-gray-300 p-2">专业背景</th>
                             <th class="border border-gray-300 p-2">完成组数</th>
-                            <th class="border border-gray-300 p-2">对比次数</th>
+                            <th class="border border-gray-300 p-2">总对比次数</th>
                             <th class="border border-gray-300 p-2">语言</th>
-                            <th class="border border-gray-300 p-2">时间</th>
+                            <th class="border border-gray-300 p-2">完成状态</th>
+                            <th class="border border-gray-300 p-2">最后更新</th>
                         </tr>
                     </thead>
                     <tbody>
             `;
             
-            sessions.forEach(session => {
+            sortedSessions.forEach(session => {
+                const isComplete = session.groupsCompleted >= 5;
+                const statusText = isComplete ? '已完成' : `进行中 (${session.groupsCompleted}/5)`;
+                const statusClass = isComplete ? 'text-green-600 font-semibold' : 'text-blue-600';
+                
                 html += `
                     <tr>
                         <td class="border border-gray-300 p-2">${session.userData.nickname}</td>
@@ -1740,9 +1781,10 @@
                         <td class="border border-gray-300 p-2">${session.userData.age}</td>
                         <td class="border border-gray-300 p-2">${session.userData.isProfessional === 'yes' ? '是' : '否'}</td>
                         <td class="border border-gray-300 p-2">${session.groupsCompleted}</td>
-                        <td class="border border-gray-300 p-2">${session.totalComparisons}</td>
+                        <td class="border border-gray-300 p-2">${session.totalComparisons || 0}</td>
                         <td class="border border-gray-300 p-2">${session.language === 'zh' ? '中文' : 'English'}</td>
-                        <td class="border border-gray-300 p-2">${new Date(session.timestamp).toLocaleString()}</td>
+                        <td class="border border-gray-300 p-2 ${statusClass}">${statusText}</td>
+                        <td class="border border-gray-300 p-2">${new Date(session.lastUpdated || session.timestamp).toLocaleString()}</td>
                     </tr>
                 `;
             });
@@ -1813,14 +1855,48 @@
                     return;
                 }
                 
-                // 创建CSV格式的数据
-                const headers = [
+                // 创建用户汇总表格
+                const uniqueSessions = new Map();
+                (data.sessions || []).forEach(session => {
+                    if (!uniqueSessions.has(session.sessionId) || 
+                        session.groupsCompleted > uniqueSessions.get(session.sessionId).groupsCompleted) {
+                        uniqueSessions.set(session.sessionId, session);
+                    }
+                });
+                
+                // 导出用户汇总数据
+                const userSummaryHeaders = [
+                    '会话ID', '昵称', '性别', '年龄', '专业背景', '完成组数', '总对比次数', '语言', '完成状态', '开始时间', '最后更新'
+                ];
+                
+                let userSummaryCsv = userSummaryHeaders.join(',') + '\n';
+                
+                Array.from(uniqueSessions.values()).forEach(session => {
+                    const isComplete = session.groupsCompleted >= 5;
+                    const row = [
+                        session.sessionId,
+                        `"${session.userData.nickname}"`,
+                        session.userData.gender === 'male' ? '男' : '女',
+                        session.userData.age,
+                        session.userData.isProfessional === 'yes' ? '是' : '否',
+                        session.groupsCompleted,
+                        session.totalComparisons || 0,
+                        session.language === 'zh' ? '中文' : 'English',
+                        isComplete ? '已完成' : '进行中',
+                        `"${session.timestamp}"`,
+                        `"${session.lastUpdated || session.timestamp}"`
+                    ];
+                    userSummaryCsv += row.join(',') + '\n';
+                });
+                
+                // 创建详细对比数据CSV
+                const detailHeaders = [
                     '会话ID', '昵称', '性别', '年龄', '专业背景', '组号', '对比序号',
                     '图片A名称', '图片B名称', '图片A链接', '图片B链接',
                     '坐憩选择', '漫步选择', '慢跑选择', '聚集选择', '观看时长', '时间戳'
                 ];
                 
-                let csvContent = headers.join(',') + '\n';
+                let detailCsv = detailHeaders.join(',') + '\n';
                 
                 data.comparisons.forEach(comp => {
                     const row = [
@@ -1842,19 +1918,30 @@
                         comp.viewTime || 0,
                         `"${comp.timestamp}"`
                     ];
-                    csvContent += row.join(',') + '\n';
+                    detailCsv += row.join(',') + '\n';
                 });
                 
-                // 下载文件
-                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-                const link = document.createElement('a');
-                const url = URL.createObjectURL(blob);
-                link.setAttribute('href', url);
-                link.setAttribute('download', `街景问卷数据_${new Date().toISOString().split('T')[0]}.csv`);
-                link.style.visibility = 'hidden';
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
+                // 下载用户汇总文件
+                const userBlob = new Blob([userSummaryCsv], { type: 'text/csv;charset=utf-8;' });
+                const userLink = document.createElement('a');
+                const userUrl = URL.createObjectURL(userBlob);
+                userLink.setAttribute('href', userUrl);
+                userLink.setAttribute('download', `用户汇总_${new Date().toISOString().split('T')[0]}.csv`);
+                userLink.style.visibility = 'hidden';
+                document.body.appendChild(userLink);
+                userLink.click();
+                document.body.removeChild(userLink);
+                
+                // 下载详细对比文件
+                const detailBlob = new Blob([detailCsv], { type: 'text/csv;charset=utf-8;' });
+                const detailLink = document.createElement('a');
+                const detailUrl = URL.createObjectURL(detailBlob);
+                detailLink.setAttribute('href', detailUrl);
+                detailLink.setAttribute('download', `详细对比数据_${new Date().toISOString().split('T')[0]}.csv`);
+                detailLink.style.visibility = 'hidden';
+                document.body.appendChild(detailLink);
+                detailLink.click();
+                document.body.removeChild(detailLink);
                 
                 updateDatabaseStatus('数据导出完成', 'success');
                 setTimeout(() => {
