@@ -601,10 +601,16 @@
 
     <script>
         // ====================================================================
-        // 安全API配置 - 使用Vercel后端
+        // JSONBin API配置
         // ====================================================================
         const API_CONFIG = {
-            apiUrl: 'https://survey-backend-rosy.vercel.app/api/submit'
+            binId: '68af17fed0ea881f40683b2d',
+            masterKey: '$2a$10$BBcDpoJ9fYY0c3xkth3aM.UsL3kMY1SjrqgnbeaxjWNXH4Uwqz5H.',
+            baseUrl: 'https://api.jsonbin.io/v3/b',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-Master-Key': '$2a$10$BBcDpoJ9fYY0c3xkth3aM.UsL3kMY1SjrqgnbeaxjWNXH4Uwqz5H.'
+            }
         };
 
         // ====================================================================
@@ -638,10 +644,53 @@
         let timeWarningShown = false;
 
         // ====================================================================
-        // 安全数据存储管理 - 使用Vercel API
+        // JSONBin数据存储管理
         // ====================================================================
         function generateSessionId() {
             return 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+        }
+
+        async function readFromJsonBin() {
+            try {
+                const response = await fetch(`${API_CONFIG.baseUrl}/${API_CONFIG.binId}/latest`, {
+                    method: 'GET',
+                    headers: API_CONFIG.headers
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`读取失败: ${response.status}`);
+                }
+                
+                const result = await response.json();
+                return result.record;
+            } catch (error) {
+                debugLog(`❌ 从JSONBin读取数据失败: ${error.message}`);
+                // 如果读取失败，返回初始结构
+                return {
+                    sessions: [],
+                    comparisons: [],
+                    lastUpdated: new Date().toISOString()
+                };
+            }
+        }
+
+        async function saveToJsonBin(data) {
+            try {
+                const response = await fetch(`${API_CONFIG.baseUrl}/${API_CONFIG.binId}`, {
+                    method: 'PUT',
+                    headers: API_CONFIG.headers,
+                    body: JSON.stringify(data)
+                });
+                
+                if (!response.ok) {
+                    throw new Error(`保存失败: ${response.status}`);
+                }
+                
+                return await response.json();
+            } catch (error) {
+                debugLog(`❌ 保存到JSONBin失败: ${error.message}`);
+                throw error;
+            }
         }
 
         async function saveUserSession() {
@@ -677,27 +726,22 @@
                     timestamp: comparison.timestamp
                 }));
                 
-                // 通过Vercel API提交数据
-                showDataStatus('正在保存数据到云端...', 'loading');
+                showDataStatus('正在保存数据到JSONBin...', 'loading');
                 
-                const response = await fetch(API_CONFIG.apiUrl, {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        sessionData: sessionData,
-                        comparisonRecords: newComparisonRecords
-                    })
-                });
+                // 读取现有数据
+                const existingData = await readFromJsonBin();
                 
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    throw new Error(`保存失败: ${response.status} - ${errorText}`);
-                }
+                // 合并新数据
+                const updatedData = {
+                    sessions: [...(existingData.sessions || []), sessionData],
+                    comparisons: [...(existingData.comparisons || []), ...newComparisonRecords],
+                    lastUpdated: new Date().toISOString()
+                };
                 
-                const result = await response.json();
-                debugLog(`✅ 数据保存成功: ${result.message}`);
+                // 保存到JSONBin
+                await saveToJsonBin(updatedData);
+                
+                debugLog(`✅ 数据保存成功到JSONBin`);
                 showDataStatus('数据保存成功', 'success');
                 setTimeout(hideDataStatus, 2000);
                 
@@ -1559,7 +1603,7 @@
         }
 
         // ====================================================================
-        // 简化的管理员界面
+        // JSONBin管理员界面
         // ====================================================================
         const ENCODED_ADMIN_KEY = 'VU1TMjAyNXlncw==';
         
@@ -1589,33 +1633,122 @@
 
         async function refreshStats() {
             try {
-                updateDatabaseStatus('安全API已启用', 'success');
+                updateDatabaseStatus('正在连接JSONBin...', 'loading');
+                disableAdminButtons(true);
+                
+                const data = await readFromJsonBin();
+                
+                updateDatabaseStatus('JSONBin连接成功', 'success');
                 disableAdminButtons(false);
                 
-                document.getElementById('totalUsers').textContent = '请查看服务器日志';
-                document.getElementById('totalComparisons').textContent = '请查看服务器日志';
-                document.getElementById('avgGroups').textContent = '请查看服务器日志';
+                const totalUsers = (data.sessions || []).length;
+                const totalComparisons = (data.comparisons || []).length;
+                const avgGroups = totalUsers > 0 ? (totalComparisons / totalUsers / 20).toFixed(1) : '0';
                 
-                document.getElementById('comparisonData').innerHTML = `
-                    <div class="text-center p-6 bg-blue-50 rounded-lg">
-                        <p class="text-blue-600 mb-2">📊 数据已安全保存到云端</p>
-                        <p class="text-sm text-blue-500">详细统计请登录Vercel控制台查看函数日志</p>
-                        <p class="text-sm text-blue-500 mt-2">Vercel地址: https://survey-backend-rosy.vercel.app</p>
-                    </div>
-                `;
+                document.getElementById('totalUsers').textContent = totalUsers;
+                document.getElementById('totalComparisons').textContent = totalComparisons;
+                document.getElementById('avgGroups').textContent = avgGroups;
                 
-                document.getElementById('userDetails').innerHTML = `
-                    <div class="text-center p-6 bg-green-50 rounded-lg">
-                        <p class="text-green-600 mb-2">🔒 用户数据已安全加密存储</p>
-                        <p class="text-sm text-green-500">数据通过HTTPS安全传输到腾讯云COS</p>
-                        <p class="text-sm text-green-500 mt-1">如需导出数据，请联系技术管理员</p>
-                    </div>
-                `;
+                displayRecentComparisons(data.comparisons || []);
+                displayUserDetails(data.sessions || []);
                 
             } catch (error) {
                 console.error('刷新失败:', error);
-                updateDatabaseStatus('连接失败', 'error');
+                updateDatabaseStatus('连接JSONBin失败', 'error');
+                disableAdminButtons(true);
             }
+        }
+
+        function displayRecentComparisons(comparisons) {
+            const container = document.getElementById('comparisonData');
+            
+            if (comparisons.length === 0) {
+                container.innerHTML = '<div class="text-gray-500">暂无对比数据</div>';
+                return;
+            }
+            
+            const recent = comparisons.slice(-20);
+            
+            let html = `
+                <table class="w-full text-sm border-collapse border border-gray-300">
+                    <thead>
+                        <tr class="bg-gray-100">
+                            <th class="border border-gray-300 p-2">昵称</th>
+                            <th class="border border-gray-300 p-2">组号</th>
+                            <th class="border border-gray-300 p-2">图片A</th>
+                            <th class="border border-gray-300 p-2">图片B</th>
+                            <th class="border border-gray-300 p-2">坐憩</th>
+                            <th class="border border-gray-300 p-2">漫步</th>
+                            <th class="border border-gray-300 p-2">慢跑</th>
+                            <th class="border border-gray-300 p-2">聚集</th>
+                            <th class="border border-gray-300 p-2">时间</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            recent.forEach(comp => {
+                html += `
+                    <tr>
+                        <td class="border border-gray-300 p-2">${comp.nickname}</td>
+                        <td class="border border-gray-300 p-2">${comp.groupNumber}</td>
+                        <td class="border border-gray-300 p-2">${comp.image1_name}</td>
+                        <td class="border border-gray-300 p-2">${comp.image2_name}</td>
+                        <td class="border border-gray-300 p-2">${comp.sitting === 0 ? 'A' : 'B'}</td>
+                        <td class="border border-gray-300 p-2">${comp.strolling === 0 ? 'A' : 'B'}</td>
+                        <td class="border border-gray-300 p-2">${comp.jogging === 0 ? 'A' : 'B'}</td>
+                        <td class="border border-gray-300 p-2">${comp.gathering === 0 ? 'A' : 'B'}</td>
+                        <td class="border border-gray-300 p-2">${new Date(comp.timestamp).toLocaleString()}</td>
+                    </tr>
+                `;
+            });
+            
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        function displayUserDetails(sessions) {
+            const container = document.getElementById('userDetails');
+            
+            if (sessions.length === 0) {
+                container.innerHTML = '<div class="text-gray-500">暂无用户数据</div>';
+                return;
+            }
+            
+            let html = `
+                <table class="w-full text-sm border-collapse border border-gray-300">
+                    <thead>
+                        <tr class="bg-gray-100">
+                            <th class="border border-gray-300 p-2">昵称</th>
+                            <th class="border border-gray-300 p-2">性别</th>
+                            <th class="border border-gray-300 p-2">年龄</th>
+                            <th class="border border-gray-300 p-2">专业背景</th>
+                            <th class="border border-gray-300 p-2">完成组数</th>
+                            <th class="border border-gray-300 p-2">对比次数</th>
+                            <th class="border border-gray-300 p-2">语言</th>
+                            <th class="border border-gray-300 p-2">时间</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            sessions.forEach(session => {
+                html += `
+                    <tr>
+                        <td class="border border-gray-300 p-2">${session.userData.nickname}</td>
+                        <td class="border border-gray-300 p-2">${session.userData.gender === 'male' ? '男' : '女'}</td>
+                        <td class="border border-gray-300 p-2">${session.userData.age}</td>
+                        <td class="border border-gray-300 p-2">${session.userData.isProfessional === 'yes' ? '是' : '否'}</td>
+                        <td class="border border-gray-300 p-2">${session.groupsCompleted}</td>
+                        <td class="border border-gray-300 p-2">${session.totalComparisons}</td>
+                        <td class="border border-gray-300 p-2">${session.language === 'zh' ? '中文' : 'English'}</td>
+                        <td class="border border-gray-300 p-2">${new Date(session.timestamp).toLocaleString()}</td>
+                    </tr>
+                `;
+            });
+            
+            html += '</tbody></table>';
+            container.innerHTML = html;
         }
 
         function updateDatabaseStatus(message, type = 'loading') {
@@ -1670,18 +1803,106 @@
         }
 
         async function exportData() {
-            alert('数据导出功能已移至服务器端，请联系技术管理员获取完整数据');
+            try {
+                updateDatabaseStatus('正在导出数据...', 'loading');
+                
+                const data = await readFromJsonBin();
+                
+                if (!data.comparisons || data.comparisons.length === 0) {
+                    alert('没有可导出的数据');
+                    return;
+                }
+                
+                // 创建CSV格式的数据
+                const headers = [
+                    '会话ID', '昵称', '性别', '年龄', '专业背景', '组号', '对比序号',
+                    '图片A名称', '图片B名称', '图片A链接', '图片B链接',
+                    '坐憩选择', '漫步选择', '慢跑选择', '聚集选择', '观看时长', '时间戳'
+                ];
+                
+                let csvContent = headers.join(',') + '\n';
+                
+                data.comparisons.forEach(comp => {
+                    const row = [
+                        comp.sessionId,
+                        `"${comp.nickname}"`,
+                        comp.gender === 'male' ? '男' : '女',
+                        comp.age,
+                        comp.isProfessional === 'yes' ? '是' : '否',
+                        comp.groupNumber,
+                        comp.comparisonIndex,
+                        `"${comp.image1_name}"`,
+                        `"${comp.image2_name}"`,
+                        `"${comp.image1_url}"`,
+                        `"${comp.image2_url}"`,
+                        comp.sitting === 0 ? 'A' : 'B',
+                        comp.strolling === 0 ? 'A' : 'B',
+                        comp.jogging === 0 ? 'A' : 'B',
+                        comp.gathering === 0 ? 'A' : 'B',
+                        comp.viewTime || 0,
+                        `"${comp.timestamp}"`
+                    ];
+                    csvContent += row.join(',') + '\n';
+                });
+                
+                // 下载文件
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                const url = URL.createObjectURL(blob);
+                link.setAttribute('href', url);
+                link.setAttribute('download', `街景问卷数据_${new Date().toISOString().split('T')[0]}.csv`);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                updateDatabaseStatus('数据导出完成', 'success');
+                setTimeout(() => {
+                    updateDatabaseStatus('JSONBin连接成功', 'success');
+                }, 2000);
+                
+            } catch (error) {
+                console.error('导出失败:', error);
+                updateDatabaseStatus('导出失败', 'error');
+                alert('导出失败：' + error.message);
+            }
         }
 
         async function clearData() {
-            alert('数据清理功能已移至服务器端，请联系技术管理员进行操作');
+            if (!confirm('确定要清空所有数据吗？此操作不可恢复！')) {
+                return;
+            }
+            
+            if (!confirm('最后确认：将删除所有实验数据，确定继续吗？')) {
+                return;
+            }
+            
+            try {
+                updateDatabaseStatus('正在清空数据...', 'loading');
+                
+                const emptyData = {
+                    sessions: [],
+                    comparisons: [],
+                    lastUpdated: new Date().toISOString()
+                };
+                
+                await saveToJsonBin(emptyData);
+                
+                updateDatabaseStatus('数据已清空', 'success');
+                await refreshStats();
+                
+            } catch (error) {
+                console.error('清空失败:', error);
+                updateDatabaseStatus('清空失败', 'error');
+                alert('清空失败：' + error.message);
+            }
         }
 
         // ====================================================================
         // 页面初始化
         // ====================================================================
         document.addEventListener('DOMContentLoaded', async function() {
-            debugLog('🚀 街景问卷系统启动 - 安全API版本');
+            debugLog('🚀 街景问卷系统启动 - JSONBin版本');
             
             await initializeImageLibrary();
             
@@ -1699,8 +1920,8 @@
                 debugLog('⚠️ 图片库初始化有问题，但系统仍可运行');
             }
             
-            debugLog('✅ 安全API配置完成');
-            debugLog(`🔗 API地址: ${API_CONFIG.apiUrl}`);
+            debugLog('✅ JSONBin配置完成');
+            debugLog(`🔗 Bin ID: ${API_CONFIG.binId}`);
         });
     </script>
 </body>
