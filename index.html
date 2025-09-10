@@ -174,6 +174,31 @@
             color: #059669;
             margin-bottom: 8px;
         }
+        .system-status-panel {
+            background-color: #f8fafc;
+            border: 1px solid #e2e8f0;
+            border-radius: 8px;
+            padding: 16px;
+            margin: 16px 0;
+        }
+        .bin-status {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 8px 12px;
+            background-color: white;
+            border-radius: 6px;
+            margin: 4px 0;
+            border: 1px solid #e5e7eb;
+        }
+        .bin-status.active {
+            border-color: #10b981;
+            background-color: #ecfdf5;
+        }
+        .bin-status.full {
+            border-color: #f59e0b;
+            background-color: #fffbeb;
+        }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -555,6 +580,14 @@
                     </div>
                 </div>
 
+                <!-- 系统状态面板 -->
+                <div id="systemStatus" class="system-status-panel mb-6 hidden">
+                    <h4 class="font-semibold text-gray-800 mb-3">多Bin系统状态</h4>
+                    <div id="systemStatusContent">
+                        <!-- 系统状态内容将在这里动态生成 -->
+                    </div>
+                </div>
+
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                     <div class="bg-blue-100 p-4 rounded-lg">
                         <h3 class="font-semibold text-blue-800">总参与人数</h3>
@@ -601,17 +634,404 @@
 
     <script>
         // ====================================================================
-        // JSONBin API配置
+        // 多Bin管理配置
         // ====================================================================
-        const API_CONFIG = {
-            binId: '68af17fed0ea881f40683b2d',
+        const MULTI_BIN_CONFIG = {
             masterKey: '$2a$10$BBcDpoJ9fYY0c3xkth3aM.UsL3kMY1SjrqgnbeaxjWNXH4Uwqz5H.',
             baseUrl: 'https://api.jsonbin.io/v3/b',
+            // 主控制bin - 存储所有子bin的索引信息
+            masterBinId: '68af17fed0ea881f40683b2d',
+            // 数据大小限制 (字节) - 设置为800KB为安全起见
+            maxBinSize: 800 * 1024,
             headers: {
                 'Content-Type': 'application/json',
                 'X-Master-Key': '$2a$10$BBcDpoJ9fYY0c3xkth3aM.UsL3kMY1SjrqgnbeaxjWNXH4Uwqz5H.'
             }
         };
+
+        // ====================================================================
+        // 多Bin管理器类
+        // ====================================================================
+        class MultiBinManager {
+            constructor(config) {
+                this.config = config;
+                this.currentBinInfo = null;
+                this.allBins = [];
+            }
+
+            // 获取数据的字节大小
+            getDataSize(data) {
+                return new Blob([JSON.stringify(data)]).size;
+            }
+
+            // 读取主控制bin，获取所有子bin信息
+            async readMasterBin() {
+                try {
+                    const response = await fetch(`${this.config.baseUrl}/${this.config.masterBinId}/latest`, {
+                        method: 'GET',
+                        headers: this.config.headers
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`读取主控制bin失败: ${response.status}`);
+                    }
+                    
+                    const result = await response.json();
+                    return result.record;
+                } catch (error) {
+                    debugLog(`❌ 读取主控制bin失败: ${error.message}`);
+                    // 返回初始结构
+                    return {
+                        dataBins: [],
+                        totalRecords: 0,
+                        lastUpdated: new Date().toISOString(),
+                        version: '1.0'
+                    };
+                }
+            }
+
+            // 更新主控制bin
+            async updateMasterBin(masterData) {
+                try {
+                    const response = await fetch(`${this.config.baseUrl}/${this.config.masterBinId}`, {
+                        method: 'PUT',
+                        headers: this.config.headers,
+                        body: JSON.stringify(masterData)
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`更新主控制bin失败: ${response.status}`);
+                    }
+                    
+                    return await response.json();
+                } catch (error) {
+                    debugLog(`❌ 更新主控制bin失败: ${error.message}`);
+                    throw error;
+                }
+            }
+
+            // 创建新的数据bin
+            async createNewDataBin() {
+                try {
+                    const initialData = {
+                        sessions: [],
+                        comparisons: [],
+                        binInfo: {
+                            createdAt: new Date().toISOString(),
+                            recordCount: 0
+                        },
+                        lastUpdated: new Date().toISOString()
+                    };
+
+                    const response = await fetch(`${this.config.baseUrl}`, {
+                        method: 'POST',
+                        headers: this.config.headers,
+                        body: JSON.stringify(initialData)
+                    });
+
+                    if (!response.ok) {
+                        throw new Error(`创建新bin失败: ${response.status}`);
+                    }
+
+                    const result = await response.json();
+                    const newBinId = result.metadata.id;
+                    
+                    debugLog(`✅ 创建新数据bin成功: ${newBinId}`);
+                    
+                    return {
+                        binId: newBinId,
+                        createdAt: new Date().toISOString(),
+                        recordCount: 0,
+                        estimatedSize: this.getDataSize(initialData),
+                        status: 'active'
+                    };
+                } catch (error) {
+                    debugLog(`❌ 创建新数据bin失败: ${error.message}`);
+                    throw error;
+                }
+            }
+
+            // 读取指定数据bin
+            async readDataBin(binId) {
+                try {
+                    const response = await fetch(`${this.config.baseUrl}/${binId}/latest`, {
+                        method: 'GET',
+                        headers: this.config.headers
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`读取数据bin失败: ${response.status}`);
+                    }
+                    
+                    const result = await response.json();
+                    return result.record;
+                } catch (error) {
+                    debugLog(`❌ 读取数据bin ${binId} 失败: ${error.message}`);
+                    throw error;
+                }
+            }
+
+            // 更新指定数据bin
+            async updateDataBin(binId, data) {
+                try {
+                    const response = await fetch(`${this.config.baseUrl}/${binId}`, {
+                        method: 'PUT',
+                        headers: this.config.headers,
+                        body: JSON.stringify(data)
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`更新数据bin失败: ${response.status}`);
+                    }
+                    
+                    return await response.json();
+                } catch (error) {
+                    debugLog(`❌ 更新数据bin ${binId} 失败: ${error.message}`);
+                    throw error;
+                }
+            }
+
+            // 初始化多bin系统
+            async initialize() {
+                try {
+                    debugLog('🚀 初始化多bin管理系统...');
+                    
+                    const masterData = await this.readMasterBin();
+                    this.allBins = masterData.dataBins || [];
+                    
+                    if (this.allBins.length === 0) {
+                        debugLog('📦 没有发现数据bin，创建第一个...');
+                        const newBin = await this.createNewDataBin();
+                        this.allBins = [newBin];
+                        
+                        // 更新主控制bin
+                        masterData.dataBins = this.allBins;
+                        masterData.lastUpdated = new Date().toISOString();
+                        await this.updateMasterBin(masterData);
+                    }
+                    
+                    // 找到当前活跃的bin（最后一个）
+                    this.currentBinInfo = this.allBins[this.allBins.length - 1];
+                    
+                    debugLog(`✅ 多bin系统初始化完成，共 ${this.allBins.length} 个bin`);
+                    debugLog(`📍 当前活跃bin: ${this.currentBinInfo.binId}`);
+                    
+                    return true;
+                } catch (error) {
+                    debugLog(`❌ 多bin系统初始化失败: ${error.message}`);
+                    throw error;
+                }
+            }
+
+            // 检查当前bin是否需要切换
+            async checkAndSwitchBin(newDataSize) {
+                const estimatedNewSize = this.currentBinInfo.estimatedSize + newDataSize;
+                
+                if (estimatedNewSize > this.config.maxBinSize) {
+                    debugLog(`📊 当前bin即将超限 (${estimatedNewSize} > ${this.config.maxBinSize})，创建新bin...`);
+                    
+                    // 标记当前bin为已满
+                    this.currentBinInfo.status = 'full';
+                    
+                    // 创建新bin
+                    const newBin = await this.createNewDataBin();
+                    this.allBins.push(newBin);
+                    this.currentBinInfo = newBin;
+                    
+                    // 更新主控制bin
+                    const masterData = await this.readMasterBin();
+                    masterData.dataBins = this.allBins;
+                    masterData.lastUpdated = new Date().toISOString();
+                    await this.updateMasterBin(masterData);
+                    
+                    debugLog(`✅ 已切换到新bin: ${this.currentBinInfo.binId}`);
+                    
+                    return true;
+                }
+                
+                return false;
+            }
+
+            // 保存会话数据（自动处理多bin）
+            async saveUserSession(sessionData, comparisonRecords) {
+                try {
+                    debugLog(`💾 开始保存会话数据，对比记录数: ${comparisonRecords.length}`);
+                    
+                    // 估算新数据大小
+                    const newDataSize = this.getDataSize({
+                        sessions: [sessionData],
+                        comparisons: comparisonRecords
+                    });
+                    
+                    // 检查是否需要切换bin
+                    await this.checkAndSwitchBin(newDataSize);
+                    
+                    // 读取当前活跃bin的数据
+                    const currentData = await this.readDataBin(this.currentBinInfo.binId);
+                    
+                    // 检查是否已存在该用户的会话记录
+                    const existingSessions = currentData.sessions || [];
+                    const existingSessionIndex = existingSessions.findIndex(
+                        session => session.sessionId === sessionData.sessionId
+                    );
+                    
+                    let updatedSessions;
+                    if (existingSessionIndex !== -1) {
+                        // 更新现有会话记录
+                        updatedSessions = [...existingSessions];
+                        updatedSessions[existingSessionIndex] = {
+                            ...updatedSessions[existingSessionIndex],
+                            ...sessionData,
+                            lastUpdated: new Date().toISOString()
+                        };
+                        debugLog(`✅ 更新现有用户会话: ${sessionData.userData.nickname}`);
+                    } else {
+                        // 创建新会话记录
+                        updatedSessions = [...existingSessions, sessionData];
+                        debugLog(`✅ 创建新用户会话: ${sessionData.userData.nickname}`);
+                    }
+                    
+                    // 合并新的对比数据
+                    const updatedData = {
+                        ...currentData,
+                        sessions: updatedSessions,
+                        comparisons: [...(currentData.comparisons || []), ...comparisonRecords],
+                        lastUpdated: new Date().toISOString()
+                    };
+                    
+                    // 保存到当前活跃bin
+                    await this.updateDataBin(this.currentBinInfo.binId, updatedData);
+                    
+                    // 更新bin信息
+                    this.currentBinInfo.recordCount += comparisonRecords.length;
+                    this.currentBinInfo.estimatedSize = this.getDataSize(updatedData);
+                    
+                    // 更新主控制bin中的统计信息
+                    const masterData = await this.readMasterBin();
+                    masterData.totalRecords += comparisonRecords.length;
+                    masterData.dataBins = this.allBins;
+                    masterData.lastUpdated = new Date().toISOString();
+                    await this.updateMasterBin(masterData);
+                    
+                    debugLog(`✅ 会话数据保存成功到bin: ${this.currentBinInfo.binId}`);
+                    return true;
+                    
+                } catch (error) {
+                    debugLog(`❌ 保存会话数据失败: ${error.message}`);
+                    throw error;
+                }
+            }
+
+            // 读取所有数据（从所有bin）
+            async readAllData() {
+                try {
+                    debugLog('📚 开始读取所有bin的数据...');
+                    
+                    const allSessions = [];
+                    const allComparisons = [];
+                    
+                    for (const binInfo of this.allBins) {
+                        try {
+                            const binData = await this.readDataBin(binInfo.binId);
+                            
+                            if (binData.sessions) {
+                                allSessions.push(...binData.sessions);
+                            }
+                            if (binData.comparisons) {
+                                allComparisons.push(...binData.comparisons);
+                            }
+                            
+                            debugLog(`✅ 从bin ${binInfo.binId} 读取到 ${binData.sessions?.length || 0} 个会话，${binData.comparisons?.length || 0} 条对比记录`);
+                        } catch (error) {
+                            debugLog(`⚠️ 读取bin ${binInfo.binId} 失败: ${error.message}`);
+                        }
+                    }
+                    
+                    debugLog(`📊 总计读取: ${allSessions.length} 个会话，${allComparisons.length} 条对比记录`);
+                    
+                    return {
+                        sessions: allSessions,
+                        comparisons: allComparisons,
+                        lastUpdated: new Date().toISOString()
+                    };
+                    
+                } catch (error) {
+                    debugLog(`❌ 读取所有数据失败: ${error.message}`);
+                    throw error;
+                }
+            }
+
+            // 清空所有数据
+            async clearAllData() {
+                try {
+                    debugLog('🗑️ 开始清空所有bin数据...');
+                    
+                    // 清空所有数据bin（保留bin本身，只清空内容）
+                    for (const binInfo of this.allBins) {
+                        const emptyData = {
+                            sessions: [],
+                            comparisons: [],
+                            binInfo: {
+                                createdAt: binInfo.createdAt,
+                                recordCount: 0
+                            },
+                            lastUpdated: new Date().toISOString()
+                        };
+                        
+                        await this.updateDataBin(binInfo.binId, emptyData);
+                        binInfo.recordCount = 0;
+                        binInfo.estimatedSize = this.getDataSize(emptyData);
+                        binInfo.status = binInfo === this.currentBinInfo ? 'active' : 'empty';
+                    }
+                    
+                    // 更新主控制bin
+                    const masterData = await this.readMasterBin();
+                    masterData.totalRecords = 0;
+                    masterData.dataBins = this.allBins;
+                    masterData.lastUpdated = new Date().toISOString();
+                    await this.updateMasterBin(masterData);
+                    
+                    debugLog('✅ 所有数据已清空');
+                    return true;
+                    
+                } catch (error) {
+                    debugLog(`❌ 清空数据失败: ${error.message}`);
+                    throw error;
+                }
+            }
+
+            // 获取系统状态
+            getSystemStatus() {
+                return {
+                    totalBins: this.allBins.length,
+                    currentBinId: this.currentBinInfo?.binId,
+                    currentBinSize: this.currentBinInfo?.estimatedSize,
+                    maxBinSize: this.config.maxBinSize,
+                    usagePercentage: this.currentBinInfo ? 
+                        Math.round((this.currentBinInfo.estimatedSize / this.config.maxBinSize) * 100) : 0,
+                    bins: this.allBins.map(bin => ({
+                        binId: bin.binId.substring(0, 8) + '...',
+                        status: bin.status,
+                        recordCount: bin.recordCount,
+                        sizeKB: Math.round(bin.estimatedSize / 1024)
+                    }))
+                };
+            }
+        }
+
+        // ====================================================================
+        // 全局多bin管理器实例
+        // ====================================================================
+        let multiBinManager = null;
+
+        // 初始化多bin管理器
+        async function initializeMultiBinManager() {
+            if (!multiBinManager) {
+                multiBinManager = new MultiBinManager(MULTI_BIN_CONFIG);
+                await multiBinManager.initialize();
+            }
+            return multiBinManager;
+        }
 
         // ====================================================================
         // 配置和全局变量
@@ -644,28 +1064,42 @@
         let timeWarningShown = false;
 
         // ====================================================================
-        // JSONBin数据存储管理
+        // 辅助函数
         // ====================================================================
         function generateSessionId() {
             return 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
         }
 
+        function debugLog(message) {
+            if (DEBUG_MODE) {
+                console.log(message);
+                const debugLog = document.getElementById('debugLog');
+                if (debugLog) {
+                    debugLog.innerHTML += '<div>' + message + '</div>';
+                    debugLog.scrollTop = debugLog.scrollHeight;
+                }
+            }
+        }
+
+        function toggleDebug() {
+            const panel = document.getElementById('debugPanel');
+            debugVisible = !debugVisible;
+            panel.style.display = debugVisible ? 'block' : 'none';
+        }
+
+        // ====================================================================
+        // 替换的JSONBin函数
+        // ====================================================================
+
+        // 替换原来的 readFromJsonBin 函数
         async function readFromJsonBin() {
             try {
-                const response = await fetch(`${API_CONFIG.baseUrl}/${API_CONFIG.binId}/latest`, {
-                    method: 'GET',
-                    headers: API_CONFIG.headers
-                });
-                
-                if (!response.ok) {
-                    throw new Error(`读取失败: ${response.status}`);
+                if (!multiBinManager) {
+                    await initializeMultiBinManager();
                 }
-                
-                const result = await response.json();
-                return result.record;
+                return await multiBinManager.readAllData();
             } catch (error) {
-                debugLog(`❌ 从JSONBin读取数据失败: ${error.message}`);
-                // 如果读取失败，返回初始结构
+                debugLog(`❌ 从多bin读取数据失败: ${error.message}`);
                 return {
                     sessions: [],
                     comparisons: [],
@@ -674,27 +1108,13 @@
             }
         }
 
-        async function saveToJsonBin(data) {
-            try {
-                const response = await fetch(`${API_CONFIG.baseUrl}/${API_CONFIG.binId}`, {
-                    method: 'PUT',
-                    headers: API_CONFIG.headers,
-                    body: JSON.stringify(data)
-                });
-                
-                if (!response.ok) {
-                    throw new Error(`保存失败: ${response.status}`);
-                }
-                
-                return await response.json();
-            } catch (error) {
-                debugLog(`❌ 保存到JSONBin失败: ${error.message}`);
-                throw error;
-            }
-        }
-
+        // 替换原来的 saveUserSession 函数
         async function saveUserSession() {
             try {
+                if (!multiBinManager) {
+                    await initializeMultiBinManager();
+                }
+
                 debugLog(`💾 开始提交用户会话: ${sessionId}, 对比数量: ${comparisons.length}`);
                 
                 const newSessionData = {
@@ -727,43 +1147,11 @@
                     timestamp: comparison.timestamp
                 }));
                 
-                showDataStatus('正在保存数据到JSONBin...', 'loading');
+                showDataStatus('正在保存数据到多bin系统...', 'loading');
                 
-                // 读取现有数据
-                const existingData = await readFromJsonBin();
+                await multiBinManager.saveUserSession(newSessionData, newComparisonRecords);
                 
-                // 检查是否已存在该用户的会话记录
-                const existingSessions = existingData.sessions || [];
-                const existingSessionIndex = existingSessions.findIndex(session => session.sessionId === sessionId);
-                
-                let updatedSessions;
-                if (existingSessionIndex !== -1) {
-                    // 更新现有会话记录
-                    updatedSessions = [...existingSessions];
-                    updatedSessions[existingSessionIndex] = {
-                        ...updatedSessions[existingSessionIndex],
-                        groupsCompleted: currentGroupNumber,
-                        totalComparisons: updatedSessions[existingSessionIndex].totalComparisons + comparisons.length,
-                        lastUpdated: new Date().toISOString()
-                    };
-                    debugLog(`✅ 更新现有用户会话: ${userData.nickname}, 组数: ${currentGroupNumber}`);
-                } else {
-                    // 创建新会话记录
-                    updatedSessions = [...existingSessions, newSessionData];
-                    debugLog(`✅ 创建新用户会话: ${userData.nickname}, 组数: ${currentGroupNumber}`);
-                }
-                
-                // 合并新的对比数据
-                const updatedData = {
-                    sessions: updatedSessions,
-                    comparisons: [...(existingData.comparisons || []), ...newComparisonRecords],
-                    lastUpdated: new Date().toISOString()
-                };
-                
-                // 保存到JSONBin
-                await saveToJsonBin(updatedData);
-                
-                debugLog(`✅ 数据保存成功到JSONBin`);
+                debugLog(`✅ 数据保存成功到多bin系统`);
                 showDataStatus('数据保存成功', 'success');
                 setTimeout(hideDataStatus, 2000);
                 
@@ -775,26 +1163,6 @@
                 setTimeout(hideDataStatus, 5000);
                 return false;
             }
-        }
-
-        // ====================================================================
-        // 调试和诊断函数
-        // ====================================================================
-        function debugLog(message) {
-            if (DEBUG_MODE) {
-                console.log(message);
-                const debugLog = document.getElementById('debugLog');
-                if (debugLog) {
-                    debugLog.innerHTML += '<div>' + message + '</div>';
-                    debugLog.scrollTop = debugLog.scrollHeight;
-                }
-            }
-        }
-
-        function toggleDebug() {
-            const panel = document.getElementById('debugPanel');
-            debugVisible = !debugVisible;
-            panel.style.display = debugVisible ? 'block' : 'none';
         }
 
         // ====================================================================
@@ -1625,7 +1993,7 @@
         }
 
         // ====================================================================
-        // JSONBin管理员界面
+        // 管理员界面
         // ====================================================================
         const ENCODED_ADMIN_KEY = 'VU1TMjAyNXlncw==';
         
@@ -1653,17 +2021,26 @@
             document.getElementById('adminPanel').classList.add('hidden');
         }
 
+        // 更新管理员界面以显示多bin状态
         async function refreshStats() {
             try {
-                updateDatabaseStatus('正在连接JSONBin...', 'loading');
+                updateDatabaseStatus('正在连接多bin系统...', 'loading');
                 disableAdminButtons(true);
                 
-                const data = await readFromJsonBin();
+                if (!multiBinManager) {
+                    await initializeMultiBinManager();
+                }
                 
-                updateDatabaseStatus('JSONBin连接成功', 'success');
+                const data = await multiBinManager.readAllData();
+                const systemStatus = multiBinManager.getSystemStatus();
+                
+                updateDatabaseStatus(`多bin系统连接成功 (${systemStatus.totalBins} bins)`, 'success');
                 disableAdminButtons(false);
                 
-                // 计算独特用户数（基于sessionId去重）
+                // 显示系统状态
+                displaySystemStatus(systemStatus);
+                
+                // 计算统计信息
                 const uniqueSessions = new Map();
                 (data.sessions || []).forEach(session => {
                     if (!uniqueSessions.has(session.sessionId) || 
@@ -1685,9 +2062,83 @@
                 
             } catch (error) {
                 console.error('刷新失败:', error);
-                updateDatabaseStatus('连接JSONBin失败', 'error');
+                updateDatabaseStatus('连接多bin系统失败', 'error');
                 disableAdminButtons(true);
             }
+        }
+
+        // 显示系统状态
+        function displaySystemStatus(systemStatus) {
+            const systemStatusPanel = document.getElementById('systemStatus');
+            const systemStatusContent = document.getElementById('systemStatusContent');
+            
+            systemStatusPanel.classList.remove('hidden');
+            
+            let statusHtml = `
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <span class="font-medium">总Bin数:</span>
+                        <span class="text-blue-600 font-semibold">${systemStatus.totalBins}</span>
+                    </div>
+                    <div>
+                        <span class="font-medium">当前活跃Bin:</span>
+                        <span class="text-green-600 font-semibold">${systemStatus.currentBinId?.substring(0, 12) || 'N/A'}...</span>
+                    </div>
+                    <div>
+                        <span class="font-medium">当前Bin使用率:</span>
+                        <span class="text-purple-600 font-semibold">${systemStatus.usagePercentage}%</span>
+                    </div>
+                    <div>
+                        <span class="font-medium">当前Bin大小:</span>
+                        <span class="text-orange-600 font-semibold">${Math.round(systemStatus.currentBinSize / 1024)}KB</span>
+                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <div class="text-sm text-gray-600 mb-2">当前Bin容量使用情况</div>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar-fill" style="width: ${systemStatus.usagePercentage}%"></div>
+                    </div>
+                    <div class="text-xs text-gray-500 mt-1">
+                        ${Math.round(systemStatus.currentBinSize / 1024)}KB / ${Math.round(systemStatus.maxBinSize / 1024)}KB
+                    </div>
+                </div>
+                
+                <div>
+                    <div class="text-sm font-medium text-gray-700 mb-2">所有Bin状态:</div>
+                    <div class="space-y-1">
+            `;
+            
+            systemStatus.bins.forEach((bin, index) => {
+                const statusClass = bin.status === 'active' ? 'active' : 
+                                 bin.status === 'full' ? 'full' : '';
+                const statusText = bin.status === 'active' ? '活跃' :
+                                bin.status === 'full' ? '已满' : '空闲';
+                
+                statusHtml += `
+                    <div class="bin-status ${statusClass}">
+                        <div>
+                            <span class="font-medium">Bin ${index + 1}:</span>
+                            <span class="text-xs text-gray-600">${bin.binId}</span>
+                        </div>
+                        <div class="text-sm">
+                            <span class="px-2 py-1 rounded text-xs ${
+                                bin.status === 'active' ? 'bg-green-100 text-green-700' :
+                                bin.status === 'full' ? 'bg-orange-100 text-orange-700' :
+                                'bg-gray-100 text-gray-700'
+                            }">${statusText}</span>
+                            <span class="ml-2 text-gray-600">${bin.sizeKB}KB (${bin.recordCount} 记录)</span>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            statusHtml += `
+                    </div>
+                </div>
+            `;
+            
+            systemStatusContent.innerHTML = statusHtml;
         }
 
         function displayRecentComparisons(comparisons) {
@@ -1848,7 +2299,7 @@
             try {
                 updateDatabaseStatus('正在导出数据...', 'loading');
                 
-                const data = await readFromJsonBin();
+                const data = await multiBinManager.readAllData();
                 
                 if (!data.comparisons || data.comparisons.length === 0) {
                     alert('没有可导出的数据');
@@ -1901,7 +2352,7 @@
                 
                 updateDatabaseStatus('数据导出完成', 'success');
                 setTimeout(() => {
-                    updateDatabaseStatus('JSONBin连接成功', 'success');
+                    updateDatabaseStatus('多bin系统连接成功', 'success');
                 }, 2000);
                 
             } catch (error) {
@@ -1911,27 +2362,26 @@
             }
         }
 
+        // 更新清空数据函数
         async function clearData() {
             if (!confirm('确定要清空所有数据吗？此操作不可恢复！')) {
                 return;
             }
             
-            if (!confirm('最后确认：将删除所有实验数据，确定继续吗？')) {
+            if (!confirm('最后确认：将删除所有bin中的实验数据，确定继续吗？')) {
                 return;
             }
             
             try {
-                updateDatabaseStatus('正在清空数据...', 'loading');
+                updateDatabaseStatus('正在清空所有bin数据...', 'loading');
                 
-                const emptyData = {
-                    sessions: [],
-                    comparisons: [],
-                    lastUpdated: new Date().toISOString()
-                };
+                if (!multiBinManager) {
+                    await initializeMultiBinManager();
+                }
                 
-                await saveToJsonBin(emptyData);
+                await multiBinManager.clearAllData();
                 
-                updateDatabaseStatus('数据已清空', 'success');
+                updateDatabaseStatus('所有数据已清空', 'success');
                 await refreshStats();
                 
             } catch (error) {
@@ -1945,7 +2395,16 @@
         // 页面初始化
         // ====================================================================
         document.addEventListener('DOMContentLoaded', async function() {
-            debugLog('🚀 街景问卷系统启动 - JSONBin版本');
+            debugLog('🚀 街景问卷系统启动 - 多Bin版本');
+            
+            // 初始化多bin管理器
+            try {
+                await initializeMultiBinManager();
+                debugLog('✅ 多bin系统初始化成功');
+            } catch (error) {
+                debugLog('❌ 多bin系统初始化失败，系统仍可运行但可能有存储限制');
+                console.error('MultiBin初始化错误:', error);
+            }
             
             await initializeImageLibrary();
             
@@ -1963,8 +2422,11 @@
                 debugLog('⚠️ 图片库初始化有问题，但系统仍可运行');
             }
             
-            debugLog('✅ JSONBin配置完成');
-            debugLog(`🔗 Bin ID: ${API_CONFIG.binId}`);
+            debugLog('✅ 多Bin配置完成');
+            if (multiBinManager) {
+                const status = multiBinManager.getSystemStatus();
+                debugLog(`🔗 当前系统: ${status.totalBins} 个bin，活跃bin: ${status.currentBinId?.substring(0, 8)}...`);
+            }
         });
     </script>
 </body>
