@@ -41,7 +41,22 @@
             position: fixed;
             bottom: 10px;
             left: 10px;
-            z-index: 1000;
+            z-index: 9999;
+            pointer-events: auto;
+        }
+        .admin-panel button {
+            background-color: #1f2937;
+            color: white;
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 12px;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .admin-panel button:hover {
+            background-color: #374151;
         }
         .timer-warning {
             background-color: #fef3c7;
@@ -202,16 +217,9 @@
     </style>
 </head>
 <body class="bg-gray-100">
-    <!-- 管理员入口 -->
-    <div class="admin-panel">
-        <button onclick="showAdminPanel()" class="bg-gray-800 text-white px-3 py-1 rounded text-xs hover:bg-gray-700">
-            管理员
-        </button>
-    </div>
-
     <!-- 调试面板 -->
     <div id="debugPanel" class="debug-panel">
-        <div>?? 调试信息</div>
+        <div>🔧 调试信息</div>
         <div id="debugLog"></div>
         <button onclick="toggleDebug()" style="background: #333; color: #fff; border: none; padding: 2px 5px; margin-top: 5px;">隐藏</button>
     </div>
@@ -229,6 +237,13 @@
 
     <!-- 语言选择页面 -->
     <div id="languagePage" class="min-h-screen bg-gray-100 flex items-center justify-center p-4">
+        <!-- 管理员入口 - 只在语言选择页面显示 -->
+        <div class="admin-panel">
+            <button onclick="showAdminPanel()" class="bg-gray-800 text-white px-3 py-1 rounded text-xs hover:bg-gray-700">
+                管理员
+            </button>
+        </div>
+        
         <div class="bg-white rounded-lg shadow-lg p-8 text-center max-w-md w-full">
             <h1 class="text-2xl font-bold text-gray-800 mb-2">街景行为感知问卷</h1>
             <h2 class="text-lg text-gray-600 mb-8">Street View Behaviours Questionnaire</h2>
@@ -257,7 +272,7 @@
             <div class="bg-white rounded-lg shadow-lg p-6">
                 <!-- 实验提醒 -->
                 <div id="experimentReminder" class="experiment-reminder">
-                    <h4 id="reminderTitle"> 实验提醒</h4>
+                    <h4 id="reminderTitle">📋 实验提醒</h4>
                     <p id="reminderText">请认真作答。本实验需要完成5组，每组20次图片对比，耗时约20分钟，才能获得最终报酬。</p>
                     <p id="reminderDevice">为保证实验效果，请使用电脑或平板电脑作答。</p>
                 </div>
@@ -525,7 +540,7 @@
     <!-- 退出警告页面 -->
     <div id="exitWarningPage" class="hidden min-h-screen bg-gray-100 flex items-center justify-center p-4">
         <div class="bg-white rounded-lg shadow-lg p-8 text-center max-w-md w-full">
-            <h2 id="exitWarningTitle" class="text-2xl font-bold text-gray-800 mb-4">?? 退出警告</h2>
+            <h2 id="exitWarningTitle" class="text-2xl font-bold text-gray-800 mb-4">⚠️ 退出警告</h2>
             <p id="exitWarningMessage" class="text-gray-600 mb-8">您还未完成全部5组实验，现在退出将无法获得报酬。<br><br>确定要退出吗？</p>
             
             <div class="flex justify-center space-x-4">
@@ -548,7 +563,7 @@
                 <p id="nicknameConfirmText" class="text-sm text-gray-600">感谢您的参与！</p>
             </div>
             
-            <h2 id="thankYouTitle" class="text-2xl font-bold text-gray-800 mb-4"> 感谢您的参与！</h2>
+            <h2 id="thankYouTitle" class="text-2xl font-bold text-gray-800 mb-4">🎉 感谢您的参与！</h2>
             <p id="thankYouMessage" class="text-gray-600 mb-8">您已成功完成全部5组实验，数据已提交！<br><br>感谢您为街景感知研究做出的贡献！请联系研究人员兑换报酬。</p>
             
             <button onclick="restart()" id="restartButton" class="px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors font-medium">
@@ -679,7 +694,7 @@
                     const result = await response.json();
                     return result.record;
                 } catch (error) {
-                    debugLog(`? 读取主控制bin失败: ${error.message}`);
+                    debugLog(`🔍 读取主控制bin失败: ${error.message}`);
                     // 返回初始结构
                     return {
                         dataBins: [],
@@ -705,7 +720,7 @@
                     
                     return await response.json();
                 } catch (error) {
-                    debugLog(`? 更新主控制bin失败: ${error.message}`);
+                    debugLog(`❌ 更新主控制bin失败: ${error.message}`);
                     throw error;
                 }
             }
@@ -736,7 +751,7 @@
                     const result = await response.json();
                     const newBinId = result.metadata.id;
                     
-                    debugLog(`? 创建新数据bin成功: ${newBinId}`);
+                    debugLog(`✅ 创建新数据bin成功: ${newBinId}`);
                     
                     return {
                         binId: newBinId,
@@ -746,7 +761,7 @@
                         status: 'active'
                     };
                 } catch (error) {
-                    debugLog(`? 创建新数据bin失败: ${error.message}`);
+                    debugLog(`❌ 创建新数据bin失败: ${error.message}`);
                     throw error;
                 }
             }
@@ -766,7 +781,7 @@
                     const result = await response.json();
                     return result.record;
                 } catch (error) {
-                    debugLog(`? 读取数据bin ${binId} 失败: ${error.message}`);
+                    debugLog(`❌ 读取数据bin ${binId} 失败: ${error.message}`);
                     throw error;
                 }
             }
@@ -786,7 +801,7 @@
                     
                     return await response.json();
                 } catch (error) {
-                    debugLog(`? 更新数据bin ${binId} 失败: ${error.message}`);
+                    debugLog(`❌ 更新数据bin ${binId} 失败: ${error.message}`);
                     throw error;
                 }
             }
@@ -794,13 +809,13 @@
             // 初始化多bin系统
             async initialize() {
                 try {
-                    debugLog('?? 初始化多bin管理系统...');
+                    debugLog('🚀 初始化多bin管理系统...');
                     
                     const masterData = await this.readMasterBin();
                     this.allBins = masterData.dataBins || [];
                     
                     if (this.allBins.length === 0) {
-                        debugLog('?? 没有发现数据bin，创建第一个...');
+                        debugLog('📁 没有发现数据bin，创建第一个...');
                         const newBin = await this.createNewDataBin();
                         this.allBins = [newBin];
                         
@@ -813,12 +828,12 @@
                     // 找到当前活跃的bin（最后一个）
                     this.currentBinInfo = this.allBins[this.allBins.length - 1];
                     
-                    debugLog(`? 多bin系统初始化完成，共 ${this.allBins.length} 个bin`);
-                    debugLog(`?? 当前活跃bin: ${this.currentBinInfo.binId}`);
+                    debugLog(`✅ 多bin系统初始化完成，共 ${this.allBins.length} 个bin`);
+                    debugLog(`🎯 当前活跃bin: ${this.currentBinInfo.binId}`);
                     
                     return true;
                 } catch (error) {
-                    debugLog(`? 多bin系统初始化失败: ${error.message}`);
+                    debugLog(`❌ 多bin系统初始化失败: ${error.message}`);
                     throw error;
                 }
             }
@@ -828,7 +843,7 @@
                 const estimatedNewSize = this.currentBinInfo.estimatedSize + newDataSize;
                 
                 if (estimatedNewSize > this.config.maxBinSize) {
-                    debugLog(`?? 当前bin即将超限 (${estimatedNewSize} > ${this.config.maxBinSize})，创建新bin...`);
+                    debugLog(`⚠️ 当前bin即将超限 (${estimatedNewSize} > ${this.config.maxBinSize})，创建新bin...`);
                     
                     // 标记当前bin为已满
                     this.currentBinInfo.status = 'full';
@@ -844,7 +859,7 @@
                     masterData.lastUpdated = new Date().toISOString();
                     await this.updateMasterBin(masterData);
                     
-                    debugLog(`? 已切换到新bin: ${this.currentBinInfo.binId}`);
+                    debugLog(`✅ 已切换到新bin: ${this.currentBinInfo.binId}`);
                     
                     return true;
                 }
@@ -855,7 +870,7 @@
             // 保存会话数据（自动处理多bin）
             async saveUserSession(sessionData, comparisonRecords) {
                 try {
-                    debugLog(`?? 开始保存会话数据，对比记录数: ${comparisonRecords.length}`);
+                    debugLog(`💾 开始保存会话数据，对比记录数: ${comparisonRecords.length}`);
                     
                     // 估算新数据大小
                     const newDataSize = this.getDataSize({
@@ -884,11 +899,11 @@
                             ...sessionData,
                             lastUpdated: new Date().toISOString()
                         };
-                        debugLog(`? 更新现有用户会话: ${sessionData.userData.nickname}`);
+                        debugLog(`🔄 更新现有用户会话: ${sessionData.userData.nickname}`);
                     } else {
                         // 创建新会话记录
                         updatedSessions = [...existingSessions, sessionData];
-                        debugLog(`? 创建新用户会话: ${sessionData.userData.nickname}`);
+                        debugLog(`➕ 创建新用户会话: ${sessionData.userData.nickname}`);
                     }
                     
                     // 合并新的对比数据
@@ -913,11 +928,11 @@
                     masterData.lastUpdated = new Date().toISOString();
                     await this.updateMasterBin(masterData);
                     
-                    debugLog(`? 会话数据保存成功到bin: ${this.currentBinInfo.binId}`);
+                    debugLog(`✅ 会话数据保存成功到bin: ${this.currentBinInfo.binId}`);
                     return true;
                     
                 } catch (error) {
-                    debugLog(`? 保存会话数据失败: ${error.message}`);
+                    debugLog(`❌ 保存会话数据失败: ${error.message}`);
                     throw error;
                 }
             }
@@ -925,7 +940,7 @@
             // 读取所有数据（从所有bin）
             async readAllData() {
                 try {
-                    debugLog('?? 开始读取所有bin的数据...');
+                    debugLog('📖 开始读取所有bin的数据...');
                     
                     const allSessions = [];
                     const allComparisons = [];
@@ -941,13 +956,13 @@
                                 allComparisons.push(...binData.comparisons);
                             }
                             
-                            debugLog(`? 从bin ${binInfo.binId} 读取到 ${binData.sessions?.length || 0} 个会话，${binData.comparisons?.length || 0} 条对比记录`);
+                            debugLog(`📊 从bin ${binInfo.binId} 读取到 ${binData.sessions?.length || 0} 个会话，${binData.comparisons?.length || 0} 条对比记录`);
                         } catch (error) {
-                            debugLog(`?? 读取bin ${binInfo.binId} 失败: ${error.message}`);
+                            debugLog(`⚠️ 读取bin ${binInfo.binId} 失败: ${error.message}`);
                         }
                     }
                     
-                    debugLog(`?? 总计读取: ${allSessions.length} 个会话，${allComparisons.length} 条对比记录`);
+                    debugLog(`📋 总计读取: ${allSessions.length} 个会话，${allComparisons.length} 条对比记录`);
                     
                     return {
                         sessions: allSessions,
@@ -956,7 +971,7 @@
                     };
                     
                 } catch (error) {
-                    debugLog(`? 读取所有数据失败: ${error.message}`);
+                    debugLog(`❌ 读取所有数据失败: ${error.message}`);
                     throw error;
                 }
             }
@@ -964,7 +979,7 @@
             // 清空所有数据
             async clearAllData() {
                 try {
-                    debugLog('??? 开始清空所有bin数据...');
+                    debugLog('🗑️ 开始清空所有bin数据...');
                     
                     // 清空所有数据bin（保留bin本身，只清空内容）
                     for (const binInfo of this.allBins) {
@@ -991,11 +1006,11 @@
                     masterData.lastUpdated = new Date().toISOString();
                     await this.updateMasterBin(masterData);
                     
-                    debugLog('? 所有数据已清空');
+                    debugLog('✅ 所有数据已清空');
                     return true;
                     
                 } catch (error) {
-                    debugLog(`? 清空数据失败: ${error.message}`);
+                    debugLog(`❌ 清空数据失败: ${error.message}`);
                     throw error;
                 }
             }
@@ -1099,7 +1114,7 @@
                 }
                 return await multiBinManager.readAllData();
             } catch (error) {
-                debugLog(`? 从多bin读取数据失败: ${error.message}`);
+                debugLog(`❌ 从多bin读取数据失败: ${error.message}`);
                 return {
                     sessions: [],
                     comparisons: [],
@@ -1115,7 +1130,7 @@
                     await initializeMultiBinManager();
                 }
 
-                debugLog(`?? 开始提交用户会话: ${sessionId}, 对比数量: ${comparisons.length}`);
+                debugLog(`💾 开始提交用户会话: ${sessionId}, 对比数量: ${comparisons.length}`);
                 
                 const newSessionData = {
                     sessionId: sessionId,
@@ -1151,14 +1166,14 @@
                 
                 await multiBinManager.saveUserSession(newSessionData, newComparisonRecords);
                 
-                debugLog(`? 数据保存成功到多bin系统`);
+                debugLog(`✅ 数据保存成功到多bin系统`);
                 showDataStatus('数据保存成功', 'success');
                 setTimeout(hideDataStatus, 2000);
                 
                 return true;
                 
             } catch (error) {
-                debugLog(`? 保存失败: ${error.message}`);
+                debugLog(`❌ 保存失败: ${error.message}`);
                 showDataStatus('数据保存失败，请检查网络连接', 'error');
                 setTimeout(hideDataStatus, 5000);
                 return false;
@@ -1232,12 +1247,12 @@
         // 图片库初始化
         // ====================================================================
         async function initializeImageLibrary() {
-            debugLog('?? 初始化完整图片库...');
+            debugLog('📷 初始化完整图片库...');
             
             let imageUrls = await loadImageUrlsFromFile();
             
             if (!imageUrls || imageUrls.length === 0) {
-                debugLog('?? 文件加载失败，使用演示图片列表');
+                debugLog('⚠️ 文件加载失败，使用演示图片列表');
                 imageUrls = DEMO_IMAGES;
             }
             
@@ -1250,7 +1265,7 @@
             
             const minImagesNeeded = 20;
             if (fullImageLibrary.length < minImagesNeeded) {
-                debugLog(`?? 图片数量不足(${fullImageLibrary.length}张)，需要至少${minImagesNeeded}张`);
+                debugLog(`⚠️ 图片数量不足(${fullImageLibrary.length}张)，需要至少${minImagesNeeded}张`);
                 const originalLibrary = [...fullImageLibrary];
                 while (fullImageLibrary.length < minImagesNeeded) {
                     fullImageLibrary.push(...originalLibrary.map((img, index) => ({
@@ -1258,15 +1273,15 @@
                         id: fullImageLibrary.length + index + 1
                     })));
                 }
-                debugLog(`? 已调整完整图片库到${fullImageLibrary.length}张图片`);
+                debugLog(`✅ 已调整完整图片库到${fullImageLibrary.length}张图片`);
             }
             
             isImageLibraryLoaded = true;
-            debugLog(`? 完整图片库初始化完成，共 ${fullImageLibrary.length} 张图片`);
+            debugLog(`✅ 完整图片库初始化完成，共 ${fullImageLibrary.length} 张图片`);
         }
 
         function selectImagesForCurrentGroup() {
-            debugLog(`?? 为第${currentGroupNumber}组选择新的图片...`);
+            debugLog(`🔀 为第${currentGroupNumber}组选择新的图片...`);
             
             const minImagesNeeded = 20;
             
@@ -1286,8 +1301,8 @@
                 imageLibrary.sort(() => 0.5 - Math.random());
             }
             
-            debugLog(`? 第${currentGroupNumber}组图片选择完成，共 ${imageLibrary.length} 张图片`);
-            debugLog(`?? 本组使用的图片: ${imageLibrary.map(img => img.name.substring(0, 8)).join(', ')}`);
+            debugLog(`✅ 第${currentGroupNumber}组图片选择完成，共 ${imageLibrary.length} 张图片`);
+            debugLog(`🖼️ 本组使用的图片: ${imageLibrary.map(img => img.name.substring(0, 8)).join(', ')}`);
         }
 
         async function loadImageUrlsFromFile() {
@@ -1301,22 +1316,22 @@
                     .filter(line => line.length > 0 && !line.startsWith('#'))
                     .filter(line => line.startsWith('http'));
                 
-                debugLog(`?? 从文件加载了 ${urls.length} 个图片URL`);
+                debugLog(`📄 从文件加载了 ${urls.length} 个图片URL`);
                 return urls;
             } catch (error) {
-                debugLog(`? 加载图片列表文件失败: ${error.message}`);
+                debugLog(`❌ 加载图片列表文件失败: ${error.message}`);
                 return null;
             }
         }
 
         function loadImageWithFallback(imgElement, imageData, callback) {
-            debugLog(`??? 加载图片: ${imageData.name}`);
+            debugLog(`🖼️ 加载图片: ${imageData.name}`);
             
             const preloadedImageKey = `${imageData.id}_${imageData.url}`;
             if (preloadedImages.has(preloadedImageKey)) {
                 const preloadedImg = preloadedImages.get(preloadedImageKey);
                 if (preloadedImg.complete && preloadedImg.naturalHeight !== 0) {
-                    debugLog(`? 使用预加载的图片: ${imageData.name}`);
+                    debugLog(`✅ 使用预加载的图片: ${imageData.name}`);
                     imgElement.src = preloadedImg.src;
                     if (callback) callback(true);
                     return;
@@ -1324,20 +1339,20 @@
             }
             
             imgElement.onload = function() {
-                debugLog(`? 图片 ${imageData.name} 原始URL加载成功`);
+                debugLog(`✅ 图片 ${imageData.name} 原始URL加载成功`);
                 if (callback) callback(true);
             };
             
             imgElement.onerror = function() {
-                debugLog(`? 图片 ${imageData.name} 原始URL加载失败，尝试备用图片`);
+                debugLog(`⚠️ 图片 ${imageData.name} 原始URL加载失败，尝试备用图片`);
                 
                 imgElement.onload = function() {
-                    debugLog(`? 图片 ${imageData.name} 通过备用源加载成功`);
+                    debugLog(`✅ 图片 ${imageData.name} 通过备用源加载成功`);
                     if (callback) callback(true);
                 };
                 
                 imgElement.onerror = function() {
-                    debugLog(`? 图片 ${imageData.name} 所有源都无法加载`);
+                    debugLog(`❌ 图片 ${imageData.name} 所有源都无法加载`);
                     imgElement.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjY2IiBoZWlnaHQ9IjUwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNiIgZmlsbD0iIzk5YTNhZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPuWbvueJh+aauOaXoOazleWKoOi9rTwvdGV4dD48L3N2Zz4=';
                     if (callback) callback(false);
                 };
@@ -1360,23 +1375,23 @@
                 const img = new Image();
                 
                 img.onload = function() {
-                    debugLog(`?? 预加载成功: ${imageData.name}`);
+                    debugLog(`⚡ 预加载成功: ${imageData.name}`);
                     preloadedImages.set(preloadedImageKey, img);
                     resolve(img);
                 };
                 
                 img.onerror = function() {
-                    debugLog(`? 预加载原始URL失败，尝试备用URL: ${imageData.name}`);
+                    debugLog(`⚠️ 预加载原始URL失败，尝试备用URL: ${imageData.name}`);
                     
                     const fallbackImg = new Image();
                     fallbackImg.onload = function() {
-                        debugLog(`?? 预加载备用URL成功: ${imageData.name}`);
+                        debugLog(`⚡ 预加载备用URL成功: ${imageData.name}`);
                         preloadedImages.set(preloadedImageKey, fallbackImg);
                         resolve(fallbackImg);
                     };
                     
                     fallbackImg.onerror = function() {
-                        debugLog(`? 预加载所有URL都失败: ${imageData.name}`);
+                        debugLog(`❌ 预加载所有URL都失败: ${imageData.name}`);
                         resolve(null);
                     };
                     
@@ -1391,15 +1406,15 @@
             const nextIndex = currentComparisonIndex + 1;
             if (nextIndex < comparisonPairs.length) {
                 const nextPair = comparisonPairs[nextIndex];
-                debugLog(`?? 开始预加载下一对图片 (${nextIndex + 1}/${comparisonPairs.length})`);
+                debugLog(`🔮 开始预加载下一对图片 (${nextIndex + 1}/${comparisonPairs.length})`);
                 
                 Promise.all([
                     preloadImage(nextPair.imageA),
                     preloadImage(nextPair.imageB)
                 ]).then(() => {
-                    debugLog(`? 下一对图片预加载完成`);
+                    debugLog(`✅ 下一对图片预加载完成`);
                 }).catch((error) => {
-                    debugLog(`? 预加载失败: ${error}`);
+                    debugLog(`❌ 预加载失败: ${error}`);
                 });
             }
         }
@@ -1509,7 +1524,7 @@
         const texts = {
             zh: {
                 surveyTitle: '街景感知问卷：第一部分',
-                reminderTitle: '?? 实验提醒',
+                reminderTitle: '📋 实验提醒',
                 reminderText: '请认真作答。本实验需要完成5组，每组20次图片对比，耗时约20分钟，才能获得最终报酬。',
                 reminderDevice: '为保证实验效果，请使用电脑或平板电脑作答。',
                 nicknameLabel: '您的昵称是：',
@@ -1530,12 +1545,12 @@
                 continueTitle: '本组对比已完成',
                 continueButton: '继续下一组',
                 exitButton: '退出实验',
-                exitWarningTitle: '?? 退出警告',
+                exitWarningTitle: '⚠️ 退出警告',
                 exitWarningMessage: '您还未完成全部5组实验，现在退出将无法获得报酬。\n\n确定要退出吗？',
                 backButton: '返回继续实验',
                 forceExitButton: '确定退出',
                 finishButton: '完成实验',
-                thankYouTitle: '?? 感谢您的参与！',
+                thankYouTitle: '🎉 感谢您的参与！',
                 thankYouMessage: '您已成功完成全部5组实验，数据已提交！\n\n感谢您为街景感知研究做出的贡献！请联系研究人员兑换报酬。',
                 restartButton: '重新开始',
                 nicknameConfirmText: '感谢您的参与！',
@@ -1552,7 +1567,7 @@
             },
             en: {
                 surveyTitle: 'Street View Perception Questionnaire: Part 1',
-                reminderTitle: '?? Experiment Reminder',
+                reminderTitle: '📋 Experiment Reminder',
                 reminderText: 'Please answer carefully. This experiment requires completing 5 groups, with 20 image comparisons each, taking about 20 minutes total to receive the final compensation.',
                 reminderDevice: 'For best results, please use a computer or tablet.',
                 nicknameLabel: 'Your nickname is:',
@@ -1573,12 +1588,12 @@
                 continueTitle: 'Group Comparison Completed',
                 continueButton: 'Continue Next Group',
                 exitButton: 'Exit Experiment',
-                exitWarningTitle: '?? Exit Warning',
+                exitWarningTitle: '⚠️ Exit Warning',
                 exitWarningMessage: 'You have not completed all 5 groups yet. Exiting now means you will not receive compensation.\n\nAre you sure you want to exit?',
                 backButton: 'Return to Continue',
                 forceExitButton: 'Confirm Exit',
                 finishButton: 'Complete Experiment',
-                thankYouTitle: '?? Thank You for Your Participation!',
+                thankYouTitle: '🎉 Thank You for Your Participation!',
                 thankYouMessage: 'You have successfully completed all 5 groups! Your data has been submitted.\n\nThank you for contributing to street view perception research! Please contact the researchers to claim your compensation.',
                 restartButton: 'Start Over',
                 nicknameConfirmText: 'Thank you for your participation!',
@@ -1745,7 +1760,7 @@
                 [imagePool[i], imagePool[j]] = [imagePool[j], imagePool[i]];
             }
             
-            debugLog(`?? 图片池创建完成，共 ${imagePool.length} 个图片实例`);
+            debugLog(`🎲 图片池创建完成，共 ${imagePool.length} 个图片实例`);
             
             for (let i = 0; i < imagePool.length - 1; i += 2) {
                 let imageAId = imagePool[i];
@@ -1775,7 +1790,7 @@
                 }
             }
             
-            debugLog(`? 第${currentGroupNumber}组生成了 ${comparisonPairs.length} 组配对`);
+            debugLog(`✅ 第${currentGroupNumber}组生成了 ${comparisonPairs.length} 组配对`);
         }
 
         function generateNewComparison() {
@@ -1885,7 +1900,7 @@
         }
 
         async function completeCurrentGroup() {
-            debugLog(`? 第${currentGroupNumber}组对比完成，共${comparisons.length}次对比`);
+            debugLog(`✅ 第${currentGroupNumber}组对比完成，共${comparisons.length}次对比`);
             
             const saveSuccess = await saveUserSession();
             
@@ -2395,14 +2410,14 @@
         // 页面初始化
         // ====================================================================
         document.addEventListener('DOMContentLoaded', async function() {
-            debugLog('?? 街景问卷系统启动 - 多Bin版本');
+            debugLog('🚀 街景问卷系统启动 - 多Bin版本');
             
             // 初始化多bin管理器
             try {
                 await initializeMultiBinManager();
-                debugLog('? 多bin系统初始化成功');
+                debugLog('✅ 多bin系统初始化成功');
             } catch (error) {
-                debugLog('? 多bin系统初始化失败，系统仍可运行但可能有存储限制');
+                debugLog('⚠️ 多bin系统初始化失败，系统仍可运行但可能有存储限制');
                 console.error('MultiBin初始化错误:', error);
             }
             
@@ -2417,15 +2432,15 @@
             });
             
             if (isImageLibraryLoaded) {
-                debugLog(`? 系统就绪，完整图片库包含 ${fullImageLibrary.length} 张图片`);
+                debugLog(`✅ 系统就绪，完整图片库包含 ${fullImageLibrary.length} 张图片`);
             } else {
-                debugLog('?? 图片库初始化有问题，但系统仍可运行');
+                debugLog('⚠️ 图片库初始化有问题，但系统仍可运行');
             }
             
-            debugLog('? 多Bin配置完成');
+            debugLog('✅ 多Bin配置完成');
             if (multiBinManager) {
                 const status = multiBinManager.getSystemStatus();
-                debugLog(`?? 当前系统: ${status.totalBins} 个bin，活跃bin: ${status.currentBinId?.substring(0, 8)}...`);
+                debugLog(`🎯 当前系统: ${status.totalBins} 个bin，活跃bin: ${status.currentBinId?.substring(0, 8)}...`);
             }
         });
     </script>
