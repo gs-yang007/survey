@@ -1376,25 +1376,39 @@
             }
         }
 
+        // 修复：更智能的缓存清理逻辑
         function cleanupPreloadCache() {
             const keepKeys = new Set();
             
-            if (currentComparisonIndex < comparisonPairs.length) {
-                const currentPair = comparisonPairs[currentComparisonIndex];
+            // 保留当前显示的图片 - 使用当前显示的索引而不是增加后的索引
+            const displayIndex = Math.min(currentComparisonIndex, comparisonPairs.length - 1);
+            if (displayIndex >= 0 && displayIndex < comparisonPairs.length) {
+                const currentPair = comparisonPairs[displayIndex];
                 keepKeys.add(`${currentPair.imageA.id}_${currentPair.imageA.url}`);
                 keepKeys.add(`${currentPair.imageB.id}_${currentPair.imageB.url}`);
+                console.log(`保留当前显示图片 (索引 ${displayIndex}): ${currentPair.imageA.name}, ${currentPair.imageB.name}`);
             }
             
-            if (currentComparisonIndex + 1 < comparisonPairs.length) {
-                const nextPair = comparisonPairs[currentComparisonIndex + 1];
+            // 保留下一对预加载的图片
+            const nextIndex = currentComparisonIndex + 1;
+            if (nextIndex < comparisonPairs.length) {
+                const nextPair = comparisonPairs[nextIndex];
                 keepKeys.add(`${nextPair.imageA.id}_${nextPair.imageA.url}`);
                 keepKeys.add(`${nextPair.imageB.id}_${nextPair.imageB.url}`);
+                console.log(`保留下一对预加载图片 (索引 ${nextIndex}): ${nextPair.imageA.name}, ${nextPair.imageB.name}`);
             }
             
+            // 清理不需要的缓存
+            const beforeCleanup = preloadedImages.size;
             for (const key of preloadedImages.keys()) {
                 if (!keepKeys.has(key)) {
                     preloadedImages.delete(key);
                 }
+            }
+            const afterCleanup = preloadedImages.size;
+            
+            if (beforeCleanup !== afterCleanup) {
+                console.log(`缓存清理完成: ${beforeCleanup} -> ${afterCleanup} 张图片`);
             }
         }
 
@@ -1809,6 +1823,7 @@
             }
         }
 
+        // 修复：重新组织确认选择的流程，避免缓存清理问题
         async function confirmAllSelections() {
             if (!checkMinimumViewTime()) {
                 showTimeWarning();
@@ -1841,6 +1856,7 @@
                 return;
             }
 
+            // 保存当前对比的数据
             comparisons.push({
                 imageA: currentPair.imageA,
                 imageB: currentPair.imageB,
@@ -1851,8 +1867,13 @@
                 viewTime: Date.now() - comparisonStartTime
             });
 
-            currentComparisonIndex++;
+            console.log(`第 ${currentComparisonIndex + 1} 次对比完成，已保存数据`);
+
+            // 先进行清理，但使用当前的索引（未增加）
             cleanupPreloadCache();
+            
+            // 然后增加索引并生成下一个对比
+            currentComparisonIndex++;
             generateNewComparison();
         }
 
