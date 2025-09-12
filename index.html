@@ -12,22 +12,6 @@
             from { opacity: 0; }
             to { opacity: 1; }
         }
-        .debug-panel {
-            position: fixed;
-            top: 10px;
-            right: 10px;
-            background: #1a1a1a;
-            color: #00ff00;
-            padding: 10px;
-            border-radius: 5px;
-            font-family: monospace;
-            font-size: 12px;
-            max-width: 300px;
-            max-height: 200px;
-            overflow-y: auto;
-            z-index: 1000;
-            display: none;
-        }
         .image-container {
             width: 666px;
             height: 500px;
@@ -217,13 +201,6 @@
     </style>
 </head>
 <body class="bg-gray-100">
-    <!-- 调试面板 -->
-    <div id="debugPanel" class="debug-panel">
-        <div>🔧 调试信息</div>
-        <div id="debugLog"></div>
-        <button onclick="toggleDebug()" style="background: #333; color: #fff; border: none; padding: 2px 5px; margin-top: 5px;">隐藏</button>
-    </div>
-
     <!-- 数据状态指示器 -->
     <div id="dataStatusIndicator" class="fixed top-4 left-1/2 transform -translate-x-1/2 z-50 hidden">
         <div class="status-indicator">
@@ -694,7 +671,7 @@
                     const result = await response.json();
                     return result.record;
                 } catch (error) {
-                    debugLog(`🔍 读取主控制bin失败: ${error.message}`);
+                    console.log(`读取主控制bin失败: ${error.message}`);
                     // 返回初始结构
                     return {
                         dataBins: [],
@@ -720,7 +697,7 @@
                     
                     return await response.json();
                 } catch (error) {
-                    debugLog(`❌ 更新主控制bin失败: ${error.message}`);
+                    console.log(`更新主控制bin失败: ${error.message}`);
                     throw error;
                 }
             }
@@ -751,7 +728,7 @@
                     const result = await response.json();
                     const newBinId = result.metadata.id;
                     
-                    debugLog(`✅ 创建新数据bin成功: ${newBinId}`);
+                    console.log(`创建新数据bin成功: ${newBinId}`);
                     
                     return {
                         binId: newBinId,
@@ -761,7 +738,7 @@
                         status: 'active'
                     };
                 } catch (error) {
-                    debugLog(`❌ 创建新数据bin失败: ${error.message}`);
+                    console.log(`创建新数据bin失败: ${error.message}`);
                     throw error;
                 }
             }
@@ -781,7 +758,7 @@
                     const result = await response.json();
                     return result.record;
                 } catch (error) {
-                    debugLog(`❌ 读取数据bin ${binId} 失败: ${error.message}`);
+                    console.log(`读取数据bin ${binId} 失败: ${error.message}`);
                     throw error;
                 }
             }
@@ -801,7 +778,7 @@
                     
                     return await response.json();
                 } catch (error) {
-                    debugLog(`❌ 更新数据bin ${binId} 失败: ${error.message}`);
+                    console.log(`更新数据bin ${binId} 失败: ${error.message}`);
                     throw error;
                 }
             }
@@ -809,13 +786,13 @@
             // 初始化多bin系统
             async initialize() {
                 try {
-                    debugLog('🚀 初始化多bin管理系统...');
+                    console.log('初始化多bin管理系统...');
                     
                     const masterData = await this.readMasterBin();
                     this.allBins = masterData.dataBins || [];
                     
                     if (this.allBins.length === 0) {
-                        debugLog('📁 没有发现数据bin，创建第一个...');
+                        console.log('没有发现数据bin，创建第一个...');
                         const newBin = await this.createNewDataBin();
                         this.allBins = [newBin];
                         
@@ -828,12 +805,12 @@
                     // 找到当前活跃的bin（最后一个）
                     this.currentBinInfo = this.allBins[this.allBins.length - 1];
                     
-                    debugLog(`✅ 多bin系统初始化完成，共 ${this.allBins.length} 个bin`);
-                    debugLog(`🎯 当前活跃bin: ${this.currentBinInfo.binId}`);
+                    console.log(`多bin系统初始化完成，共 ${this.allBins.length} 个bin`);
+                    console.log(`当前活跃bin: ${this.currentBinInfo.binId}`);
                     
                     return true;
                 } catch (error) {
-                    debugLog(`❌ 多bin系统初始化失败: ${error.message}`);
+                    console.log(`多bin系统初始化失败: ${error.message}`);
                     throw error;
                 }
             }
@@ -843,7 +820,7 @@
                 const estimatedNewSize = this.currentBinInfo.estimatedSize + newDataSize;
                 
                 if (estimatedNewSize > this.config.maxBinSize) {
-                    debugLog(`⚠️ 当前bin即将超限 (${estimatedNewSize} > ${this.config.maxBinSize})，创建新bin...`);
+                    console.log(`当前bin即将超限 (${estimatedNewSize} > ${this.config.maxBinSize})，创建新bin...`);
                     
                     // 标记当前bin为已满
                     this.currentBinInfo.status = 'full';
@@ -859,7 +836,7 @@
                     masterData.lastUpdated = new Date().toISOString();
                     await this.updateMasterBin(masterData);
                     
-                    debugLog(`✅ 已切换到新bin: ${this.currentBinInfo.binId}`);
+                    console.log(`已切换到新bin: ${this.currentBinInfo.binId}`);
                     
                     return true;
                 }
@@ -870,7 +847,7 @@
             // 保存会话数据（自动处理多bin）
             async saveUserSession(sessionData, comparisonRecords) {
                 try {
-                    debugLog(`💾 开始保存会话数据，对比记录数: ${comparisonRecords.length}`);
+                    console.log(`开始保存会话数据，对比记录数: ${comparisonRecords.length}`);
                     
                     // 估算新数据大小
                     const newDataSize = this.getDataSize({
@@ -899,11 +876,11 @@
                             ...sessionData,
                             lastUpdated: new Date().toISOString()
                         };
-                        debugLog(`🔄 更新现有用户会话: ${sessionData.userData.nickname}`);
+                        console.log(`更新现有用户会话: ${sessionData.userData.nickname}`);
                     } else {
                         // 创建新会话记录
                         updatedSessions = [...existingSessions, sessionData];
-                        debugLog(`➕ 创建新用户会话: ${sessionData.userData.nickname}`);
+                        console.log(`创建新用户会话: ${sessionData.userData.nickname}`);
                     }
                     
                     // 合并新的对比数据
@@ -928,11 +905,11 @@
                     masterData.lastUpdated = new Date().toISOString();
                     await this.updateMasterBin(masterData);
                     
-                    debugLog(`✅ 会话数据保存成功到bin: ${this.currentBinInfo.binId}`);
+                    console.log(`会话数据保存成功到bin: ${this.currentBinInfo.binId}`);
                     return true;
                     
                 } catch (error) {
-                    debugLog(`❌ 保存会话数据失败: ${error.message}`);
+                    console.log(`保存会话数据失败: ${error.message}`);
                     throw error;
                 }
             }
@@ -940,7 +917,7 @@
             // 读取所有数据（从所有bin）
             async readAllData() {
                 try {
-                    debugLog('📖 开始读取所有bin的数据...');
+                    console.log('开始读取所有bin的数据...');
                     
                     const allSessions = [];
                     const allComparisons = [];
@@ -956,13 +933,13 @@
                                 allComparisons.push(...binData.comparisons);
                             }
                             
-                            debugLog(`📊 从bin ${binInfo.binId} 读取到 ${binData.sessions?.length || 0} 个会话，${binData.comparisons?.length || 0} 条对比记录`);
+                            console.log(`从bin ${binInfo.binId} 读取到 ${binData.sessions?.length || 0} 个会话，${binData.comparisons?.length || 0} 条对比记录`);
                         } catch (error) {
-                            debugLog(`⚠️ 读取bin ${binInfo.binId} 失败: ${error.message}`);
+                            console.log(`读取bin ${binInfo.binId} 失败: ${error.message}`);
                         }
                     }
                     
-                    debugLog(`📋 总计读取: ${allSessions.length} 个会话，${allComparisons.length} 条对比记录`);
+                    console.log(`总计读取: ${allSessions.length} 个会话，${allComparisons.length} 条对比记录`);
                     
                     return {
                         sessions: allSessions,
@@ -971,7 +948,7 @@
                     };
                     
                 } catch (error) {
-                    debugLog(`❌ 读取所有数据失败: ${error.message}`);
+                    console.log(`读取所有数据失败: ${error.message}`);
                     throw error;
                 }
             }
@@ -979,7 +956,7 @@
             // 清空所有数据
             async clearAllData() {
                 try {
-                    debugLog('🗑️ 开始清空所有bin数据...');
+                    console.log('开始清空所有bin数据...');
                     
                     // 清空所有数据bin（保留bin本身，只清空内容）
                     for (const binInfo of this.allBins) {
@@ -1006,11 +983,11 @@
                     masterData.lastUpdated = new Date().toISOString();
                     await this.updateMasterBin(masterData);
                     
-                    debugLog('✅ 所有数据已清空');
+                    console.log('所有数据已清空');
                     return true;
                     
                 } catch (error) {
-                    debugLog(`❌ 清空数据失败: ${error.message}`);
+                    console.log(`清空数据失败: ${error.message}`);
                     throw error;
                 }
             }
@@ -1051,9 +1028,7 @@
         // ====================================================================
         // 配置和全局变量
         // ====================================================================
-        const DEBUG_MODE = false;
         const MAX_GROUPS = 5;
-        let debugVisible = false;
 
         const DEMO_IMAGES = [
             'https://res.cloudinary.com/dw3huanrk/image/upload/my_website_images/batch_upload/fff7d0a1-08b4-4bb4-8e89-50936e51f395_5345.png',
@@ -1085,23 +1060,6 @@
             return 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
         }
 
-        function debugLog(message) {
-            if (DEBUG_MODE) {
-                console.log(message);
-                const debugLog = document.getElementById('debugLog');
-                if (debugLog) {
-                    debugLog.innerHTML += '<div>' + message + '</div>';
-                    debugLog.scrollTop = debugLog.scrollHeight;
-                }
-            }
-        }
-
-        function toggleDebug() {
-            const panel = document.getElementById('debugPanel');
-            debugVisible = !debugVisible;
-            panel.style.display = debugVisible ? 'block' : 'none';
-        }
-
         // ====================================================================
         // 替换的JSONBin函数
         // ====================================================================
@@ -1114,7 +1072,7 @@
                 }
                 return await multiBinManager.readAllData();
             } catch (error) {
-                debugLog(`❌ 从多bin读取数据失败: ${error.message}`);
+                console.log(`从多bin读取数据失败: ${error.message}`);
                 return {
                     sessions: [],
                     comparisons: [],
@@ -1130,7 +1088,7 @@
                     await initializeMultiBinManager();
                 }
 
-                debugLog(`💾 开始提交用户会话: ${sessionId}, 对比数量: ${comparisons.length}`);
+                console.log(`开始提交用户会话: ${sessionId}, 对比数量: ${comparisons.length}`);
                 
                 const newSessionData = {
                     sessionId: sessionId,
@@ -1166,14 +1124,14 @@
                 
                 await multiBinManager.saveUserSession(newSessionData, newComparisonRecords);
                 
-                debugLog(`✅ 数据保存成功到多bin系统`);
+                console.log(`数据保存成功到多bin系统`);
                 showDataStatus('数据保存成功', 'success');
                 setTimeout(hideDataStatus, 2000);
                 
                 return true;
                 
             } catch (error) {
-                debugLog(`❌ 保存失败: ${error.message}`);
+                console.log(`保存失败: ${error.message}`);
                 showDataStatus('数据保存失败，请检查网络连接', 'error');
                 setTimeout(hideDataStatus, 5000);
                 return false;
@@ -1247,12 +1205,12 @@
         // 图片库初始化
         // ====================================================================
         async function initializeImageLibrary() {
-            debugLog('📷 初始化完整图片库...');
+            console.log('初始化完整图片库...');
             
             let imageUrls = await loadImageUrlsFromFile();
             
             if (!imageUrls || imageUrls.length === 0) {
-                debugLog('⚠️ 文件加载失败，使用演示图片列表');
+                console.log('文件加载失败，使用演示图片列表');
                 imageUrls = DEMO_IMAGES;
             }
             
@@ -1265,7 +1223,7 @@
             
             const minImagesNeeded = 20;
             if (fullImageLibrary.length < minImagesNeeded) {
-                debugLog(`⚠️ 图片数量不足(${fullImageLibrary.length}张)，需要至少${minImagesNeeded}张`);
+                console.log(`图片数量不足(${fullImageLibrary.length}张)，需要至少${minImagesNeeded}张`);
                 const originalLibrary = [...fullImageLibrary];
                 while (fullImageLibrary.length < minImagesNeeded) {
                     fullImageLibrary.push(...originalLibrary.map((img, index) => ({
@@ -1273,15 +1231,15 @@
                         id: fullImageLibrary.length + index + 1
                     })));
                 }
-                debugLog(`✅ 已调整完整图片库到${fullImageLibrary.length}张图片`);
+                console.log(`已调整完整图片库到${fullImageLibrary.length}张图片`);
             }
             
             isImageLibraryLoaded = true;
-            debugLog(`✅ 完整图片库初始化完成，共 ${fullImageLibrary.length} 张图片`);
+            console.log(`完整图片库初始化完成，共 ${fullImageLibrary.length} 张图片`);
         }
 
         function selectImagesForCurrentGroup() {
-            debugLog(`🔀 为第${currentGroupNumber}组选择新的图片...`);
+            console.log(`为第${currentGroupNumber}组选择新的图片...`);
             
             const minImagesNeeded = 20;
             
@@ -1301,8 +1259,7 @@
                 imageLibrary.sort(() => 0.5 - Math.random());
             }
             
-            debugLog(`✅ 第${currentGroupNumber}组图片选择完成，共 ${imageLibrary.length} 张图片`);
-            debugLog(`🖼️ 本组使用的图片: ${imageLibrary.map(img => img.name.substring(0, 8)).join(', ')}`);
+            console.log(`第${currentGroupNumber}组图片选择完成，共 ${imageLibrary.length} 张图片`);
         }
 
         async function loadImageUrlsFromFile() {
@@ -1316,22 +1273,22 @@
                     .filter(line => line.length > 0 && !line.startsWith('#'))
                     .filter(line => line.startsWith('http'));
                 
-                debugLog(`📄 从文件加载了 ${urls.length} 个图片URL`);
+                console.log(`从文件加载了 ${urls.length} 个图片URL`);
                 return urls;
             } catch (error) {
-                debugLog(`❌ 加载图片列表文件失败: ${error.message}`);
+                console.log(`加载图片列表文件失败: ${error.message}`);
                 return null;
             }
         }
 
         function loadImageWithFallback(imgElement, imageData, callback) {
-            debugLog(`🖼️ 加载图片: ${imageData.name}`);
+            console.log(`加载图片: ${imageData.name}`);
             
             const preloadedImageKey = `${imageData.id}_${imageData.url}`;
             if (preloadedImages.has(preloadedImageKey)) {
                 const preloadedImg = preloadedImages.get(preloadedImageKey);
                 if (preloadedImg.complete && preloadedImg.naturalHeight !== 0) {
-                    debugLog(`✅ 使用预加载的图片: ${imageData.name}`);
+                    console.log(`使用预加载的图片: ${imageData.name}`);
                     imgElement.src = preloadedImg.src;
                     if (callback) callback(true);
                     return;
@@ -1339,20 +1296,20 @@
             }
             
             imgElement.onload = function() {
-                debugLog(`✅ 图片 ${imageData.name} 原始URL加载成功`);
+                console.log(`图片 ${imageData.name} 原始URL加载成功`);
                 if (callback) callback(true);
             };
             
             imgElement.onerror = function() {
-                debugLog(`⚠️ 图片 ${imageData.name} 原始URL加载失败，尝试备用图片`);
+                console.log(`图片 ${imageData.name} 原始URL加载失败，尝试备用图片`);
                 
                 imgElement.onload = function() {
-                    debugLog(`✅ 图片 ${imageData.name} 通过备用源加载成功`);
+                    console.log(`图片 ${imageData.name} 通过备用源加载成功`);
                     if (callback) callback(true);
                 };
                 
                 imgElement.onerror = function() {
-                    debugLog(`❌ 图片 ${imageData.name} 所有源都无法加载`);
+                    console.log(`图片 ${imageData.name} 所有源都无法加载`);
                     imgElement.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjY2IiBoZWlnaHQ9IjUwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNiIgZmlsbD0iIzk5YTNhZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPuWbvueJh+aauOaXoOazleWKoOi9rTwvdGV4dD48L3N2Zz4=';
                     if (callback) callback(false);
                 };
@@ -1375,23 +1332,23 @@
                 const img = new Image();
                 
                 img.onload = function() {
-                    debugLog(`⚡ 预加载成功: ${imageData.name}`);
+                    console.log(`预加载成功: ${imageData.name}`);
                     preloadedImages.set(preloadedImageKey, img);
                     resolve(img);
                 };
                 
                 img.onerror = function() {
-                    debugLog(`⚠️ 预加载原始URL失败，尝试备用URL: ${imageData.name}`);
+                    console.log(`预加载原始URL失败，尝试备用URL: ${imageData.name}`);
                     
                     const fallbackImg = new Image();
                     fallbackImg.onload = function() {
-                        debugLog(`⚡ 预加载备用URL成功: ${imageData.name}`);
+                        console.log(`预加载备用URL成功: ${imageData.name}`);
                         preloadedImages.set(preloadedImageKey, fallbackImg);
                         resolve(fallbackImg);
                     };
                     
                     fallbackImg.onerror = function() {
-                        debugLog(`❌ 预加载所有URL都失败: ${imageData.name}`);
+                        console.log(`预加载所有URL都失败: ${imageData.name}`);
                         resolve(null);
                     };
                     
@@ -1406,15 +1363,15 @@
             const nextIndex = currentComparisonIndex + 1;
             if (nextIndex < comparisonPairs.length) {
                 const nextPair = comparisonPairs[nextIndex];
-                debugLog(`🔮 开始预加载下一对图片 (${nextIndex + 1}/${comparisonPairs.length})`);
+                console.log(`开始预加载下一对图片 (${nextIndex + 1}/${comparisonPairs.length})`);
                 
                 Promise.all([
                     preloadImage(nextPair.imageA),
                     preloadImage(nextPair.imageB)
                 ]).then(() => {
-                    debugLog(`✅ 下一对图片预加载完成`);
+                    console.log(`下一对图片预加载完成`);
                 }).catch((error) => {
-                    debugLog(`❌ 预加载失败: ${error}`);
+                    console.log(`预加载失败: ${error}`);
                 });
             }
         }
@@ -1760,7 +1717,7 @@
                 [imagePool[i], imagePool[j]] = [imagePool[j], imagePool[i]];
             }
             
-            debugLog(`🎲 图片池创建完成，共 ${imagePool.length} 个图片实例`);
+            console.log(`图片池创建完成，共 ${imagePool.length} 个图片实例`);
             
             for (let i = 0; i < imagePool.length - 1; i += 2) {
                 let imageAId = imagePool[i];
@@ -1790,7 +1747,7 @@
                 }
             }
             
-            debugLog(`✅ 第${currentGroupNumber}组生成了 ${comparisonPairs.length} 组配对`);
+            console.log(`第${currentGroupNumber}组生成了 ${comparisonPairs.length} 组配对`);
         }
 
         function generateNewComparison() {
@@ -1900,7 +1857,7 @@
         }
 
         async function completeCurrentGroup() {
-            debugLog(`✅ 第${currentGroupNumber}组对比完成，共${comparisons.length}次对比`);
+            console.log(`第${currentGroupNumber}组对比完成，共${comparisons.length}次对比`);
             
             const saveSuccess = await saveUserSession();
             
@@ -2410,14 +2367,14 @@
         // 页面初始化
         // ====================================================================
         document.addEventListener('DOMContentLoaded', async function() {
-            debugLog('🚀 街景问卷系统启动 - 多Bin版本');
+            console.log('街景问卷系统启动 - 多Bin版本');
             
             // 初始化多bin管理器
             try {
                 await initializeMultiBinManager();
-                debugLog('✅ 多bin系统初始化成功');
+                console.log('多bin系统初始化成功');
             } catch (error) {
-                debugLog('⚠️ 多bin系统初始化失败，系统仍可运行但可能有存储限制');
+                console.log('多bin系统初始化失败，系统仍可运行但可能有存储限制');
                 console.error('MultiBin初始化错误:', error);
             }
             
@@ -2432,15 +2389,15 @@
             });
             
             if (isImageLibraryLoaded) {
-                debugLog(`✅ 系统就绪，完整图片库包含 ${fullImageLibrary.length} 张图片`);
+                console.log(`系统就绪，完整图片库包含 ${fullImageLibrary.length} 张图片`);
             } else {
-                debugLog('⚠️ 图片库初始化有问题，但系统仍可运行');
+                console.log('图片库初始化有问题，但系统仍可运行');
             }
             
-            debugLog('✅ 多Bin配置完成');
+            console.log('多Bin配置完成');
             if (multiBinManager) {
                 const status = multiBinManager.getSystemStatus();
-                debugLog(`🎯 当前系统: ${status.totalBins} 个bin，活跃bin: ${status.currentBinId?.substring(0, 8)}...`);
+                console.log(`当前系统: ${status.totalBins} 个bin，活跃bin: ${status.currentBinId?.substring(0, 8)}...`);
             }
         });
     </script>
