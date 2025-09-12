@@ -249,7 +249,7 @@
             <div class="bg-white rounded-lg shadow-lg p-6">
                 <!-- 实验提醒 -->
                 <div id="experimentReminder" class="experiment-reminder">
-                    <h4 id="reminderTitle">?? 实验提醒</h4>
+                    <h4 id="reminderTitle">实验提醒</h4>
                     <p id="reminderText">请认真作答。本实验需要完成5组，每组20次图片对比，耗时约20分钟，才能获得最终报酬。</p>
                     <p id="reminderDevice">为保证实验效果，请使用电脑或平板电脑作答。</p>
                 </div>
@@ -517,7 +517,7 @@
     <!-- 退出警告页面 -->
     <div id="exitWarningPage" class="hidden min-h-screen bg-gray-100 flex items-center justify-center p-4">
         <div class="bg-white rounded-lg shadow-lg p-8 text-center max-w-md w-full">
-            <h2 id="exitWarningTitle" class="text-2xl font-bold text-gray-800 mb-4">?? 退出警告</h2>
+            <h2 id="exitWarningTitle" class="text-2xl font-bold text-gray-800 mb-4">退出警告</h2>
             <p id="exitWarningMessage" class="text-gray-600 mb-8">您还未完成全部5组实验，现在退出将无法获得报酬。<br><br>确定要退出吗？</p>
             
             <div class="flex justify-center space-x-4">
@@ -540,7 +540,7 @@
                 <p id="nicknameConfirmText" class="text-sm text-gray-600">感谢您的参与！</p>
             </div>
             
-            <h2 id="thankYouTitle" class="text-2xl font-bold text-gray-800 mb-4">?? 感谢您的参与！</h2>
+            <h2 id="thankYouTitle" class="text-2xl font-bold text-gray-800 mb-4">感谢您的参与！</h2>
             <p id="thankYouMessage" class="text-gray-600 mb-8">您已成功完成全部5组实验，数据已提交！<br><br>感谢您为街景感知研究做出的贡献！请联系研究人员兑换报酬。</p>
             
             <button onclick="restart()" id="restartButton" class="px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors font-medium">
@@ -633,6 +633,31 @@
             baseUrl: 'https://api.jsonbin.io/v3/b',
             // 主控制bin - 存储所有子bin的索引信息
             masterBinId: '68af17fed0ea881f40683b2d',
+            // 所有已知的bin id列表（包括主控制bin和所有数据bin）
+            allKnownBinIds: [
+                '68af17fed0ea881f40683b2d', // 主控制bin
+                '68c3b73b43b1c97be9402194',
+                '68c3b716d0ea881f407b1148',
+                '68c3b5de43b1c97be940205f',
+                '68c3b55ed0ea881f407b0fee',
+                '68c3b55dae596e708febdbdb',
+                '68c3b55dd0ea881f407b0fec',
+                '68c3b55cd0ea881f407b0fea',
+                '68c3b49e43b1c97be9401f5b',
+                '68c3a413ae596e708febce80',
+                '68c3a29a43b1c97be9401146',
+                '68c3a27043b1c97be94010fb',
+                '68c3a249d0ea881f407b009e',
+                '68c3a24843b1c97be94010bb',
+                '68c3a22aae596e708febcc7f',
+                '68c3a1d8d0ea881f407affdd',
+                '68c3a1a2d0ea881f407affa9',
+                '68c3a19aae596e708febcbb6',
+                '68c3a194d0ea881f407aff97',
+                '68c3a173d0ea881f407aff79',
+                '68c3a123ae596e708febcb61',
+                '68c3a0fdae596e708febcb46'
+            ],
             // 数据大小限制 (字节) - 设置为800KB为安全起见
             maxBinSize: 800 * 1024,
             headers: {
@@ -702,45 +727,82 @@
                 }
             }
 
-            // 创建新的数据bin
-            async createNewDataBin() {
-                try {
-                    const initialData = {
-                        sessions: [],
-                        comparisons: [],
-                        binInfo: {
-                            createdAt: new Date().toISOString(),
-                            recordCount: 0
-                        },
-                        lastUpdated: new Date().toISOString()
-                    };
-
-                    const response = await fetch(`${this.config.baseUrl}`, {
-                        method: 'POST',
-                        headers: this.config.headers,
-                        body: JSON.stringify(initialData)
-                    });
-
-                    if (!response.ok) {
-                        throw new Error(`创建新bin失败: ${response.status}`);
+            // 扫描所有已知bin的状态
+            async scanAllKnownBins() {
+                console.log('开始扫描所有已知bin...');
+                const allBins = [];
+                
+                for (const binId of this.config.allKnownBinIds) {
+                    // 跳过主控制bin
+                    if (binId === this.config.masterBinId) {
+                        continue;
                     }
-
-                    const result = await response.json();
-                    const newBinId = result.metadata.id;
                     
-                    console.log(`创建新数据bin成功: ${newBinId}`);
-                    
-                    return {
-                        binId: newBinId,
-                        createdAt: new Date().toISOString(),
-                        recordCount: 0,
-                        estimatedSize: this.getDataSize(initialData),
-                        status: 'active'
-                    };
-                } catch (error) {
-                    console.log(`创建新数据bin失败: ${error.message}`);
-                    throw error;
+                    try {
+                        const binData = await this.readDataBin(binId);
+                        const dataSize = this.getDataSize(binData);
+                        
+                        const binInfo = {
+                            binId: binId,
+                            createdAt: binData.binInfo?.createdAt || '未知',
+                            recordCount: (binData.sessions?.length || 0) + (binData.comparisons?.length || 0),
+                            estimatedSize: dataSize,
+                            status: dataSize < this.config.maxBinSize * 0.9 ? 'available' : 'full',
+                            sessionsCount: binData.sessions?.length || 0,
+                            comparisonsCount: binData.comparisons?.length || 0,
+                            lastUpdated: binData.lastUpdated || '未知'
+                        };
+                        
+                        allBins.push(binInfo);
+                        console.log(`扫描bin ${binId.substring(0, 8)}...: ${Math.round(dataSize/1024)}KB, ${binInfo.recordCount} 记录`);
+                        
+                    } catch (error) {
+                        console.log(`扫描bin ${binId} 失败: ${error.message}`);
+                        // 将失败的bin也加入，标记为错误状态
+                        allBins.push({
+                            binId: binId,
+                            createdAt: '未知',
+                            recordCount: 0,
+                            estimatedSize: 0,
+                            status: 'error',
+                            sessionsCount: 0,
+                            comparisonsCount: 0,
+                            lastUpdated: '未知',
+                            error: error.message
+                        });
+                    }
                 }
+                
+                // 按可用性和大小排序，优先选择有空间的bin
+                allBins.sort((a, b) => {
+                    if (a.status === 'error' && b.status !== 'error') return 1;
+                    if (a.status !== 'error' && b.status === 'error') return -1;
+                    if (a.status === 'available' && b.status !== 'available') return -1;
+                    if (a.status !== 'available' && b.status === 'available') return 1;
+                    return a.estimatedSize - b.estimatedSize;
+                });
+                
+                console.log(`扫描完成，共发现 ${allBins.length} 个数据bin`);
+                return allBins;
+            }
+
+            // 选择合适的bin进行数据存储
+            selectBestAvailableBin(newDataSize) {
+                const availableBins = this.allBins.filter(bin => 
+                    bin.status === 'available' && 
+                    bin.estimatedSize + newDataSize < this.config.maxBinSize
+                );
+                
+                if (availableBins.length === 0) {
+                    console.log('没有找到合适的可用bin，使用第一个非错误状态的bin');
+                    const fallbackBins = this.allBins.filter(bin => bin.status !== 'error');
+                    return fallbackBins.length > 0 ? fallbackBins[0] : this.allBins[0];
+                }
+                
+                // 选择使用率最低的bin
+                return availableBins.reduce((best, current) => 
+                    current.estimatedSize < best.estimatedSize ? current : best
+                );
             }
 
             // 读取指定数据bin
@@ -788,25 +850,32 @@
                 try {
                     console.log('初始化多bin管理系统...');
                     
-                    const masterData = await this.readMasterBin();
-                    this.allBins = masterData.dataBins || [];
+                    // 扫描所有已知的bin状态
+                    this.allBins = await this.scanAllKnownBins();
                     
                     if (this.allBins.length === 0) {
-                        console.log('没有发现数据bin，创建第一个...');
-                        const newBin = await this.createNewDataBin();
-                        this.allBins = [newBin];
-                        
-                        // 更新主控制bin
-                        masterData.dataBins = this.allBins;
-                        masterData.lastUpdated = new Date().toISOString();
-                        await this.updateMasterBin(masterData);
+                        throw new Error('没有发现任何可用的数据bin');
                     }
                     
-                    // 找到当前活跃的bin（最后一个）
-                    this.currentBinInfo = this.allBins[this.allBins.length - 1];
+                    // 选择当前活跃bin（优先选择有空间的bin）
+                    const availableBins = this.allBins.filter(bin => bin.status === 'available');
+                    this.currentBinInfo = availableBins.length > 0 ? availableBins[0] : this.allBins[0];
                     
-                    console.log(`多bin系统初始化完成，共 ${this.allBins.length} 个bin`);
-                    console.log(`当前活跃bin: ${this.currentBinInfo.binId}`);
+                    // 如果当前选择的bin状态不是available，将其标记为active
+                    if (this.currentBinInfo.status !== 'available') {
+                        this.currentBinInfo.status = 'active';
+                    }
+                    
+                    const availableCount = this.allBins.filter(bin => bin.status === 'available').length;
+                    const fullCount = this.allBins.filter(bin => bin.status === 'full').length;
+                    const errorCount = this.allBins.filter(bin => bin.status === 'error').length;
+                    
+                    console.log(`多bin系统初始化完成:`);
+                    console.log(`- 总bin数: ${this.allBins.length}`);
+                    console.log(`- 可用bin: ${availableCount}`);
+                    console.log(`- 已满bin: ${fullCount}`);
+                    console.log(`- 错误bin: ${errorCount}`);
+                    console.log(`- 当前活跃bin: ${this.currentBinInfo.binId.substring(0, 8)}... (${Math.round(this.currentBinInfo.estimatedSize/1024)}KB)`);
                     
                     return true;
                 } catch (error) {
@@ -815,36 +884,41 @@
                 }
             }
 
-            // 检查当前bin是否需要切换
+            // 检查并切换到合适的bin
             async checkAndSwitchBin(newDataSize) {
-                const estimatedNewSize = this.currentBinInfo.estimatedSize + newDataSize;
+                const currentUsage = this.currentBinInfo.estimatedSize + newDataSize;
                 
-                if (estimatedNewSize > this.config.maxBinSize) {
-                    console.log(`当前bin即将超限 (${estimatedNewSize} > ${this.config.maxBinSize})，创建新bin...`);
-                    
-                    // 标记当前bin为已满
-                    this.currentBinInfo.status = 'full';
-                    
-                    // 创建新bin
-                    const newBin = await this.createNewDataBin();
-                    this.allBins.push(newBin);
-                    this.currentBinInfo = newBin;
-                    
-                    // 更新主控制bin
-                    const masterData = await this.readMasterBin();
-                    masterData.dataBins = this.allBins;
-                    masterData.lastUpdated = new Date().toISOString();
-                    await this.updateMasterBin(masterData);
-                    
-                    console.log(`已切换到新bin: ${this.currentBinInfo.binId}`);
-                    
-                    return true;
+                if (currentUsage <= this.config.maxBinSize * 0.9) {
+                    // 当前bin还有足够空间
+                    return false;
                 }
                 
-                return false;
+                console.log(`当前bin即将超限 (${Math.round(currentUsage/1024)}KB > ${Math.round(this.config.maxBinSize*0.9/1024)}KB)，寻找其他可用bin...`);
+                
+                // 重新扫描所有bin状态以获取最新信息
+                this.allBins = await this.scanAllKnownBins();
+                
+                // 选择最佳可用bin
+                const newBin = this.selectBestAvailableBin(newDataSize);
+                
+                if (newBin.binId === this.currentBinInfo.binId) {
+                    console.log('没有找到更好的bin，继续使用当前bin');
+                    return false;
+                }
+                
+                // 标记当前bin状态
+                this.currentBinInfo.status = 'full';
+                
+                // 切换到新bin
+                this.currentBinInfo = newBin;
+                this.currentBinInfo.status = 'active';
+                
+                console.log(`已切换到bin: ${this.currentBinInfo.binId.substring(0, 8)}... (${Math.round(this.currentBinInfo.estimatedSize/1024)}KB)`);
+                
+                return true;
             }
 
-            // 保存会话数据（自动处理多bin）
+            // 保存会话数据（使用现有bin）
             async saveUserSession(sessionData, comparisonRecords) {
                 try {
                     console.log(`开始保存会话数据，对比记录数: ${comparisonRecords.length}`);
@@ -897,15 +971,10 @@
                     // 更新bin信息
                     this.currentBinInfo.recordCount += comparisonRecords.length;
                     this.currentBinInfo.estimatedSize = this.getDataSize(updatedData);
+                    this.currentBinInfo.sessionsCount = updatedSessions.length;
+                    this.currentBinInfo.comparisonsCount = updatedData.comparisons.length;
                     
-                    // 更新主控制bin中的统计信息
-                    const masterData = await this.readMasterBin();
-                    masterData.totalRecords += comparisonRecords.length;
-                    masterData.dataBins = this.allBins;
-                    masterData.lastUpdated = new Date().toISOString();
-                    await this.updateMasterBin(masterData);
-                    
-                    console.log(`会话数据保存成功到bin: ${this.currentBinInfo.binId}`);
+                    console.log(`会话数据保存成功到bin: ${this.currentBinInfo.binId.substring(0, 8)}... (${Math.round(this.currentBinInfo.estimatedSize/1024)}KB)`);
                     return true;
                     
                 } catch (error) {
@@ -914,7 +983,7 @@
                 }
             }
 
-            // 读取所有数据（从所有bin）
+            // 读取所有数据（从所有可用bin）
             async readAllData() {
                 try {
                     console.log('开始读取所有bin的数据...');
@@ -923,6 +992,11 @@
                     const allComparisons = [];
                     
                     for (const binInfo of this.allBins) {
+                        if (binInfo.status === 'error') {
+                            console.log(`跳过错误状态的bin: ${binInfo.binId.substring(0, 8)}...`);
+                            continue;
+                        }
+                        
                         try {
                             const binData = await this.readDataBin(binInfo.binId);
                             
@@ -933,9 +1007,9 @@
                                 allComparisons.push(...binData.comparisons);
                             }
                             
-                            console.log(`从bin ${binInfo.binId} 读取到 ${binData.sessions?.length || 0} 个会话，${binData.comparisons?.length || 0} 条对比记录`);
+                            console.log(`从bin ${binInfo.binId.substring(0, 8)}... 读取到 ${binData.sessions?.length || 0} 个会话，${binData.comparisons?.length || 0} 条对比记录`);
                         } catch (error) {
-                            console.log(`读取bin ${binInfo.binId} 失败: ${error.message}`);
+                            console.log(`读取bin ${binInfo.binId.substring(0, 8)}... 失败: ${error.message}`);
                         }
                     }
                     
@@ -958,32 +1032,43 @@
                 try {
                     console.log('开始清空所有bin数据...');
                     
-                    // 清空所有数据bin（保留bin本身，只清空内容）
+                    let clearedCount = 0;
+                    let errorCount = 0;
+                    
                     for (const binInfo of this.allBins) {
-                        const emptyData = {
-                            sessions: [],
-                            comparisons: [],
-                            binInfo: {
-                                createdAt: binInfo.createdAt,
-                                recordCount: 0
-                            },
-                            lastUpdated: new Date().toISOString()
-                        };
+                        if (binInfo.status === 'error') {
+                            console.log(`跳过错误状态的bin: ${binInfo.binId.substring(0, 8)}...`);
+                            continue;
+                        }
                         
-                        await this.updateDataBin(binInfo.binId, emptyData);
-                        binInfo.recordCount = 0;
-                        binInfo.estimatedSize = this.getDataSize(emptyData);
-                        binInfo.status = binInfo === this.currentBinInfo ? 'active' : 'empty';
+                        try {
+                            const emptyData = {
+                                sessions: [],
+                                comparisons: [],
+                                binInfo: {
+                                    createdAt: binInfo.createdAt,
+                                    recordCount: 0
+                                },
+                                lastUpdated: new Date().toISOString()
+                            };
+                            
+                            await this.updateDataBin(binInfo.binId, emptyData);
+                            binInfo.recordCount = 0;
+                            binInfo.estimatedSize = this.getDataSize(emptyData);
+                            binInfo.status = binInfo === this.currentBinInfo ? 'active' : 'available';
+                            binInfo.sessionsCount = 0;
+                            binInfo.comparisonsCount = 0;
+                            
+                            clearedCount++;
+                            console.log(`清空bin ${binInfo.binId.substring(0, 8)}... 成功`);
+                            
+                        } catch (error) {
+                            console.log(`清空bin ${binInfo.binId.substring(0, 8)}... 失败: ${error.message}`);
+                            errorCount++;
+                        }
                     }
                     
-                    // 更新主控制bin
-                    const masterData = await this.readMasterBin();
-                    masterData.totalRecords = 0;
-                    masterData.dataBins = this.allBins;
-                    masterData.lastUpdated = new Date().toISOString();
-                    await this.updateMasterBin(masterData);
-                    
-                    console.log('所有数据已清空');
+                    console.log(`数据清空完成: ${clearedCount} 个bin成功，${errorCount} 个bin失败`);
                     return true;
                     
                 } catch (error) {
@@ -994,18 +1079,43 @@
 
             // 获取系统状态
             getSystemStatus() {
+                const totalRecords = this.allBins.reduce((sum, bin) => sum + bin.recordCount, 0);
+                const totalSessions = this.allBins.reduce((sum, bin) => sum + bin.sessionsCount, 0);
+                const totalComparisons = this.allBins.reduce((sum, bin) => sum + bin.comparisonsCount, 0);
+                const totalSize = this.allBins.reduce((sum, bin) => sum + bin.estimatedSize, 0);
+                
+                const statusCounts = {
+                    available: this.allBins.filter(bin => bin.status === 'available').length,
+                    active: this.allBins.filter(bin => bin.status === 'active').length,
+                    full: this.allBins.filter(bin => bin.status === 'full').length,
+                    error: this.allBins.filter(bin => bin.status === 'error').length
+                };
+                
                 return {
                     totalBins: this.allBins.length,
                     currentBinId: this.currentBinInfo?.binId,
-                    currentBinSize: this.currentBinInfo?.estimatedSize,
+                    currentBinSize: this.currentBinInfo?.estimatedSize || 0,
                     maxBinSize: this.config.maxBinSize,
                     usagePercentage: this.currentBinInfo ? 
                         Math.round((this.currentBinInfo.estimatedSize / this.config.maxBinSize) * 100) : 0,
-                    bins: this.allBins.map(bin => ({
-                        binId: bin.binId.substring(0, 8) + '...',
+                    totalRecords: totalRecords,
+                    totalSessions: totalSessions,
+                    totalComparisons: totalComparisons,
+                    totalSize: totalSize,
+                    statusCounts: statusCounts,
+                    bins: this.allBins.map((bin, index) => ({
+                        index: index + 1,
+                        binId: bin.binId.substring(0, 12) + '...',
+                        fullBinId: bin.binId,
                         status: bin.status,
                         recordCount: bin.recordCount,
-                        sizeKB: Math.round(bin.estimatedSize / 1024)
+                        sessionsCount: bin.sessionsCount,
+                        comparisonsCount: bin.comparisonsCount,
+                        sizeKB: Math.round(bin.estimatedSize / 1024),
+                        usagePercent: Math.round((bin.estimatedSize / this.config.maxBinSize) * 100),
+                        lastUpdated: bin.lastUpdated,
+                        error: bin.error || null,
+                        isActive: bin === this.currentBinInfo
                     }))
                 };
             }
@@ -1495,7 +1605,7 @@
         const texts = {
             zh: {
                 surveyTitle: '街景感知问卷：第一部分',
-                reminderTitle: '?? 实验提醒',
+                reminderTitle: '实验提醒',
                 reminderText: '请认真作答。本实验需要完成5组，每组20次图片对比，耗时约20分钟，才能获得最终报酬。',
                 reminderDevice: '为保证实验效果，请使用电脑或平板电脑作答。',
                 nicknameLabel: '您的昵称是：',
@@ -1516,12 +1626,12 @@
                 continueTitle: '本组对比已完成',
                 continueButton: '继续下一组',
                 exitButton: '退出实验',
-                exitWarningTitle: '?? 退出警告',
+                exitWarningTitle: '退出警告',
                 exitWarningMessage: '您还未完成全部5组实验，现在退出将无法获得报酬。\n\n确定要退出吗？',
                 backButton: '返回继续实验',
                 forceExitButton: '确定退出',
                 finishButton: '完成实验',
-                thankYouTitle: '?? 感谢您的参与！',
+                thankYouTitle: '感谢您的参与！',
                 thankYouMessage: '您已成功完成全部5组实验，数据已提交！\n\n感谢您为街景感知研究做出的贡献！请联系研究人员兑换报酬。',
                 restartButton: '重新开始',
                 nicknameConfirmText: '感谢您的参与！',
@@ -1538,7 +1648,7 @@
             },
             en: {
                 surveyTitle: 'Street View Perception Questionnaire: Part 1',
-                reminderTitle: '?? Experiment Reminder',
+                reminderTitle: 'Experiment Reminder',
                 reminderText: 'Please answer carefully. This experiment requires completing 5 groups, with 20 image comparisons each, taking about 20 minutes total to receive the final compensation.',
                 reminderDevice: 'For best results, please use a computer or tablet.',
                 nicknameLabel: 'Your nickname is:',
@@ -1559,12 +1669,12 @@
                 continueTitle: 'Group Comparison Completed',
                 continueButton: 'Continue Next Group',
                 exitButton: 'Exit Experiment',
-                exitWarningTitle: '?? Exit Warning',
+                exitWarningTitle: 'Exit Warning',
                 exitWarningMessage: 'You have not completed all 5 groups yet. Exiting now means you will not receive compensation.\n\nAre you sure you want to exit?',
                 backButton: 'Return to Continue',
                 forceExitButton: 'Confirm Exit',
                 finishButton: 'Complete Experiment',
-                thankYouTitle: '?? Thank You for Your Participation!',
+                thankYouTitle: 'Thank You for Your Participation!',
                 thankYouMessage: 'You have successfully completed all 5 groups! Your data has been submitted.\n\nThank you for contributing to street view perception research! Please contact the researchers to claim your compensation.',
                 restartButton: 'Start Over',
                 nicknameConfirmText: 'Thank you for your participation!',
@@ -2017,17 +2127,20 @@
         // 更新管理员界面以显示多bin状态
         async function refreshStats() {
             try {
-                updateDatabaseStatus('正在连接多bin系统...', 'loading');
+                updateDatabaseStatus('正在扫描所有已知bin...', 'loading');
                 disableAdminButtons(true);
                 
                 if (!multiBinManager) {
                     await initializeMultiBinManager();
                 }
                 
+                // 重新扫描所有bin以获取最新状态
+                multiBinManager.allBins = await multiBinManager.scanAllKnownBins();
+                
                 const data = await multiBinManager.readAllData();
                 const systemStatus = multiBinManager.getSystemStatus();
                 
-                updateDatabaseStatus(`多bin系统连接成功 (${systemStatus.totalBins} bins)`, 'success');
+                updateDatabaseStatus(`多bin系统连接成功 (${systemStatus.totalBins} bins, ${systemStatus.statusCounts.available} 可用)`, 'success');
                 disableAdminButtons(false);
                 
                 // 显示系统状态
@@ -2053,9 +2166,12 @@
                 displayRecentComparisons(data.comparisons || []);
                 displayUserDetails(Array.from(uniqueSessions.values()));
                 
+                console.log(`统计刷新完成: ${totalUsers} 用户, ${totalComparisons} 对比记录`);
+                console.log(`Bin状态: ${systemStatus.statusCounts.available} 可用, ${systemStatus.statusCounts.full} 已满, ${systemStatus.statusCounts.error} 错误`);
+                
             } catch (error) {
                 console.error('刷新失败:', error);
-                updateDatabaseStatus('连接多bin系统失败', 'error');
+                updateDatabaseStatus(`连接失败: ${error.message}`, 'error');
                 disableAdminButtons(true);
             }
         }
@@ -2068,60 +2184,100 @@
             systemStatusPanel.classList.remove('hidden');
             
             let statusHtml = `
-                <div class="grid grid-cols-2 gap-4 mb-4">
-                    <div>
-                        <span class="font-medium">总Bin数:</span>
-                        <span class="text-blue-600 font-semibold">${systemStatus.totalBins}</span>
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
+                    <div class="bg-blue-50 p-3 rounded-lg border border-blue-200">
+                        <div class="text-xs text-blue-600 uppercase font-semibold">总Bin数</div>
+                        <div class="text-xl font-bold text-blue-800">${systemStatus.totalBins}</div>
                     </div>
-                    <div>
-                        <span class="font-medium">当前活跃Bin:</span>
-                        <span class="text-green-600 font-semibold">${systemStatus.currentBinId?.substring(0, 12) || 'N/A'}...</span>
+                    <div class="bg-green-50 p-3 rounded-lg border border-green-200">
+                        <div class="text-xs text-green-600 uppercase font-semibold">可用Bin</div>
+                        <div class="text-xl font-bold text-green-800">${systemStatus.statusCounts.available}</div>
                     </div>
-                    <div>
-                        <span class="font-medium">当前Bin使用率:</span>
-                        <span class="text-purple-600 font-semibold">${systemStatus.usagePercentage}%</span>
+                    <div class="bg-orange-50 p-3 rounded-lg border border-orange-200">
+                        <div class="text-xs text-orange-600 uppercase font-semibold">已满Bin</div>
+                        <div class="text-xl font-bold text-orange-800">${systemStatus.statusCounts.full}</div>
                     </div>
-                    <div>
-                        <span class="font-medium">当前Bin大小:</span>
-                        <span class="text-orange-600 font-semibold">${Math.round(systemStatus.currentBinSize / 1024)}KB</span>
+                    <div class="bg-red-50 p-3 rounded-lg border border-red-200">
+                        <div class="text-xs text-red-600 uppercase font-semibold">错误Bin</div>
+                        <div class="text-xl font-bold text-red-800">${systemStatus.statusCounts.error}</div>
                     </div>
                 </div>
                 
-                <div class="mb-4">
-                    <div class="text-sm text-gray-600 mb-2">当前Bin容量使用情况</div>
-                    <div class="progress-bar-container">
-                        <div class="progress-bar-fill" style="width: ${systemStatus.usagePercentage}%"></div>
+                <div class="mb-4 p-4 bg-gray-50 rounded-lg">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
+                        <div>
+                            <span class="font-medium text-gray-700">当前活跃Bin:</span><br>
+                            <span class="text-blue-600 font-mono text-xs">${systemStatus.currentBinId?.substring(0, 20) || 'N/A'}...</span>
+                        </div>
+                        <div>
+                            <span class="font-medium text-gray-700">当前Bin使用率:</span><br>
+                            <span class="text-purple-600 font-semibold">${systemStatus.usagePercentage}%</span>
+                            <span class="text-gray-500">(${Math.round(systemStatus.currentBinSize / 1024)}KB)</span>
+                        </div>
+                        <div>
+                            <span class="font-medium text-gray-700">系统总容量:</span><br>
+                            <span class="text-indigo-600 font-semibold">${Math.round(systemStatus.totalSize / 1024)}KB</span>
+                        </div>
                     </div>
-                    <div class="text-xs text-gray-500 mt-1">
-                        ${Math.round(systemStatus.currentBinSize / 1024)}KB / ${Math.round(systemStatus.maxBinSize / 1024)}KB
+                    
+                    <div class="mt-3">
+                        <div class="text-xs text-gray-600 mb-1">当前Bin容量 (${Math.round(systemStatus.currentBinSize / 1024)}KB / ${Math.round(systemStatus.maxBinSize / 1024)}KB)</div>
+                        <div class="progress-bar-container">
+                            <div class="progress-bar-fill ${systemStatus.usagePercentage > 90 ? 'bg-red-500' : systemStatus.usagePercentage > 70 ? 'bg-orange-500' : 'bg-green-500'}" style="width: ${systemStatus.usagePercentage}%"></div>
+                        </div>
                     </div>
                 </div>
                 
                 <div>
-                    <div class="text-sm font-medium text-gray-700 mb-2">所有Bin状态:</div>
-                    <div class="space-y-1">
+                    <div class="text-sm font-medium text-gray-700 mb-3 flex items-center justify-between">
+                        <span>所有Bin详细状态:</span>
+                        <span class="text-xs text-gray-500">总计: ${systemStatus.totalSessions} 会话, ${systemStatus.totalComparisons} 对比</span>
+                    </div>
+                    <div class="space-y-2 max-h-64 overflow-y-auto">
             `;
             
-            systemStatus.bins.forEach((bin, index) => {
+            systemStatus.bins.forEach((bin) => {
                 const statusClass = bin.status === 'active' ? 'active' : 
-                                 bin.status === 'full' ? 'full' : '';
+                                 bin.status === 'full' ? 'full' : 
+                                 bin.status === 'error' ? 'error' : 'available';
+                
+                const statusColor = bin.status === 'active' ? 'bg-blue-100 text-blue-700 border-blue-300' :
+                                  bin.status === 'full' ? 'bg-orange-100 text-orange-700 border-orange-300' :
+                                  bin.status === 'error' ? 'bg-red-100 text-red-700 border-red-300' :
+                                  'bg-green-100 text-green-700 border-green-300';
+                                  
                 const statusText = bin.status === 'active' ? '活跃' :
-                                bin.status === 'full' ? '已满' : '空闲';
+                                 bin.status === 'full' ? '已满' : 
+                                 bin.status === 'error' ? '错误' : '可用';
                 
                 statusHtml += `
-                    <div class="bin-status ${statusClass}">
-                        <div>
-                            <span class="font-medium">Bin ${index + 1}:</span>
-                            <span class="text-xs text-gray-600">${bin.binId}</span>
+                    <div class="bin-status ${statusClass} p-3 rounded-lg border">
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="flex items-center gap-2">
+                                <span class="font-medium text-gray-800">Bin ${bin.index}</span>
+                                ${bin.isActive ? '<span class="text-xs bg-blue-500 text-white px-2 py-1 rounded">当前</span>' : ''}
+                                <span class="px-2 py-1 rounded text-xs ${statusColor}">${statusText}</span>
+                            </div>
+                            <div class="text-right">
+                                <div class="text-sm font-semibold text-gray-700">${bin.sizeKB}KB (${bin.usagePercent}%)</div>
+                                <div class="text-xs text-gray-500">${bin.sessionsCount}会话 + ${bin.comparisonsCount}对比</div>
+                            </div>
                         </div>
-                        <div class="text-sm">
-                            <span class="px-2 py-1 rounded text-xs ${
-                                bin.status === 'active' ? 'bg-green-100 text-green-700' :
-                                bin.status === 'full' ? 'bg-orange-100 text-orange-700' :
-                                'bg-gray-100 text-gray-700'
-                            }">${statusText}</span>
-                            <span class="ml-2 text-gray-600">${bin.sizeKB}KB (${bin.recordCount} 记录)</span>
+                        
+                        <div class="mb-2">
+                            <div class="text-xs text-gray-600 font-mono break-all">${bin.fullBinId}</div>
                         </div>
+                        
+                        <div class="progress-bar-container h-1">
+                            <div class="progress-bar-fill h-1 ${
+                                bin.usagePercent > 90 ? 'bg-red-400' :
+                                bin.usagePercent > 70 ? 'bg-orange-400' :
+                                'bg-green-400'
+                            }" style="width: ${bin.usagePercent}%"></div>
+                        </div>
+                        
+                        ${bin.error ? `<div class="text-xs text-red-600 mt-1">错误: ${bin.error}</div>` : ''}
+                        ${bin.lastUpdated !== '未知' ? `<div class="text-xs text-gray-500 mt-1">更新: ${new Date(bin.lastUpdated).toLocaleString()}</div>` : ''}
                     </div>
                 `;
             });
@@ -2361,12 +2517,12 @@
                 return;
             }
             
-            if (!confirm('最后确认：将删除所有bin中的实验数据，确定继续吗？')) {
+            if (!confirm('最后确认：将删除所有已知bin中的实验数据，确定继续吗？')) {
                 return;
             }
             
             try {
-                updateDatabaseStatus('正在清空所有bin数据...', 'loading');
+                updateDatabaseStatus('正在清空所有已知bin数据...', 'loading');
                 
                 if (!multiBinManager) {
                     await initializeMultiBinManager();
@@ -2388,14 +2544,20 @@
         // 页面初始化
         // ====================================================================
         document.addEventListener('DOMContentLoaded', async function() {
-            console.log('街景问卷系统启动 - 多Bin版本');
+            console.log('街景问卷系统启动 - 多Bin增强版本');
+            console.log(`配置: ${MULTI_BIN_CONFIG.allKnownBinIds.length} 个已知bin`);
             
             // 初始化多bin管理器
             try {
                 await initializeMultiBinManager();
                 console.log('多bin系统初始化成功');
+                
+                const status = multiBinManager.getSystemStatus();
+                console.log(`系统状态: ${status.totalBins} bins (${status.statusCounts.available} 可用, ${status.statusCounts.full} 已满, ${status.statusCounts.error} 错误)`);
+                console.log(`当前活跃bin: ${status.currentBinId?.substring(0, 12)}... (${Math.round(status.currentBinSize/1024)}KB)`);
+                
             } catch (error) {
-                console.log('多bin系统初始化失败，系统仍可运行但可能有存储限制');
+                console.log('多bin系统初始化失败，但系统仍可运行');
                 console.error('MultiBin初始化错误:', error);
             }
             
@@ -2415,11 +2577,7 @@
                 console.log('图片库初始化有问题，但系统仍可运行');
             }
             
-            console.log('多Bin配置完成');
-            if (multiBinManager) {
-                const status = multiBinManager.getSystemStatus();
-                console.log(`当前系统: ${status.totalBins} 个bin，活跃bin: ${status.currentBinId?.substring(0, 8)}...`);
-            }
+            console.log('多Bin街景问卷系统初始化完成！');
         });
     </script>
 </body>
