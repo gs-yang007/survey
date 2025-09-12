@@ -198,10 +198,6 @@
             border-color: #f59e0b;
             background-color: #fffbeb;
         }
-        .bin-status.error {
-            border-color: #ef4444;
-            background-color: #fef2f2;
-        }
     </style>
 </head>
 <body class="bg-gray-100">
@@ -253,7 +249,7 @@
             <div class="bg-white rounded-lg shadow-lg p-6">
                 <!-- 实验提醒 -->
                 <div id="experimentReminder" class="experiment-reminder">
-                    <h4 id="reminderTitle">📋 实验提醒</h4>
+                    <h4 id="reminderTitle">?? 实验提醒</h4>
                     <p id="reminderText">请认真作答。本实验需要完成5组，每组20次图片对比，耗时约20分钟，才能获得最终报酬。</p>
                     <p id="reminderDevice">为保证实验效果，请使用电脑或平板电脑作答。</p>
                 </div>
@@ -521,7 +517,7 @@
     <!-- 退出警告页面 -->
     <div id="exitWarningPage" class="hidden min-h-screen bg-gray-100 flex items-center justify-center p-4">
         <div class="bg-white rounded-lg shadow-lg p-8 text-center max-w-md w-full">
-            <h2 id="exitWarningTitle" class="text-2xl font-bold text-gray-800 mb-4">⚠️ 退出警告</h2>
+            <h2 id="exitWarningTitle" class="text-2xl font-bold text-gray-800 mb-4">?? 退出警告</h2>
             <p id="exitWarningMessage" class="text-gray-600 mb-8">您还未完成全部5组实验，现在退出将无法获得报酬。<br><br>确定要退出吗？</p>
             
             <div class="flex justify-center space-x-4">
@@ -544,7 +540,7 @@
                 <p id="nicknameConfirmText" class="text-sm text-gray-600">感谢您的参与！</p>
             </div>
             
-            <h2 id="thankYouTitle" class="text-2xl font-bold text-gray-800 mb-4">🎉 感谢您的参与！</h2>
+            <h2 id="thankYouTitle" class="text-2xl font-bold text-gray-800 mb-4">?? 感谢您的参与！</h2>
             <p id="thankYouMessage" class="text-gray-600 mb-8">您已成功完成全部5组实验，数据已提交！<br><br>感谢您为街景感知研究做出的贡献！请联系研究人员兑换报酬。</p>
             
             <button onclick="restart()" id="restartButton" class="px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors font-medium">
@@ -576,43 +572,6 @@
                     </div>
                 </div>
 
-                <!-- Bin修复界面 -->
-                <div id="binRepairInterface" class="hidden bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
-                    <h4 class="text-lg font-semibold text-red-800 mb-3">🔧 Bin系统修复工具</h4>
-                    
-                    <div class="mb-4">
-                        <p class="text-red-700 mb-2">检测到bin数量不一致问题。请按照以下步骤修复：</p>
-                        <ol class="list-decimal list-inside text-sm text-red-600 space-y-1">
-                            <li>首先扫描当前主控制bin中记录的bin</li>
-                            <li>如果发现遗漏的bin，请输入它们的ID</li>
-                            <li>清理无用的空bin</li>
-                        </ol>
-                    </div>
-                    
-                    <div class="space-y-3">
-                        <button onclick="scanExistingBins()" class="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600">
-                            1. 扫描已知Bin
-                        </button>
-                        
-                        <div id="additionalBinsInput" class="hidden">
-                            <label class="block text-sm font-medium text-red-700 mb-2">
-                                发现的额外Bin IDs (每行一个):
-                            </label>
-                            <textarea id="additionalBinIds" rows="4" class="w-full p-2 border border-red-300 rounded text-sm" 
-                                      placeholder="请输入在后台发现但未在管理面板显示的bin IDs..."></textarea>
-                            <button onclick="repairMasterBin()" class="mt-2 px-4 py-2 bg-orange-500 text-white rounded hover:bg-orange-600">
-                                2. 修复主控制Bin
-                            </button>
-                        </div>
-                        
-                        <button onclick="cleanupEmptyBins()" class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">
-                            3. 清理空Bin
-                        </button>
-                    </div>
-                    
-                    <div id="repairStatus" class="mt-4 hidden"></div>
-                </div>
-
                 <!-- 系统状态面板 -->
                 <div id="systemStatus" class="system-status-panel mb-6 hidden">
                     <h4 class="font-semibold text-gray-800 mb-3">多Bin系统状态</h4>
@@ -620,9 +579,6 @@
                         <!-- 系统状态内容将在这里动态生成 -->
                     </div>
                 </div>
-
-                <!-- 数据质量警告 -->
-                <div id="dataQualityWarnings" class="hidden"></div>
 
                 <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
                     <div class="bg-blue-100 p-4 rounded-lg">
@@ -634,7 +590,7 @@
                         <p id="totalComparisons" class="text-2xl font-bold text-green-600">-</p>
                     </div>
                     <div class="bg-purple-100 p-4 rounded-lg">
-                        <h3 class="font-semibold text-purple-800">平均每人完成组数</h3>
+                        <h3 class="font-semibold text-purple-800">平均每人对比次数</h3>
                         <p id="avgGroups" class="text-2xl font-bold text-purple-600">-</p>
                     </div>
                 </div>
@@ -648,9 +604,6 @@
                     </button>
                     <button onclick="refreshStats()" id="refreshButton" class="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600">
                         刷新统计
-                    </button>
-                    <button onclick="showBinRepairInterface()" id="repairInterfaceButton" class="px-4 py-2 bg-yellow-500 text-white rounded hover:bg-yellow-600">
-                        Bin修复工具
                     </button>
                 </div>
                 
@@ -678,8 +631,10 @@
         const MULTI_BIN_CONFIG = {
             masterKey: '$2a$10$BBcDpoJ9fYY0c3xkth3aM.UsL3kMY1SjrqgnbeaxjWNXH4Uwqz5H.',
             baseUrl: 'https://api.jsonbin.io/v3/b',
+            // 主控制bin - 存储所有子bin的索引信息
             masterBinId: '68af17fed0ea881f40683b2d',
-            maxBinSize: 800 * 1024, // 800KB
+            // 数据大小限制 (字节) - 设置为800KB为安全起见
+            maxBinSize: 800 * 1024,
             headers: {
                 'Content-Type': 'application/json',
                 'X-Master-Key': '$2a$10$BBcDpoJ9fYY0c3xkth3aM.UsL3kMY1SjrqgnbeaxjWNXH4Uwqz5H.'
@@ -687,21 +642,21 @@
         };
 
         // ====================================================================
-        // 修复后的多Bin管理器类
+        // 多Bin管理器类
         // ====================================================================
         class MultiBinManager {
             constructor(config) {
                 this.config = config;
                 this.currentBinInfo = null;
                 this.allBins = [];
-                this.isCreatingBin = false; // 防止并发创建
-                this.binCreationPromise = null;
             }
 
+            // 获取数据的字节大小
             getDataSize(data) {
                 return new Blob([JSON.stringify(data)]).size;
             }
 
+            // 读取主控制bin，获取所有子bin信息
             async readMasterBin() {
                 try {
                     const response = await fetch(`${this.config.baseUrl}/${this.config.masterBinId}/latest`, {
@@ -717,6 +672,7 @@
                     return result.record;
                 } catch (error) {
                     console.log(`读取主控制bin失败: ${error.message}`);
+                    // 返回初始结构
                     return {
                         dataBins: [],
                         totalRecords: 0,
@@ -726,54 +682,28 @@
                 }
             }
 
+            // 更新主控制bin
             async updateMasterBin(masterData) {
-                const maxRetries = 3;
-                for (let i = 0; i < maxRetries; i++) {
-                    try {
-                        const response = await fetch(`${this.config.baseUrl}/${this.config.masterBinId}`, {
-                            method: 'PUT',
-                            headers: this.config.headers,
-                            body: JSON.stringify(masterData)
-                        });
-                        
-                        if (!response.ok) {
-                            throw new Error(`更新主控制bin失败: ${response.status}`);
-                        }
-                        
-                        return await response.json();
-                    } catch (error) {
-                        if (i === maxRetries - 1) {
-                            console.error(`更新主控制bin失败（已重试${maxRetries}次）: ${error.message}`);
-                            throw error;
-                        }
-                        console.log(`更新主控制bin失败，重试第${i + 1}次...`);
-                        await this.delay(1000 * (i + 1)); // 递增延迟
-                    }
-                }
-            }
-
-            async createNewDataBin() {
-                // 防止并发创建
-                if (this.isCreatingBin) {
-                    if (this.binCreationPromise) {
-                        return await this.binCreationPromise;
-                    }
-                    throw new Error('Another bin creation is in progress');
-                }
-
-                this.isCreatingBin = true;
-                this.binCreationPromise = this._createNewDataBinInternal();
-                
                 try {
-                    const result = await this.binCreationPromise;
-                    return result;
-                } finally {
-                    this.isCreatingBin = false;
-                    this.binCreationPromise = null;
+                    const response = await fetch(`${this.config.baseUrl}/${this.config.masterBinId}`, {
+                        method: 'PUT',
+                        headers: this.config.headers,
+                        body: JSON.stringify(masterData)
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`更新主控制bin失败: ${response.status}`);
+                    }
+                    
+                    return await response.json();
+                } catch (error) {
+                    console.log(`更新主控制bin失败: ${error.message}`);
+                    throw error;
                 }
             }
 
-            async _createNewDataBinInternal() {
+            // 创建新的数据bin
+            async createNewDataBin() {
                 try {
                     const initialData = {
                         sessions: [],
@@ -808,65 +738,52 @@
                         status: 'active'
                     };
                 } catch (error) {
-                    console.error(`创建新数据bin失败: ${error.message}`);
+                    console.log(`创建新数据bin失败: ${error.message}`);
                     throw error;
                 }
             }
 
+            // 读取指定数据bin
             async readDataBin(binId) {
-                const maxRetries = 2;
-                for (let i = 0; i < maxRetries; i++) {
-                    try {
-                        const response = await fetch(`${this.config.baseUrl}/${binId}/latest`, {
-                            method: 'GET',
-                            headers: this.config.headers
-                        });
-                        
-                        if (!response.ok) {
-                            throw new Error(`读取数据bin失败: ${response.status}`);
-                        }
-                        
-                        const result = await response.json();
-                        return result.record;
-                    } catch (error) {
-                        if (i === maxRetries - 1) {
-                            console.error(`读取数据bin ${binId} 失败: ${error.message}`);
-                            throw error;
-                        }
-                        await this.delay(500);
+                try {
+                    const response = await fetch(`${this.config.baseUrl}/${binId}/latest`, {
+                        method: 'GET',
+                        headers: this.config.headers
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`读取数据bin失败: ${response.status}`);
                     }
+                    
+                    const result = await response.json();
+                    return result.record;
+                } catch (error) {
+                    console.log(`读取数据bin ${binId} 失败: ${error.message}`);
+                    throw error;
                 }
             }
 
+            // 更新指定数据bin
             async updateDataBin(binId, data) {
-                const maxRetries = 3;
-                for (let i = 0; i < maxRetries; i++) {
-                    try {
-                        const response = await fetch(`${this.config.baseUrl}/${binId}`, {
-                            method: 'PUT',
-                            headers: this.config.headers,
-                            body: JSON.stringify(data)
-                        });
-                        
-                        if (!response.ok) {
-                            throw new Error(`更新数据bin失败: ${response.status}`);
-                        }
-                        
-                        return await response.json();
-                    } catch (error) {
-                        if (i === maxRetries - 1) {
-                            console.error(`更新数据bin ${binId} 失败: ${error.message}`);
-                            throw error;
-                        }
-                        await this.delay(1000 * (i + 1));
+                try {
+                    const response = await fetch(`${this.config.baseUrl}/${binId}`, {
+                        method: 'PUT',
+                        headers: this.config.headers,
+                        body: JSON.stringify(data)
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error(`更新数据bin失败: ${response.status}`);
                     }
+                    
+                    return await response.json();
+                } catch (error) {
+                    console.log(`更新数据bin ${binId} 失败: ${error.message}`);
+                    throw error;
                 }
             }
 
-            delay(ms) {
-                return new Promise(resolve => setTimeout(resolve, ms));
-            }
-
+            // 初始化多bin系统
             async initialize() {
                 try {
                     console.log('初始化多bin管理系统...');
@@ -879,44 +796,27 @@
                         const newBin = await this.createNewDataBin();
                         this.allBins = [newBin];
                         
+                        // 更新主控制bin
                         masterData.dataBins = this.allBins;
                         masterData.lastUpdated = new Date().toISOString();
                         await this.updateMasterBin(masterData);
                     }
                     
-                    // 验证并修复currentBinInfo
+                    // 找到当前活跃的bin（最后一个）
                     this.currentBinInfo = this.allBins[this.allBins.length - 1];
-                    if (!this.currentBinInfo || this.currentBinInfo.status === 'full') {
-                        // 如果当前bin已满或不存在，创建新的
-                        const newBin = await this.createNewDataBin();
-                        this.allBins.push(newBin);
-                        this.currentBinInfo = newBin;
-                        
-                        masterData.dataBins = this.allBins;
-                        masterData.lastUpdated = new Date().toISOString();
-                        await this.updateMasterBin(masterData);
-                    }
                     
                     console.log(`多bin系统初始化完成，共 ${this.allBins.length} 个bin`);
                     console.log(`当前活跃bin: ${this.currentBinInfo.binId}`);
                     
                     return true;
                 } catch (error) {
-                    console.error(`多bin系统初始化失败: ${error.message}`);
+                    console.log(`多bin系统初始化失败: ${error.message}`);
                     throw error;
                 }
             }
 
+            // 检查当前bin是否需要切换
             async checkAndSwitchBin(newDataSize) {
-                // 防止并发创建bin
-                if (this.isCreatingBin) {
-                    console.log('等待bin创建完成...');
-                    if (this.binCreationPromise) {
-                        await this.binCreationPromise;
-                    }
-                    return false;
-                }
-
                 const estimatedNewSize = this.currentBinInfo.estimatedSize + newDataSize;
                 
                 if (estimatedNewSize > this.config.maxBinSize) {
@@ -925,7 +825,7 @@
                     // 标记当前bin为已满
                     this.currentBinInfo.status = 'full';
                     
-                    // 创建新bin（已包含并发保护）
+                    // 创建新bin
                     const newBin = await this.createNewDataBin();
                     this.allBins.push(newBin);
                     this.currentBinInfo = newBin;
@@ -944,24 +844,24 @@
                 return false;
             }
 
+            // 保存会话数据（自动处理多bin）
             async saveUserSession(sessionData, comparisonRecords) {
                 try {
                     console.log(`开始保存会话数据，对比记录数: ${comparisonRecords.length}`);
                     
-                    // 数据验证
-                    if (!sessionData.sessionId || !sessionData.userData || !sessionData.userData.nickname) {
-                        throw new Error('会话数据不完整');
-                    }
-                    
+                    // 估算新数据大小
                     const newDataSize = this.getDataSize({
                         sessions: [sessionData],
                         comparisons: comparisonRecords
                     });
                     
+                    // 检查是否需要切换bin
                     await this.checkAndSwitchBin(newDataSize);
                     
+                    // 读取当前活跃bin的数据
                     const currentData = await this.readDataBin(this.currentBinInfo.binId);
                     
+                    // 检查是否已存在该用户的会话记录
                     const existingSessions = currentData.sessions || [];
                     const existingSessionIndex = existingSessions.findIndex(
                         session => session.sessionId === sessionData.sessionId
@@ -969,6 +869,7 @@
                     
                     let updatedSessions;
                     if (existingSessionIndex !== -1) {
+                        // 更新现有会话记录
                         updatedSessions = [...existingSessions];
                         updatedSessions[existingSessionIndex] = {
                             ...updatedSessions[existingSessionIndex],
@@ -977,38 +878,29 @@
                         };
                         console.log(`更新现有用户会话: ${sessionData.userData.nickname}`);
                     } else {
+                        // 创建新会话记录
                         updatedSessions = [...existingSessions, sessionData];
                         console.log(`创建新用户会话: ${sessionData.userData.nickname}`);
                     }
                     
-                    // 数据完整性检查
-                    const validComparisons = comparisonRecords.filter(comp => 
-                        comp.sessionId && comp.nickname && 
-                        comp.image1_url && comp.image2_url &&
-                        [comp.sitting, comp.strolling, comp.jogging, comp.gathering]
-                            .every(val => val !== null && val !== undefined)
-                    );
-                    
-                    if (validComparisons.length !== comparisonRecords.length) {
-                        console.warn(`${comparisonRecords.length - validComparisons.length} 条对比记录数据不完整`);
-                    }
-                    
+                    // 合并新的对比数据
                     const updatedData = {
                         ...currentData,
                         sessions: updatedSessions,
-                        comparisons: [...(currentData.comparisons || []), ...validComparisons],
+                        comparisons: [...(currentData.comparisons || []), ...comparisonRecords],
                         lastUpdated: new Date().toISOString()
                     };
                     
+                    // 保存到当前活跃bin
                     await this.updateDataBin(this.currentBinInfo.binId, updatedData);
                     
                     // 更新bin信息
-                    this.currentBinInfo.recordCount += validComparisons.length;
+                    this.currentBinInfo.recordCount += comparisonRecords.length;
                     this.currentBinInfo.estimatedSize = this.getDataSize(updatedData);
                     
-                    // 更新主控制bin统计
+                    // 更新主控制bin中的统计信息
                     const masterData = await this.readMasterBin();
-                    masterData.totalRecords += validComparisons.length;
+                    masterData.totalRecords += comparisonRecords.length;
                     masterData.dataBins = this.allBins;
                     masterData.lastUpdated = new Date().toISOString();
                     await this.updateMasterBin(masterData);
@@ -1017,18 +909,18 @@
                     return true;
                     
                 } catch (error) {
-                    console.error(`保存会话数据失败: ${error.message}`);
+                    console.log(`保存会话数据失败: ${error.message}`);
                     throw error;
                 }
             }
 
+            // 读取所有数据（从所有bin）
             async readAllData() {
                 try {
                     console.log('开始读取所有bin的数据...');
                     
                     const allSessions = [];
                     const allComparisons = [];
-                    const readErrors = [];
                     
                     for (const binInfo of this.allBins) {
                         try {
@@ -1043,36 +935,30 @@
                             
                             console.log(`从bin ${binInfo.binId} 读取到 ${binData.sessions?.length || 0} 个会话，${binData.comparisons?.length || 0} 条对比记录`);
                         } catch (error) {
-                            console.error(`读取bin ${binInfo.binId} 失败: ${error.message}`);
-                            readErrors.push({
-                                binId: binInfo.binId,
-                                error: error.message
-                            });
+                            console.log(`读取bin ${binInfo.binId} 失败: ${error.message}`);
                         }
                     }
                     
                     console.log(`总计读取: ${allSessions.length} 个会话，${allComparisons.length} 条对比记录`);
-                    if (readErrors.length > 0) {
-                        console.warn(`${readErrors.length} 个bin读取失败`);
-                    }
                     
                     return {
                         sessions: allSessions,
                         comparisons: allComparisons,
-                        readErrors: readErrors,
                         lastUpdated: new Date().toISOString()
                     };
                     
                 } catch (error) {
-                    console.error(`读取所有数据失败: ${error.message}`);
+                    console.log(`读取所有数据失败: ${error.message}`);
                     throw error;
                 }
             }
 
+            // 清空所有数据
             async clearAllData() {
                 try {
                     console.log('开始清空所有bin数据...');
                     
+                    // 清空所有数据bin（保留bin本身，只清空内容）
                     for (const binInfo of this.allBins) {
                         const emptyData = {
                             sessions: [],
@@ -1090,6 +976,7 @@
                         binInfo.status = binInfo === this.currentBinInfo ? 'active' : 'empty';
                     }
                     
+                    // 更新主控制bin
                     const masterData = await this.readMasterBin();
                     masterData.totalRecords = 0;
                     masterData.dataBins = this.allBins;
@@ -1100,11 +987,12 @@
                     return true;
                     
                 } catch (error) {
-                    console.error(`清空数据失败: ${error.message}`);
+                    console.log(`清空数据失败: ${error.message}`);
                     throw error;
                 }
             }
 
+            // 获取系统状态
             getSystemStatus() {
                 return {
                     totalBins: this.allBins.length,
@@ -1115,7 +1003,6 @@
                         Math.round((this.currentBinInfo.estimatedSize / this.config.maxBinSize) * 100) : 0,
                     bins: this.allBins.map(bin => ({
                         binId: bin.binId.substring(0, 8) + '...',
-                        fullBinId: bin.binId,
                         status: bin.status,
                         recordCount: bin.recordCount,
                         sizeKB: Math.round(bin.estimatedSize / 1024)
@@ -1125,130 +1012,21 @@
         }
 
         // ====================================================================
-        // Bin清理管理器类
+        // 全局多bin管理器实例
         // ====================================================================
-        class BinCleanupManager {
-            constructor(multiBinManager) {
-                this.multiBinManager = multiBinManager;
-                this.config = multiBinManager.config;
-            }
+        let multiBinManager = null;
 
-            async scanAllExistingBins() {
-                console.log('开始扫描所有实际存在的bin...');
-                const masterData = await this.multiBinManager.readMasterBin();
-                const knownBins = (masterData.dataBins || []).map(bin => bin.binId);
-                
-                console.log(`主控制bin中记录的bin数量: ${knownBins.length}`);
-                console.log('已知bin IDs:', knownBins);
-                
-                return {
-                    knownBins: knownBins,
-                    masterData: masterData
-                };
+        // 初始化多bin管理器
+        async function initializeMultiBinManager() {
+            if (!multiBinManager) {
+                multiBinManager = new MultiBinManager(MULTI_BIN_CONFIG);
+                await multiBinManager.initialize();
             }
-
-            async repairMasterBin(additionalBinIds) {
-                try {
-                    console.log(`开始修复主控制bin，添加 ${additionalBinIds.length} 个遗漏的bin...`);
-                    
-                    const masterData = await this.multiBinManager.readMasterBin();
-                    const existingBinIds = new Set((masterData.dataBins || []).map(bin => bin.binId));
-                    
-                    for (const binId of additionalBinIds) {
-                        if (!existingBinIds.has(binId)) {
-                            try {
-                                const binData = await this.multiBinManager.readDataBin(binId);
-                                const recordCount = (binData.sessions?.length || 0) + (binData.comparisons?.length || 0);
-                                const estimatedSize = this.multiBinManager.getDataSize(binData);
-                                
-                                const binInfo = {
-                                    binId: binId,
-                                    createdAt: binData.binInfo?.createdAt || new Date().toISOString(),
-                                    recordCount: recordCount,
-                                    estimatedSize: estimatedSize,
-                                    status: estimatedSize > this.config.maxBinSize * 0.8 ? 'full' : 'active'
-                                };
-                                
-                                masterData.dataBins.push(binInfo);
-                                console.log(`添加遗漏的bin: ${binId} (${Math.round(estimatedSize/1024)}KB, ${recordCount} 记录)`);
-                                
-                            } catch (error) {
-                                console.log(`无法读取bin ${binId}: ${error.message}，可能是无效的bin ID`);
-                            }
-                        }
-                    }
-                    
-                    masterData.totalRecords = masterData.dataBins.reduce((total, bin) => total + (bin.recordCount || 0), 0);
-                    masterData.lastUpdated = new Date().toISOString();
-                    
-                    await this.multiBinManager.updateMasterBin(masterData);
-                    
-                    this.multiBinManager.allBins = masterData.dataBins;
-                    this.multiBinManager.currentBinInfo = masterData.dataBins[masterData.dataBins.length - 1];
-                    
-                    console.log(`主控制bin修复完成，现在包含 ${masterData.dataBins.length} 个bin`);
-                    return masterData;
-                    
-                } catch (error) {
-                    console.error('修复主控制bin失败:', error);
-                    throw error;
-                }
-            }
-
-            async cleanupEmptyBins() {
-                try {
-                    console.log('开始清理空的bin...');
-                    
-                    const masterData = await this.multiBinManager.readMasterBin();
-                    const activeBins = [];
-                    const emptyBins = [];
-                    
-                    for (const binInfo of masterData.dataBins) {
-                        try {
-                            const binData = await this.multiBinManager.readDataBin(binInfo.binId);
-                            const hasData = (binData.sessions?.length > 0) || (binData.comparisons?.length > 0);
-                            
-                            if (hasData) {
-                                activeBins.push(binInfo);
-                            } else {
-                                emptyBins.push(binInfo);
-                            }
-                        } catch (error) {
-                            console.log(`无法读取bin ${binInfo.binId}，将其标记为需要清理`);
-                            emptyBins.push(binInfo);
-                        }
-                    }
-                    
-                    if (emptyBins.length > 0) {
-                        console.log(`发现 ${emptyBins.length} 个空bin，更新主控制bin...`);
-                        
-                        if (activeBins.length === 0 && emptyBins.length > 0) {
-                            activeBins.push(emptyBins.pop());
-                        }
-                        
-                        masterData.dataBins = activeBins;
-                        masterData.lastUpdated = new Date().toISOString();
-                        
-                        await this.multiBinManager.updateMasterBin(masterData);
-                        this.multiBinManager.allBins = activeBins;
-                        
-                        console.log(`清理完成，剩余 ${activeBins.length} 个有效bin`);
-                    }
-                    
-                    return {
-                        activeBins: activeBins.length,
-                        cleanedBins: emptyBins.length
-                    };
-                    
-                } catch (error) {
-                    console.error('清理空bin失败:', error);
-                    throw error;
-                }
-            }
+            return multiBinManager;
         }
 
         // ====================================================================
-        // 全局变量和初始化
+        // 配置和全局变量
         // ====================================================================
         const MAX_GROUPS = 5;
 
@@ -1275,24 +1053,18 @@
         let minimumViewTime = 6000;
         let timeWarningShown = false;
 
-        let multiBinManager = null;
-        let binCleanupManager = null;
-
+        // ====================================================================
+        // 辅助函数
+        // ====================================================================
         function generateSessionId() {
             return 'session_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-        }
-
-        async function initializeMultiBinManager() {
-            if (!multiBinManager) {
-                multiBinManager = new MultiBinManager(MULTI_BIN_CONFIG);
-                await multiBinManager.initialize();
-            }
-            return multiBinManager;
         }
 
         // ====================================================================
         // 替换的JSONBin函数
         // ====================================================================
+
+        // 替换原来的 readFromJsonBin 函数
         async function readFromJsonBin() {
             try {
                 if (!multiBinManager) {
@@ -1300,16 +1072,16 @@
                 }
                 return await multiBinManager.readAllData();
             } catch (error) {
-                console.error(`从多bin读取数据失败: ${error.message}`);
+                console.log(`从多bin读取数据失败: ${error.message}`);
                 return {
                     sessions: [],
                     comparisons: [],
-                    readErrors: [],
                     lastUpdated: new Date().toISOString()
                 };
             }
         }
 
+        // 替换原来的 saveUserSession 函数
         async function saveUserSession() {
             try {
                 if (!multiBinManager) {
@@ -1359,603 +1131,10 @@
                 return true;
                 
             } catch (error) {
-                console.error(`保存失败: ${error.message}`);
+                console.log(`保存失败: ${error.message}`);
                 showDataStatus('数据保存失败，请检查网络连接', 'error');
                 setTimeout(hideDataStatus, 5000);
                 return false;
-            }
-        }
-
-        // ====================================================================
-        // 管理员界面函数
-        // ====================================================================
-        const ENCODED_ADMIN_KEY = 'VU1TMjAyNXlncw==';
-        
-        function getAdminPassword() {
-            return atob(ENCODED_ADMIN_KEY);
-        }
-
-        async function showAdminPanel() {
-            const password = prompt('请输入管理员密码：');
-            
-            if (password === null) return;
-            
-            if (password !== getAdminPassword()) {
-                alert('密码错误！');
-                return;
-            }
-            
-            document.getElementById('adminPanel').classList.remove('hidden');
-            await refreshStats();
-        }
-
-        function hideAdminPanel() {
-            document.getElementById('adminPanel').classList.add('hidden');
-            // 清理修复界面
-            const repairInterface = document.getElementById('binRepairInterface');
-            if (repairInterface) {
-                repairInterface.classList.add('hidden');
-            }
-        }
-
-        function showBinRepairInterface() {
-            document.getElementById('binRepairInterface').classList.remove('hidden');
-        }
-
-        async function refreshStats() {
-            try {
-                updateDatabaseStatus('正在连接多bin系统...', 'loading');
-                disableAdminButtons(true);
-                
-                if (!multiBinManager) {
-                    await initializeMultiBinManager();
-                }
-                
-                const data = await multiBinManager.readAllData();
-                const systemStatus = multiBinManager.getSystemStatus();
-                
-                // 检查读取错误
-                const readErrors = data.readErrors || [];
-                if (readErrors.length > 0) {
-                    updateDatabaseStatus(`警告：${readErrors.length}个bin读取失败，统计可能不完整`, 'warning');
-                    console.warn('Bin读取错误：', readErrors);
-                } else {
-                    updateDatabaseStatus(`多bin系统连接成功 (${systemStatus.totalBins} bins)`, 'success');
-                }
-                
-                disableAdminButtons(false);
-                
-                displaySystemStatus(systemStatus, readErrors);
-                
-                // 改进的会话去重逻辑
-                const uniqueSessions = new Map();
-                const sessionsWithIssues = [];
-                
-                (data.sessions || []).forEach(session => {
-                    if (!session.sessionId || !session.userData || !session.userData.nickname) {
-                        sessionsWithIssues.push(session);
-                        return;
-                    }
-                    
-                    const existingSession = uniqueSessions.get(session.sessionId);
-                    if (!existingSession) {
-                        uniqueSessions.set(session.sessionId, session);
-                    } else {
-                        const currentCompleted = session.groupsCompleted || 0;
-                        const existingCompleted = existingSession.groupsCompleted || 0;
-                        const currentTimestamp = new Date(session.lastUpdated || session.timestamp || 0);
-                        const existingTimestamp = new Date(existingSession.lastUpdated || existingSession.timestamp || 0);
-                        
-                        if (currentCompleted > existingCompleted || 
-                            (currentCompleted === existingCompleted && currentTimestamp > existingTimestamp)) {
-                            uniqueSessions.set(session.sessionId, session);
-                        }
-                    }
-                });
-                
-                const validComparisons = (data.comparisons || []).filter(comp => 
-                    comp.sessionId && comp.nickname && 
-                    comp.image1_url && comp.image2_url &&
-                    [comp.sitting, comp.strolling, comp.jogging, comp.gathering].every(val => val !== null && val !== undefined)
-                );
-                
-                const invalidComparisons = (data.comparisons || []).length - validComparisons.length;
-                
-                const totalUsers = uniqueSessions.size;
-                const totalComparisons = validComparisons.length;
-                
-                let totalCompletedGroups = 0;
-                const sessionArray = Array.from(uniqueSessions.values());
-                sessionArray.forEach(session => {
-                    totalCompletedGroups += (session.groupsCompleted || 0);
-                });
-                const avgGroups = totalUsers > 0 ? (totalCompletedGroups / totalUsers).toFixed(1) : '0';
-                
-                document.getElementById('totalUsers').textContent = totalUsers;
-                document.getElementById('totalComparisons').textContent = totalComparisons;
-                document.getElementById('avgGroups').textContent = avgGroups;
-                
-                if (sessionsWithIssues.length > 0 || invalidComparisons > 0 || readErrors.length > 0) {
-                    displayDataQualityWarnings({
-                        invalidSessions: sessionsWithIssues.length,
-                        invalidComparisons: invalidComparisons,
-                        binErrors: readErrors.length
-                    });
-                }
-                
-                displayRecentComparisons(validComparisons);
-                displayUserDetails(sessionArray);
-                
-            } catch (error) {
-                console.error('刷新失败:', error);
-                updateDatabaseStatus('连接多bin系统失败', 'error');
-                disableAdminButtons(true);
-            }
-        }
-
-        function displayDataQualityWarnings(issues) {
-            let existingWarning = document.getElementById('dataQualityWarnings');
-            existingWarning.innerHTML = '';
-            
-            if (issues.binErrors > 0 || issues.invalidSessions > 0 || issues.invalidComparisons > 0) {
-                existingWarning.className = 'bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6';
-                
-                let warningHtml = '<h4 class="text-lg font-medium text-yellow-800">数据质量警告</h4><ul class="mt-2 text-sm text-yellow-700">';
-                
-                if (issues.binErrors > 0) {
-                    warningHtml += `<li>• ${issues.binErrors} 个数据bin读取失败，部分数据可能丢失</li>`;
-                }
-                if (issues.invalidSessions > 0) {
-                    warningHtml += `<li>• ${issues.invalidSessions} 个会话记录数据不完整</li>`;
-                }
-                if (issues.invalidComparisons > 0) {
-                    warningHtml += `<li>• ${issues.invalidComparisons} 条对比记录数据不完整</li>`;
-                }
-                
-                warningHtml += '</ul>';
-                existingWarning.innerHTML = warningHtml;
-                existingWarning.classList.remove('hidden');
-            } else {
-                existingWarning.classList.add('hidden');
-            }
-        }
-
-        function displaySystemStatus(systemStatus, readErrors = []) {
-            const systemStatusPanel = document.getElementById('systemStatus');
-            const systemStatusContent = document.getElementById('systemStatusContent');
-            
-            systemStatusPanel.classList.remove('hidden');
-            
-            let statusHtml = `
-                <div class="grid grid-cols-2 gap-4 mb-4">
-                    <div>
-                        <span class="font-medium">总Bin数:</span>
-                        <span class="text-blue-600 font-semibold">${systemStatus.totalBins}</span>
-                    </div>
-                    <div>
-                        <span class="font-medium">当前活跃Bin:</span>
-                        <span class="text-green-600 font-semibold">${systemStatus.currentBinId?.substring(0, 12) || 'N/A'}...</span>
-                    </div>
-                    <div>
-                        <span class="font-medium">当前Bin使用率:</span>
-                        <span class="text-purple-600 font-semibold">${systemStatus.usagePercentage}%</span>
-                    </div>
-                    <div>
-                        <span class="font-medium">当前Bin大小:</span>
-                        <span class="text-orange-600 font-semibold">${Math.round(systemStatus.currentBinSize / 1024)}KB</span>
-                    </div>
-                </div>
-            `;
-            
-            if (readErrors.length > 0) {
-                statusHtml += `
-                    <div class="bg-red-50 border border-red-200 rounded p-3 mb-4">
-                        <div class="text-red-800 font-medium">数据读取警告 (${readErrors.length} 个bin):</div>
-                        <ul class="text-sm text-red-600 mt-1 ml-4">
-                            ${readErrors.map(error => `<li>• Bin ${error.binId.substring(0, 8)}: ${error.error}</li>`).join('')}
-                        </ul>
-                    </div>
-                `;
-            }
-            
-            statusHtml += `
-                <div class="mb-4">
-                    <div class="text-sm text-gray-600 mb-2">当前Bin容量使用情况</div>
-                    <div class="progress-bar-container">
-                        <div class="progress-bar-fill" style="width: ${systemStatus.usagePercentage}%"></div>
-                    </div>
-                    <div class="text-xs text-gray-500 mt-1">
-                        ${Math.round(systemStatus.currentBinSize / 1024)}KB / ${Math.round(systemStatus.maxBinSize / 1024)}KB
-                    </div>
-                </div>
-                
-                <div>
-                    <div class="text-sm font-medium text-gray-700 mb-2">所有Bin状态:</div>
-                    <div class="space-y-1">
-            `;
-            
-            systemStatus.bins.forEach((bin, index) => {
-                const hasError = readErrors.some(error => error.binId === bin.fullBinId);
-                const statusClass = hasError ? 'error' : (bin.status === 'active' ? 'active' : 
-                                 bin.status === 'full' ? 'full' : '');
-                const statusText = hasError ? '读取失败' : (bin.status === 'active' ? '活跃' :
-                                bin.status === 'full' ? '已满' : '空闲');
-                
-                statusHtml += `
-                    <div class="bin-status ${statusClass} ${hasError ? 'border-red-300 bg-red-50' : ''}">
-                        <div>
-                            <span class="font-medium">Bin ${index + 1}:</span>
-                            <span class="text-xs text-gray-600">${bin.binId}</span>
-                        </div>
-                        <div class="text-sm">
-                            <span class="px-2 py-1 rounded text-xs ${
-                                hasError ? 'bg-red-100 text-red-700' :
-                                bin.status === 'active' ? 'bg-green-100 text-green-700' :
-                                bin.status === 'full' ? 'bg-orange-100 text-orange-700' :
-                                'bg-gray-100 text-gray-700'
-                            }">${statusText}</span>
-                            <span class="ml-2 text-gray-600">${bin.sizeKB}KB (${bin.recordCount} 记录)</span>
-                        </div>
-                    </div>
-                `;
-            });
-            
-            statusHtml += `
-                    </div>
-                </div>
-            `;
-            
-            systemStatusContent.innerHTML = statusHtml;
-        }
-
-        function displayRecentComparisons(comparisons) {
-            const container = document.getElementById('comparisonData');
-            
-            if (comparisons.length === 0) {
-                container.innerHTML = '<div class="text-gray-500">暂无对比数据</div>';
-                return;
-            }
-            
-            const recent = comparisons.slice(-20);
-            
-            let html = `
-                <table class="w-full text-sm border-collapse border border-gray-300">
-                    <thead>
-                        <tr class="bg-gray-100">
-                            <th class="border border-gray-300 p-2">昵称</th>
-                            <th class="border border-gray-300 p-2">组号</th>
-                            <th class="border border-gray-300 p-2">图片A</th>
-                            <th class="border border-gray-300 p-2">图片B</th>
-                            <th class="border border-gray-300 p-2">坐憩</th>
-                            <th class="border border-gray-300 p-2">漫步</th>
-                            <th class="border border-gray-300 p-2">慢跑</th>
-                            <th class="border border-gray-300 p-2">聚集</th>
-                            <th class="border border-gray-300 p-2">时间</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-            `;
-            
-            recent.forEach(comp => {
-                html += `
-                    <tr>
-                        <td class="border border-gray-300 p-2">${comp.nickname}</td>
-                        <td class="border border-gray-300 p-2">${comp.groupNumber}</td>
-                        <td class="border border-gray-300 p-2">${comp.image1_name}</td>
-                        <td class="border border-gray-300 p-2">${comp.image2_name}</td>
-                        <td class="border border-gray-300 p-2">${comp.sitting === 0 ? 'A' : 'B'}</td>
-                        <td class="border border-gray-300 p-2">${comp.strolling === 0 ? 'A' : 'B'}</td>
-                        <td class="border border-gray-300 p-2">${comp.jogging === 0 ? 'A' : 'B'}</td>
-                        <td class="border border-gray-300 p-2">${comp.gathering === 0 ? 'A' : 'B'}</td>
-                        <td class="border border-gray-300 p-2">${new Date(comp.timestamp).toLocaleString()}</td>
-                    </tr>
-                `;
-            });
-            
-            html += '</tbody></table>';
-            container.innerHTML = html;
-        }
-
-        function displayUserDetails(sessions) {
-            const container = document.getElementById('userDetails');
-            
-            if (sessions.length === 0) {
-                container.innerHTML = '<div class="text-gray-500">暂无用户数据</div>';
-                return;
-            }
-            
-            const sortedSessions = sessions.sort((a, b) => 
-                new Date(b.lastUpdated || b.timestamp) - new Date(a.lastUpdated || a.timestamp)
-            );
-            
-            let html = `
-                <table class="w-full text-sm border-collapse border border-gray-300">
-                    <thead>
-                        <tr class="bg-gray-100">
-                            <th class="border border-gray-300 p-2">昵称</th>
-                            <th class="border border-gray-300 p-2">性别</th>
-                            <th class="border border-gray-300 p-2">年龄</th>
-                            <th class="border border-gray-300 p-2">专业背景</th>
-                            <th class="border border-gray-300 p-2">完成组数</th>
-                            <th class="border border-gray-300 p-2">总对比次数</th>
-                            <th class="border border-gray-300 p-2">语言</th>
-                            <th class="border border-gray-300 p-2">完成状态</th>
-                            <th class="border border-gray-300 p-2">最后更新</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-            `;
-            
-            sortedSessions.forEach(session => {
-                const isComplete = session.groupsCompleted >= 5;
-                const statusText = isComplete ? '已完成' : `进行中 (${session.groupsCompleted}/5)`;
-                const statusClass = isComplete ? 'text-green-600 font-semibold' : 'text-blue-600';
-                
-                html += `
-                    <tr>
-                        <td class="border border-gray-300 p-2">${session.userData.nickname}</td>
-                        <td class="border border-gray-300 p-2">${session.userData.gender === 'male' ? '男' : '女'}</td>
-                        <td class="border border-gray-300 p-2">${session.userData.age}</td>
-                        <td class="border border-gray-300 p-2">${session.userData.isProfessional === 'yes' ? '是' : '否'}</td>
-                        <td class="border border-gray-300 p-2">${session.groupsCompleted}</td>
-                        <td class="border border-gray-300 p-2">${session.totalComparisons || 0}</td>
-                        <td class="border border-gray-300 p-2">${session.language === 'zh' ? '中文' : 'English'}</td>
-                        <td class="border border-gray-300 p-2 ${statusClass}">${statusText}</td>
-                        <td class="border border-gray-300 p-2">${new Date(session.lastUpdated || session.timestamp).toLocaleString()}</td>
-                    </tr>
-                `;
-            });
-            
-            html += '</tbody></table>';
-            container.innerHTML = html;
-        }
-
-        function updateDatabaseStatus(message, type = 'loading') {
-            const statusDiv = document.getElementById('databaseStatus');
-            
-            let html = '';
-            switch (type) {
-                case 'loading':
-                    html = `
-                        <div class="loading-indicator">
-                            <div class="spinner"></div>
-                            <span>${message}</span>
-                        </div>
-                    `;
-                    break;
-                case 'success':
-                    html = `
-                        <div class="status-indicator status-success">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                            </svg>
-                            <span>${message}</span>
-                        </div>
-                    `;
-                    break;
-                case 'warning':
-                    html = `
-                        <div class="status-indicator status-warning">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.34 16.5c-.77.833.192 2.5 1.732 2.5z"></path>
-                            </svg>
-                            <span>${message}</span>
-                        </div>
-                    `;
-                    break;
-                case 'error':
-                    html = `
-                        <div class="status-indicator status-error">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                            </svg>
-                            <span>${message}</span>
-                        </div>
-                    `;
-                    break;
-            }
-            
-            statusDiv.innerHTML = html;
-        }
-
-        function disableAdminButtons(disabled) {
-            document.getElementById('exportButton').disabled = disabled;
-            document.getElementById('clearButton').disabled = disabled;
-            
-            if (disabled) {
-                document.getElementById('exportButton').classList.add('disabled:bg-gray-400');
-                document.getElementById('clearButton').classList.add('disabled:bg-gray-400');
-            } else {
-                document.getElementById('exportButton').classList.remove('disabled:bg-gray-400');
-                document.getElementById('clearButton').classList.remove('disabled:bg-gray-400');
-            }
-        }
-
-        async function exportData() {
-            try {
-                updateDatabaseStatus('正在导出数据...', 'loading');
-                
-                const data = await multiBinManager.readAllData();
-                
-                if (!data.comparisons || data.comparisons.length === 0) {
-                    alert('没有可导出的数据');
-                    return;
-                }
-                
-                const headers = [
-                    'sessionId', 'nickname', 'gender', 'age', 'isProfessional', 
-                    'groupNumber', 'comparisonIndex', 'image1_url', 'image2_url', 
-                    'image1_name', 'image2_name', 'sitting', 'strolling', 
-                    'jogging', 'gathering', 'viewTime_ms', 'timestamp'
-                ];
-                
-                let csvContent = headers.join(',') + '\n';
-                
-                data.comparisons.forEach(comp => {
-                    const row = [
-                        comp.sessionId,
-                        comp.nickname,
-                        comp.gender,
-                        comp.age,
-                        comp.isProfessional,
-                        comp.groupNumber,
-                        comp.comparisonIndex,
-                        `"${comp.image1_url}"`,
-                        `"${comp.image2_url}"`,
-                        comp.image1_name,
-                        comp.image2_name,
-                        comp.sitting,
-                        comp.strolling,
-                        comp.jogging,
-                        comp.gathering,
-                        comp.viewTime || 0,
-                        comp.timestamp
-                    ];
-                    csvContent += row.join(',') + '\n';
-                });
-                
-                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-                const link = document.createElement('a');
-                const url = URL.createObjectURL(blob);
-                link.setAttribute('href', url);
-                link.setAttribute('download', `街景问卷对比数据_${new Date().toISOString().split('T')[0]}.csv`);
-                link.style.visibility = 'hidden';
-                document.body.appendChild(link);
-                link.click();
-                document.body.removeChild(link);
-                
-                updateDatabaseStatus('数据导出完成', 'success');
-                setTimeout(() => {
-                    updateDatabaseStatus('多bin系统连接成功', 'success');
-                }, 2000);
-                
-            } catch (error) {
-                console.error('导出失败:', error);
-                updateDatabaseStatus('导出失败', 'error');
-                alert('导出失败：' + error.message);
-            }
-        }
-
-        async function clearData() {
-            if (!confirm('确定要清空所有数据吗？此操作不可恢复！')) {
-                return;
-            }
-            
-            if (!confirm('最后确认：将删除所有bin中的实验数据，确定继续吗？')) {
-                return;
-            }
-            
-            try {
-                updateDatabaseStatus('正在清空所有bin数据...', 'loading');
-                
-                if (!multiBinManager) {
-                    await initializeMultiBinManager();
-                }
-                
-                await multiBinManager.clearAllData();
-                
-                updateDatabaseStatus('所有数据已清空', 'success');
-                await refreshStats();
-                
-            } catch (error) {
-                console.error('清空失败:', error);
-                updateDatabaseStatus('清空失败', 'error');
-                alert('清空失败：' + error.message);
-            }
-        }
-
-        // Bin修复相关函数
-        async function scanExistingBins() {
-            try {
-                if (!binCleanupManager) {
-                    binCleanupManager = new BinCleanupManager(multiBinManager);
-                }
-                
-                const result = await binCleanupManager.scanAllExistingBins();
-                
-                document.getElementById('repairStatus').innerHTML = `
-                    <div class="bg-blue-50 border border-blue-200 rounded p-3">
-                        <h5 class="font-medium text-blue-800">扫描结果:</h5>
-                        <p class="text-blue-700">主控制bin中记录了 ${result.knownBins.length} 个bin</p>
-                        <div class="text-xs text-blue-600 mt-2 max-h-20 overflow-y-auto">
-                            Known Bin IDs: ${result.knownBins.join(', ')}
-                        </div>
-                    </div>
-                `;
-                document.getElementById('repairStatus').classList.remove('hidden');
-                document.getElementById('additionalBinsInput').classList.remove('hidden');
-                
-            } catch (error) {
-                document.getElementById('repairStatus').innerHTML = `
-                    <div class="bg-red-50 border border-red-200 rounded p-3">
-                        <p class="text-red-700">扫描失败: ${error.message}</p>
-                    </div>
-                `;
-                document.getElementById('repairStatus').classList.remove('hidden');
-            }
-        }
-
-        async function repairMasterBin() {
-            try {
-                const additionalBinIdsText = document.getElementById('additionalBinIds').value.trim();
-                if (!additionalBinIdsText) {
-                    alert('请输入需要添加的bin IDs');
-                    return;
-                }
-                
-                const additionalBinIds = additionalBinIdsText.split('\n')
-                    .map(id => id.trim())
-                    .filter(id => id.length > 0);
-                
-                if (!binCleanupManager) {
-                    binCleanupManager = new BinCleanupManager(multiBinManager);
-                }
-                
-                const result = await binCleanupManager.repairMasterBin(additionalBinIds);
-                
-                document.getElementById('repairStatus').innerHTML = `
-                    <div class="bg-green-50 border border-green-200 rounded p-3">
-                        <h5 class="font-medium text-green-800">修复完成!</h5>
-                        <p class="text-green-700">现在主控制bin包含 ${result.dataBins.length} 个bin</p>
-                        <p class="text-green-700">总记录数: ${result.totalRecords}</p>
-                    </div>
-                `;
-                
-                await refreshStats();
-                
-            } catch (error) {
-                document.getElementById('repairStatus').innerHTML = `
-                    <div class="bg-red-50 border border-red-200 rounded p-3">
-                        <p class="text-red-700">修复失败: ${error.message}</p>
-                    </div>
-                `;
-            }
-        }
-
-        async function cleanupEmptyBins() {
-            try {
-                if (!binCleanupManager) {
-                    binCleanupManager = new BinCleanupManager(multiBinManager);
-                }
-                
-                const result = await binCleanupManager.cleanupEmptyBins();
-                
-                document.getElementById('repairStatus').innerHTML = `
-                    <div class="bg-green-50 border border-green-200 rounded p-3">
-                        <h5 class="font-medium text-green-800">清理完成!</h5>
-                        <p class="text-green-700">保留了 ${result.activeBins} 个有效bin</p>
-                        <p class="text-green-700">清理了 ${result.cleanedBins} 个空bin</p>
-                    </div>
-                `;
-                
-                await refreshStats();
-                
-            } catch (error) {
-                document.getElementById('repairStatus').innerHTML = `
-                    <div class="bg-red-50 border border-red-200 rounded p-3">
-                        <p class="text-red-700">清理失败: ${error.message}</p>
-                    </div>
-                `;
             }
         }
 
@@ -1998,6 +1177,242 @@
         }
 
         // ====================================================================
+        // URL处理函数
+        // ====================================================================
+        function extractImageName(url) {
+            const parts = url.split('/');
+            const filename = parts[parts.length - 1];
+            return filename.replace(/\.(jpg|jpeg|png|gif|webp)$/i, '');
+        }
+
+        function buildFallbackUrl(originalUrl) {
+            const hash = hashCode(originalUrl);
+            const id = Math.abs(hash) % 1000;
+            return `https://picsum.photos/seed/${id}/666/500`;
+        }
+
+        function hashCode(str) {
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) {
+                const char = str.charCodeAt(i);
+                hash = ((hash << 5) - hash) + char;
+                hash = hash & hash;
+            }
+            return hash;
+        }
+
+        // ====================================================================
+        // 图片库初始化
+        // ====================================================================
+        async function initializeImageLibrary() {
+            console.log('初始化完整图片库...');
+            
+            let imageUrls = await loadImageUrlsFromFile();
+            
+            if (!imageUrls || imageUrls.length === 0) {
+                console.log('文件加载失败，使用演示图片列表');
+                imageUrls = DEMO_IMAGES;
+            }
+            
+            fullImageLibrary = imageUrls.map((url, index) => ({
+                id: index + 1,
+                name: extractImageName(url),
+                url: url.trim(),
+                fallbackUrl: buildFallbackUrl(url)
+            }));
+            
+            const minImagesNeeded = 20;
+            if (fullImageLibrary.length < minImagesNeeded) {
+                console.log(`图片数量不足(${fullImageLibrary.length}张)，需要至少${minImagesNeeded}张`);
+                const originalLibrary = [...fullImageLibrary];
+                while (fullImageLibrary.length < minImagesNeeded) {
+                    fullImageLibrary.push(...originalLibrary.map((img, index) => ({
+                        ...img,
+                        id: fullImageLibrary.length + index + 1
+                    })));
+                }
+                console.log(`已调整完整图片库到${fullImageLibrary.length}张图片`);
+            }
+            
+            isImageLibraryLoaded = true;
+            console.log(`完整图片库初始化完成，共 ${fullImageLibrary.length} 张图片`);
+        }
+
+        function selectImagesForCurrentGroup() {
+            console.log(`为第${currentGroupNumber}组选择新的图片...`);
+            
+            const minImagesNeeded = 20;
+            
+            if (fullImageLibrary.length >= minImagesNeeded) {
+                const shuffled = [...fullImageLibrary].sort(() => 0.5 - Math.random());
+                imageLibrary = shuffled.slice(0, minImagesNeeded);
+            } else {
+                imageLibrary = [];
+                const originalCount = fullImageLibrary.length;
+                for (let i = 0; i < minImagesNeeded; i++) {
+                    const originalImg = fullImageLibrary[i % originalCount];
+                    imageLibrary.push({
+                        ...originalImg,
+                        id: i + 1
+                    });
+                }
+                imageLibrary.sort(() => 0.5 - Math.random());
+            }
+            
+            console.log(`第${currentGroupNumber}组图片选择完成，共 ${imageLibrary.length} 张图片`);
+        }
+
+        async function loadImageUrlsFromFile() {
+            try {
+                const response = await fetch('image_list.txt');
+                if (!response.ok) throw new Error('文件不存在');
+                
+                const text = await response.text();
+                const urls = text.split('\n')
+                    .map(line => line.trim())
+                    .filter(line => line.length > 0 && !line.startsWith('#'))
+                    .filter(line => line.startsWith('http'));
+                
+                console.log(`从文件加载了 ${urls.length} 个图片URL`);
+                return urls;
+            } catch (error) {
+                console.log(`加载图片列表文件失败: ${error.message}`);
+                return null;
+            }
+        }
+
+        function loadImageWithFallback(imgElement, imageData, callback) {
+            console.log(`加载图片: ${imageData.name}`);
+            
+            const preloadedImageKey = `${imageData.id}_${imageData.url}`;
+            if (preloadedImages.has(preloadedImageKey)) {
+                const preloadedImg = preloadedImages.get(preloadedImageKey);
+                if (preloadedImg.complete && preloadedImg.naturalHeight !== 0) {
+                    console.log(`使用预加载的图片: ${imageData.name}`);
+                    imgElement.src = preloadedImg.src;
+                    if (callback) callback(true);
+                    return;
+                }
+            }
+            
+            imgElement.onload = function() {
+                console.log(`图片 ${imageData.name} 原始URL加载成功`);
+                if (callback) callback(true);
+            };
+            
+            imgElement.onerror = function() {
+                console.log(`图片 ${imageData.name} 原始URL加载失败，尝试备用图片`);
+                
+                imgElement.onload = function() {
+                    console.log(`图片 ${imageData.name} 通过备用源加载成功`);
+                    if (callback) callback(true);
+                };
+                
+                imgElement.onerror = function() {
+                    console.log(`图片 ${imageData.name} 所有源都无法加载`);
+                    imgElement.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjY2IiBoZWlnaHQ9IjUwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNiIgZmlsbD0iIzk5YTNhZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPuWbvueJh+aauOaXoOazleWKoOi9rTwvdGV4dD48L3N2Zz4=';
+                    if (callback) callback(false);
+                };
+                
+                imgElement.src = imageData.fallbackUrl;
+            };
+            
+            imgElement.src = imageData.url;
+        }
+
+        function preloadImage(imageData) {
+            return new Promise((resolve) => {
+                const preloadedImageKey = `${imageData.id}_${imageData.url}`;
+                
+                if (preloadedImages.has(preloadedImageKey)) {
+                    resolve(preloadedImages.get(preloadedImageKey));
+                    return;
+                }
+                
+                const img = new Image();
+                
+                img.onload = function() {
+                    console.log(`预加载成功: ${imageData.name}`);
+                    preloadedImages.set(preloadedImageKey, img);
+                    resolve(img);
+                };
+                
+                img.onerror = function() {
+                    console.log(`预加载原始URL失败，尝试备用URL: ${imageData.name}`);
+                    
+                    const fallbackImg = new Image();
+                    fallbackImg.onload = function() {
+                        console.log(`预加载备用URL成功: ${imageData.name}`);
+                        preloadedImages.set(preloadedImageKey, fallbackImg);
+                        resolve(fallbackImg);
+                    };
+                    
+                    fallbackImg.onerror = function() {
+                        console.log(`预加载所有URL都失败: ${imageData.name}`);
+                        resolve(null);
+                    };
+                    
+                    fallbackImg.src = imageData.fallbackUrl;
+                };
+                
+                img.src = imageData.url;
+            });
+        }
+
+        function preloadNextPair() {
+            const nextIndex = currentComparisonIndex + 1;
+            if (nextIndex < comparisonPairs.length) {
+                const nextPair = comparisonPairs[nextIndex];
+                console.log(`开始预加载下一对图片 (${nextIndex + 1}/${comparisonPairs.length})`);
+                
+                Promise.all([
+                    preloadImage(nextPair.imageA),
+                    preloadImage(nextPair.imageB)
+                ]).then(() => {
+                    console.log(`下一对图片预加载完成`);
+                }).catch((error) => {
+                    console.log(`预加载失败: ${error}`);
+                });
+            }
+        }
+
+        // 修复：更智能的缓存清理逻辑
+        function cleanupPreloadCache() {
+            const keepKeys = new Set();
+            
+            // 保留当前显示的图片 - 使用当前显示的索引而不是增加后的索引
+            const displayIndex = Math.min(currentComparisonIndex, comparisonPairs.length - 1);
+            if (displayIndex >= 0 && displayIndex < comparisonPairs.length) {
+                const currentPair = comparisonPairs[displayIndex];
+                keepKeys.add(`${currentPair.imageA.id}_${currentPair.imageA.url}`);
+                keepKeys.add(`${currentPair.imageB.id}_${currentPair.imageB.url}`);
+                console.log(`保留当前显示图片 (索引 ${displayIndex}): ${currentPair.imageA.name}, ${currentPair.imageB.name}`);
+            }
+            
+            // 保留下一对预加载的图片
+            const nextIndex = currentComparisonIndex + 1;
+            if (nextIndex < comparisonPairs.length) {
+                const nextPair = comparisonPairs[nextIndex];
+                keepKeys.add(`${nextPair.imageA.id}_${nextPair.imageA.url}`);
+                keepKeys.add(`${nextPair.imageB.id}_${nextPair.imageB.url}`);
+                console.log(`保留下一对预加载图片 (索引 ${nextIndex}): ${nextPair.imageA.name}, ${nextPair.imageB.name}`);
+            }
+            
+            // 清理不需要的缓存
+            const beforeCleanup = preloadedImages.size;
+            for (const key of preloadedImages.keys()) {
+                if (!keepKeys.has(key)) {
+                    preloadedImages.delete(key);
+                }
+            }
+            const afterCleanup = preloadedImages.size;
+            
+            if (beforeCleanup !== afterCleanup) {
+                console.log(`缓存清理完成: ${beforeCleanup} -> ${afterCleanup} 张图片`);
+            }
+        }
+
+        // ====================================================================
         // 数据状态显示函数
         // ====================================================================
         function showDataStatus(message, type = 'loading') {
@@ -2035,52 +1450,248 @@
         }
 
         // ====================================================================
-        // 其余函数（图片库、问卷逻辑等）
-        // 这里包含所有原有的函数，由于篇幅限制，我只展示关键的修改...
+        // 进度更新函数
         // ====================================================================
-
-        // 图片处理函数
-        function extractImageName(url) {
-            const parts = url.split('/');
-            const filename = parts[parts.length - 1];
-            return filename.replace(/\.(jpg|jpeg|png|gif|webp)$/i, '');
-        }
-
-        function buildFallbackUrl(originalUrl) {
-            const hash = hashCode(originalUrl);
-            const id = Math.abs(hash) % 1000;
-            return `https://picsum.photos/seed/${id}/666/500`;
-        }
-
-        function hashCode(str) {
-            let hash = 0;
-            for (let i = 0; i < str.length; i++) {
-                const char = str.charCodeAt(i);
-                hash = ((hash << 5) - hash) + char;
-                hash = hash & hash;
-            }
-            return hash;
-        }
-
-        // 图片库初始化
-        async function initializeImageLibrary() {
-            console.log('初始化完整图片库...');
+        function updateOverallProgress() {
+            const overallProgressTitle = document.getElementById('overallProgressTitle');
+            const overallProgressText = document.getElementById('overallProgressText');
+            const overallProgressDetail = document.getElementById('overallProgressDetail');
+            const overallProgressFill = document.getElementById('overallProgressFill');
             
-            let imageUrls = await loadImageUrlsFromFile();
-            
-            if (!imageUrls || imageUrls.length === 0) {
-                console.log('文件加载失败，使用演示图片列表');
-                imageUrls = DEMO_IMAGES;
+            if (currentLanguage === 'zh') {
+                overallProgressTitle.textContent = '实验进度';
+                overallProgressText.textContent = `第 ${currentGroupNumber} 组 / 共 ${MAX_GROUPS} 组`;
+                overallProgressDetail.textContent = `当前组进度: ${currentComparisonIndex + 1}/20`;
+            } else {
+                overallProgressTitle.textContent = 'Experiment Progress';
+                overallProgressText.textContent = `Group ${currentGroupNumber} / ${MAX_GROUPS}`;
+                overallProgressDetail.textContent = `Current group: ${currentComparisonIndex + 1}/20`;
             }
             
-            fullImageLibrary = imageUrls.map((url, index) => ({
-                id: index + 1,
-                name: extractImageName(url),
-                url: url.trim(),
-                fallbackUrl: buildFallbackUrl(url)
-            }));
+            const groupProgress = (currentGroupNumber - 1) / MAX_GROUPS;
+            const currentGroupProgress = (currentComparisonIndex + 1) / 20 / MAX_GROUPS;
+            const totalProgress = (groupProgress + currentGroupProgress) * 100;
             
-            const minImagesNeeded = 20;
+            overallProgressFill.style.width = `${Math.min(totalProgress, 100)}%`;
+        }
+
+        function updateContinueProgress() {
+            const continueProgressText = document.getElementById('continueProgressText');
+            const continueProgressFill = document.getElementById('continueProgressFill');
+            
+            if (currentLanguage === 'zh') {
+                continueProgressText.textContent = `已完成 ${currentGroupNumber}/${MAX_GROUPS} 组`;
+            } else {
+                continueProgressText.textContent = `Completed ${currentGroupNumber}/${MAX_GROUPS} groups`;
+            }
+            
+            const progressPercentage = (currentGroupNumber / MAX_GROUPS) * 100;
+            continueProgressFill.style.width = `${progressPercentage}%`;
+        }
+
+        // ====================================================================
+        // 问卷逻辑
+        // ====================================================================
+        const texts = {
+            zh: {
+                surveyTitle: '街景感知问卷：第一部分',
+                reminderTitle: '?? 实验提醒',
+                reminderText: '请认真作答。本实验需要完成5组，每组20次图片对比，耗时约20分钟，才能获得最终报酬。',
+                reminderDevice: '为保证实验效果，请使用电脑或平板电脑作答。',
+                nicknameLabel: '您的昵称是：',
+                nicknameHint: '请记忆，以用于兑换被试费用。建议使用姓名拼音。',
+                genderLabel: '您的性别是：',
+                maleLabel: '男',
+                femaleLabel: '女',
+                ageLabel: '您的年龄：',
+                professionalLabel: '您来自城市规划/建筑/风景园林相关专业吗？',
+                yesLabel: '是',
+                noLabel: '否',
+                consentTitle: '实验知情同意',
+                consentAgree: '我已阅读并理解上述说明，同意参与本实验',
+                nextButton: '下一部分',
+                compareTitle: '以下两张街景中，您认为哪张更加适合"坐"的行为：',
+                hintTitle: '提示',
+                instructions: '在此调研中，您需要对每对图片回答四个不同的行为问题。请根据您的直觉选择您认为更加适合进行各种活动的街景。所有问题都必须回答完毕才能进入下一对图片。',
+                continueTitle: '本组对比已完成',
+                continueButton: '继续下一组',
+                exitButton: '退出实验',
+                exitWarningTitle: '?? 退出警告',
+                exitWarningMessage: '您还未完成全部5组实验，现在退出将无法获得报酬。\n\n确定要退出吗？',
+                backButton: '返回继续实验',
+                forceExitButton: '确定退出',
+                finishButton: '完成实验',
+                thankYouTitle: '?? 感谢您的参与！',
+                thankYouMessage: '您已成功完成全部5组实验，数据已提交！\n\n感谢您为街景感知研究做出的贡献！请联系研究人员兑换报酬。',
+                restartButton: '重新开始',
+                nicknameConfirmText: '感谢您的参与！',
+                imageALabel: '图片 A',
+                imageBLabel: '图片 B',
+                optionA: '图片 A',
+                optionB: '图片 B',
+                question1: '以下两张街景中，您认为哪张更加适合"坐憩"的行为：',
+                question2: '以下两张街景中，您认为哪张更加适合"漫步"的行为：',
+                question3: '以下两张街景中，您认为哪张更加适合"慢跑"的行为：',
+                question4: '以下两张街景中，您认为哪张更加适合"聚会或聚集"的行为：',
+                confirmButtonText: '确认并继续',
+                timeWarningText: '请仔细观察图片至少6秒后再进行选择'
+            },
+            en: {
+                surveyTitle: 'Street View Perception Questionnaire: Part 1',
+                reminderTitle: '?? Experiment Reminder',
+                reminderText: 'Please answer carefully. This experiment requires completing 5 groups, with 20 image comparisons each, taking about 20 minutes total to receive the final compensation.',
+                reminderDevice: 'For best results, please use a computer or tablet.',
+                nicknameLabel: 'Your nickname is:',
+                nicknameHint: 'Keep this in mind for getting the participant fees. It is recommended to use your First Name.',
+                genderLabel: 'Your gender is:',
+                maleLabel: 'Male',
+                femaleLabel: 'Female',
+                ageLabel: 'Your age:',
+                professionalLabel: 'Are you from urban planning/architecture/landscape architecture related majors?',
+                yesLabel: 'Yes',
+                noLabel: 'No',
+                consentTitle: 'Informed Consent',
+                consentAgree: 'I have read and understood the above information and agree to participate in this experiment',
+                nextButton: 'Next Part',
+                compareTitle: 'Which of the following two street views do you think is more suitable for sitting:',
+                hintTitle: 'Hint',
+                instructions: 'In this survey, you need to answer four different behavioral questions for each pair of images. Please choose the street view you think is more suitable for various activities based on your intuition. All questions must be answered before proceeding to the next pair of images.',
+                continueTitle: 'Group Comparison Completed',
+                continueButton: 'Continue Next Group',
+                exitButton: 'Exit Experiment',
+                exitWarningTitle: '?? Exit Warning',
+                exitWarningMessage: 'You have not completed all 5 groups yet. Exiting now means you will not receive compensation.\n\nAre you sure you want to exit?',
+                backButton: 'Return to Continue',
+                forceExitButton: 'Confirm Exit',
+                finishButton: 'Complete Experiment',
+                thankYouTitle: '?? Thank You for Your Participation!',
+                thankYouMessage: 'You have successfully completed all 5 groups! Your data has been submitted.\n\nThank you for contributing to street view perception research! Please contact the researchers to claim your compensation.',
+                restartButton: 'Start Over',
+                nicknameConfirmText: 'Thank you for your participation!',
+                imageALabel: 'Image A',
+                imageBLabel: 'Image B',
+                optionA: 'Image A',
+                optionB: 'Image B',
+                question1: 'Which of the following two street views do you think is more suitable for "sitting":',
+                question2: 'Which of the following two street views do you think is more suitable for "strolling":',
+                question3: 'Which of the following two street views do you think is more suitable for "jogging":',
+                question4: 'Which of the following two street views do you think is more suitable for "gathering":',
+                confirmButtonText: 'Confirm and Continue',
+                timeWarningText: 'Please observe the images carefully for at least 6 seconds before making a selection'
+            }
+        };
+
+        function selectLanguage(lang) {
+            currentLanguage = lang;
+            updateTexts();
+            showPage('surveyPage');
+        }
+
+        function updateTexts() {
+            const t = texts[currentLanguage];
+            
+            Object.keys(t).forEach(key => {
+                const element = document.getElementById(key);
+                if (element) {
+                    if (key === 'continueMessage' || key === 'thankYouMessage' || key === 'exitWarningMessage') {
+                        element.innerHTML = t[key].replace(/\n/g, '<br>');
+                    } else {
+                        element.textContent = t[key];
+                    }
+                }
+            });
+            
+            const optionAElements = document.querySelectorAll('.optionA');
+            const optionBElements = document.querySelectorAll('.optionB');
+            
+            optionAElements.forEach(element => {
+                element.textContent = t.optionA;
+            });
+            
+            optionBElements.forEach(element => {
+                element.textContent = t.optionB;
+            });
+
+            if (currentLanguage === 'en') {
+                document.getElementById('consentText').innerHTML = `
+                    <p class="mb-3"><strong>Research Institution:</strong> Urban Morphology Studio (UMS), Urban Governance and Design Thrust, Hong Kong University of Science and Technology (Guangzhou)</p>
+                    <p class="mb-3"><strong>Research Purpose:</strong> This experiment aims to understand people's perception and preference for behavioral suitability in different street environments. Through systematic comparison of street view images, we seek to identify patterns in how individuals assess spatial affordances for various human activities, contributing to evidence-based urban design practices.</p>
+                    <p class="mb-3"><strong>Experimental Process:</strong> During the experiment, we will record:</p>
+                    <ul class="list-disc list-inside mb-3 ml-4">
+                        <li>Your basic information (nickname, gender, age, professional background)</li>
+                        <li>Your choices regarding behavioral suitability of different street view images</li>
+                        <li>Your response time and viewing duration</li>
+                        <li>Timestamps of your participation</li>
+                    </ul>
+                    <p class="mb-3"><strong>Data Usage:</strong> All collected data will be used solely for scientific research related to urban design and spatial perception.</p>
+                    <p class="mb-3"><strong>We commit to:</strong></p>
+                    <ul class="list-disc list-inside mb-3 ml-4">
+                        <li>Strict confidentiality of your personal information</li>
+                        <li>Use of data for academic research purposes only</li>
+                        <li>Publication of research results in anonymized form</li>
+                        <li>Your right to withdraw from the experiment at any time</li>
+                    </ul>
+                    <p class="mb-3"><strong>Contact Information:</strong> If you have any questions, please contact the research team.</p>
+                    <p class="font-semibold">Participation in this experiment indicates that you have fully understood the above content and voluntarily participate.</p>
+                `;
+            }
+
+            updateContinueMessage();
+        }
+
+        function updateContinueMessage() {
+            const continueMessage = document.getElementById('continueMessage');
+            if (!continueMessage) return;
+
+            const remainingGroups = MAX_GROUPS - currentGroupNumber;
+            
+            if (currentLanguage === 'zh') {
+                if (currentGroupNumber < MAX_GROUPS) {
+                    continueMessage.innerHTML = `您已完成了第${currentGroupNumber}组图片对比！<br>还需要完成${remainingGroups}组才能获得报酬。`;
+                } else {
+                    continueMessage.innerHTML = `恭喜！您已完成全部${MAX_GROUPS}组实验！<br>可以提交数据并获得报酬了。`;
+                }
+            } else {
+                if (currentGroupNumber < MAX_GROUPS) {
+                    continueMessage.innerHTML = `You have completed group ${currentGroupNumber}!<br>You need to complete ${remainingGroups} more groups to receive compensation.`;
+                } else {
+                    continueMessage.innerHTML = `Congratulations! You have completed all ${MAX_GROUPS} groups!<br>You can now submit your data and receive compensation.`;
+                }
+            }
+        }
+
+        function showPage(pageId) {
+            const pages = ['languagePage', 'surveyPage', 'comparisonPage', 'continuePage', 'exitWarningPage', 'thankYouPage'];
+            pages.forEach(page => {
+                document.getElementById(page).classList.add('hidden');
+            });
+            document.getElementById(pageId).classList.remove('hidden');
+            document.getElementById(pageId).classList.add('fade-in');
+        }
+
+        async function startComparisons() {
+            const nickname = document.getElementById('nicknameInput').value.trim();
+            const gender = document.querySelector('input[name="gender"]:checked');
+            const age = document.getElementById('ageInput').value;
+            const professional = document.querySelector('input[name="professional"]:checked');
+            const consent = document.getElementById('consentCheckbox').checked;
+
+            if (!nickname || !gender || !age || !professional || !consent) {
+                alert(currentLanguage === 'zh' ? '请完整填写所有必填项并同意参与实验！' : 'Please fill in all required fields and agree to participate!');
+                return;
+            }
+
+            userData = {
+                nickname: nickname,
+                gender: gender.value,
+                age: age,
+                isProfessional: professional.value
+            };
+
+            if (!isImageLibraryLoaded) {
+                await initializeImageLibrary();
+            }
+
             if (fullImageLibrary.length < 2) {
                 alert(currentLanguage === 'zh' ? '图片库加载失败或图片数量不足！' : 'Image library failed to load or insufficient images!');
                 return;
@@ -2212,6 +1823,7 @@
             }
         }
 
+        // 修复：重新组织确认选择的流程，避免缓存清理问题
         async function confirmAllSelections() {
             if (!checkMinimumViewTime()) {
                 showTimeWarning();
@@ -2244,6 +1856,7 @@
                 return;
             }
 
+            // 保存当前对比的数据
             comparisons.push({
                 imageA: currentPair.imageA,
                 imageB: currentPair.imageB,
@@ -2256,8 +1869,10 @@
 
             console.log(`第 ${currentComparisonIndex + 1} 次对比完成，已保存数据`);
 
+            // 先进行清理，但使用当前的索引（未增加）
             cleanupPreloadCache();
             
+            // 然后增加索引并生成下一个对比
             currentComparisonIndex++;
             generateNewComparison();
         }
@@ -2371,11 +1986,411 @@
         }
 
         // ====================================================================
+        // 管理员界面
+        // ====================================================================
+        const ENCODED_ADMIN_KEY = 'VU1TMjAyNXlncw==';
+        
+        function getAdminPassword() {
+            return atob(ENCODED_ADMIN_KEY);
+        }
+        
+        async function showAdminPanel() {
+            const password = prompt('请输入管理员密码：');
+            
+            if (password === null) {
+                return;
+            }
+            
+            if (password !== getAdminPassword()) {
+                alert('密码错误！');
+                return;
+            }
+            
+            document.getElementById('adminPanel').classList.remove('hidden');
+            await refreshStats();
+        }
+
+        function hideAdminPanel() {
+            document.getElementById('adminPanel').classList.add('hidden');
+        }
+
+        // 更新管理员界面以显示多bin状态
+        async function refreshStats() {
+            try {
+                updateDatabaseStatus('正在连接多bin系统...', 'loading');
+                disableAdminButtons(true);
+                
+                if (!multiBinManager) {
+                    await initializeMultiBinManager();
+                }
+                
+                const data = await multiBinManager.readAllData();
+                const systemStatus = multiBinManager.getSystemStatus();
+                
+                updateDatabaseStatus(`多bin系统连接成功 (${systemStatus.totalBins} bins)`, 'success');
+                disableAdminButtons(false);
+                
+                // 显示系统状态
+                displaySystemStatus(systemStatus);
+                
+                // 计算统计信息
+                const uniqueSessions = new Map();
+                (data.sessions || []).forEach(session => {
+                    if (!uniqueSessions.has(session.sessionId) || 
+                        session.groupsCompleted > uniqueSessions.get(session.sessionId).groupsCompleted) {
+                        uniqueSessions.set(session.sessionId, session);
+                    }
+                });
+                
+                const totalUsers = uniqueSessions.size;
+                const totalComparisons = (data.comparisons || []).length;
+                const avgGroups = totalUsers > 0 ? (totalComparisons / totalUsers / 20).toFixed(1) : '0';
+                
+                document.getElementById('totalUsers').textContent = totalUsers;
+                document.getElementById('totalComparisons').textContent = totalComparisons;
+                document.getElementById('avgGroups').textContent = avgGroups;
+                
+                displayRecentComparisons(data.comparisons || []);
+                displayUserDetails(Array.from(uniqueSessions.values()));
+                
+            } catch (error) {
+                console.error('刷新失败:', error);
+                updateDatabaseStatus('连接多bin系统失败', 'error');
+                disableAdminButtons(true);
+            }
+        }
+
+        // 显示系统状态
+        function displaySystemStatus(systemStatus) {
+            const systemStatusPanel = document.getElementById('systemStatus');
+            const systemStatusContent = document.getElementById('systemStatusContent');
+            
+            systemStatusPanel.classList.remove('hidden');
+            
+            let statusHtml = `
+                <div class="grid grid-cols-2 gap-4 mb-4">
+                    <div>
+                        <span class="font-medium">总Bin数:</span>
+                        <span class="text-blue-600 font-semibold">${systemStatus.totalBins}</span>
+                    </div>
+                    <div>
+                        <span class="font-medium">当前活跃Bin:</span>
+                        <span class="text-green-600 font-semibold">${systemStatus.currentBinId?.substring(0, 12) || 'N/A'}...</span>
+                    </div>
+                    <div>
+                        <span class="font-medium">当前Bin使用率:</span>
+                        <span class="text-purple-600 font-semibold">${systemStatus.usagePercentage}%</span>
+                    </div>
+                    <div>
+                        <span class="font-medium">当前Bin大小:</span>
+                        <span class="text-orange-600 font-semibold">${Math.round(systemStatus.currentBinSize / 1024)}KB</span>
+                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <div class="text-sm text-gray-600 mb-2">当前Bin容量使用情况</div>
+                    <div class="progress-bar-container">
+                        <div class="progress-bar-fill" style="width: ${systemStatus.usagePercentage}%"></div>
+                    </div>
+                    <div class="text-xs text-gray-500 mt-1">
+                        ${Math.round(systemStatus.currentBinSize / 1024)}KB / ${Math.round(systemStatus.maxBinSize / 1024)}KB
+                    </div>
+                </div>
+                
+                <div>
+                    <div class="text-sm font-medium text-gray-700 mb-2">所有Bin状态:</div>
+                    <div class="space-y-1">
+            `;
+            
+            systemStatus.bins.forEach((bin, index) => {
+                const statusClass = bin.status === 'active' ? 'active' : 
+                                 bin.status === 'full' ? 'full' : '';
+                const statusText = bin.status === 'active' ? '活跃' :
+                                bin.status === 'full' ? '已满' : '空闲';
+                
+                statusHtml += `
+                    <div class="bin-status ${statusClass}">
+                        <div>
+                            <span class="font-medium">Bin ${index + 1}:</span>
+                            <span class="text-xs text-gray-600">${bin.binId}</span>
+                        </div>
+                        <div class="text-sm">
+                            <span class="px-2 py-1 rounded text-xs ${
+                                bin.status === 'active' ? 'bg-green-100 text-green-700' :
+                                bin.status === 'full' ? 'bg-orange-100 text-orange-700' :
+                                'bg-gray-100 text-gray-700'
+                            }">${statusText}</span>
+                            <span class="ml-2 text-gray-600">${bin.sizeKB}KB (${bin.recordCount} 记录)</span>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            statusHtml += `
+                    </div>
+                </div>
+            `;
+            
+            systemStatusContent.innerHTML = statusHtml;
+        }
+
+        function displayRecentComparisons(comparisons) {
+            const container = document.getElementById('comparisonData');
+            
+            if (comparisons.length === 0) {
+                container.innerHTML = '<div class="text-gray-500">暂无对比数据</div>';
+                return;
+            }
+            
+            const recent = comparisons.slice(-20);
+            
+            let html = `
+                <table class="w-full text-sm border-collapse border border-gray-300">
+                    <thead>
+                        <tr class="bg-gray-100">
+                            <th class="border border-gray-300 p-2">昵称</th>
+                            <th class="border border-gray-300 p-2">组号</th>
+                            <th class="border border-gray-300 p-2">图片A</th>
+                            <th class="border border-gray-300 p-2">图片B</th>
+                            <th class="border border-gray-300 p-2">坐憩</th>
+                            <th class="border border-gray-300 p-2">漫步</th>
+                            <th class="border border-gray-300 p-2">慢跑</th>
+                            <th class="border border-gray-300 p-2">聚集</th>
+                            <th class="border border-gray-300 p-2">时间</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            recent.forEach(comp => {
+                html += `
+                    <tr>
+                        <td class="border border-gray-300 p-2">${comp.nickname}</td>
+                        <td class="border border-gray-300 p-2">${comp.groupNumber}</td>
+                        <td class="border border-gray-300 p-2">${comp.image1_name}</td>
+                        <td class="border border-gray-300 p-2">${comp.image2_name}</td>
+                        <td class="border border-gray-300 p-2">${comp.sitting === 0 ? 'A' : 'B'}</td>
+                        <td class="border border-gray-300 p-2">${comp.strolling === 0 ? 'A' : 'B'}</td>
+                        <td class="border border-gray-300 p-2">${comp.jogging === 0 ? 'A' : 'B'}</td>
+                        <td class="border border-gray-300 p-2">${comp.gathering === 0 ? 'A' : 'B'}</td>
+                        <td class="border border-gray-300 p-2">${new Date(comp.timestamp).toLocaleString()}</td>
+                    </tr>
+                `;
+            });
+            
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        function displayUserDetails(sessions) {
+            const container = document.getElementById('userDetails');
+            
+            if (sessions.length === 0) {
+                container.innerHTML = '<div class="text-gray-500">暂无用户数据</div>';
+                return;
+            }
+            
+            // 按最后更新时间排序
+            const sortedSessions = sessions.sort((a, b) => 
+                new Date(b.lastUpdated || b.timestamp) - new Date(a.lastUpdated || a.timestamp)
+            );
+            
+            let html = `
+                <table class="w-full text-sm border-collapse border border-gray-300">
+                    <thead>
+                        <tr class="bg-gray-100">
+                            <th class="border border-gray-300 p-2">昵称</th>
+                            <th class="border border-gray-300 p-2">性别</th>
+                            <th class="border border-gray-300 p-2">年龄</th>
+                            <th class="border border-gray-300 p-2">专业背景</th>
+                            <th class="border border-gray-300 p-2">完成组数</th>
+                            <th class="border border-gray-300 p-2">总对比次数</th>
+                            <th class="border border-gray-300 p-2">语言</th>
+                            <th class="border border-gray-300 p-2">完成状态</th>
+                            <th class="border border-gray-300 p-2">最后更新</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+            `;
+            
+            sortedSessions.forEach(session => {
+                const isComplete = session.groupsCompleted >= 5;
+                const statusText = isComplete ? '已完成' : `进行中 (${session.groupsCompleted}/5)`;
+                const statusClass = isComplete ? 'text-green-600 font-semibold' : 'text-blue-600';
+                
+                html += `
+                    <tr>
+                        <td class="border border-gray-300 p-2">${session.userData.nickname}</td>
+                        <td class="border border-gray-300 p-2">${session.userData.gender === 'male' ? '男' : '女'}</td>
+                        <td class="border border-gray-300 p-2">${session.userData.age}</td>
+                        <td class="border border-gray-300 p-2">${session.userData.isProfessional === 'yes' ? '是' : '否'}</td>
+                        <td class="border border-gray-300 p-2">${session.groupsCompleted}</td>
+                        <td class="border border-gray-300 p-2">${session.totalComparisons || 0}</td>
+                        <td class="border border-gray-300 p-2">${session.language === 'zh' ? '中文' : 'English'}</td>
+                        <td class="border border-gray-300 p-2 ${statusClass}">${statusText}</td>
+                        <td class="border border-gray-300 p-2">${new Date(session.lastUpdated || session.timestamp).toLocaleString()}</td>
+                    </tr>
+                `;
+            });
+            
+            html += '</tbody></table>';
+            container.innerHTML = html;
+        }
+
+        function updateDatabaseStatus(message, type = 'loading') {
+            const statusDiv = document.getElementById('databaseStatus');
+            
+            let html = '';
+            switch (type) {
+                case 'loading':
+                    html = `
+                        <div class="loading-indicator">
+                            <div class="spinner"></div>
+                            <span>${message}</span>
+                        </div>
+                    `;
+                    break;
+                case 'success':
+                    html = `
+                        <div class="status-indicator status-success">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            <span>${message}</span>
+                        </div>
+                    `;
+                    break;
+                case 'error':
+                    html = `
+                        <div class="status-indicator status-error">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                            <span>${message}</span>
+                        </div>
+                    `;
+                    break;
+            }
+            
+            statusDiv.innerHTML = html;
+        }
+
+        function disableAdminButtons(disabled) {
+            document.getElementById('exportButton').disabled = disabled;
+            document.getElementById('clearButton').disabled = disabled;
+            
+            if (disabled) {
+                document.getElementById('exportButton').classList.add('disabled:bg-gray-400');
+                document.getElementById('clearButton').classList.add('disabled:bg-gray-400');
+            } else {
+                document.getElementById('exportButton').classList.remove('disabled:bg-gray-400');
+                document.getElementById('clearButton').classList.remove('disabled:bg-gray-400');
+            }
+        }
+
+        async function exportData() {
+            try {
+                updateDatabaseStatus('正在导出数据...', 'loading');
+                
+                const data = await multiBinManager.readAllData();
+                
+                if (!data.comparisons || data.comparisons.length === 0) {
+                    alert('没有可导出的数据');
+                    return;
+                }
+                
+                // 按照您指定的字段格式创建CSV
+                const headers = [
+                    'sessionId', 'nickname', 'gender', 'age', 'isProfessional', 
+                    'groupNumber', 'comparisonIndex', 'image1_url', 'image2_url', 
+                    'image1_name', 'image2_name', 'sitting', 'strolling', 
+                    'jogging', 'gathering', 'viewTime_ms', 'timestamp'
+                ];
+                
+                let csvContent = headers.join(',') + '\n';
+                
+                data.comparisons.forEach(comp => {
+                    const row = [
+                        comp.sessionId,
+                        comp.nickname,
+                        comp.gender,
+                        comp.age,
+                        comp.isProfessional,
+                        comp.groupNumber,
+                        comp.comparisonIndex,
+                        `"${comp.image1_url}"`,
+                        `"${comp.image2_url}"`,
+                        comp.image1_name,
+                        comp.image2_name,
+                        comp.sitting,
+                        comp.strolling,
+                        comp.jogging,
+                        comp.gathering,
+                        comp.viewTime || 0,
+                        comp.timestamp
+                    ];
+                    csvContent += row.join(',') + '\n';
+                });
+                
+                // 下载文件
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                const link = document.createElement('a');
+                const url = URL.createObjectURL(blob);
+                link.setAttribute('href', url);
+                link.setAttribute('download', `街景问卷对比数据_${new Date().toISOString().split('T')[0]}.csv`);
+                link.style.visibility = 'hidden';
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                
+                updateDatabaseStatus('数据导出完成', 'success');
+                setTimeout(() => {
+                    updateDatabaseStatus('多bin系统连接成功', 'success');
+                }, 2000);
+                
+            } catch (error) {
+                console.error('导出失败:', error);
+                updateDatabaseStatus('导出失败', 'error');
+                alert('导出失败：' + error.message);
+            }
+        }
+
+        // 更新清空数据函数
+        async function clearData() {
+            if (!confirm('确定要清空所有数据吗？此操作不可恢复！')) {
+                return;
+            }
+            
+            if (!confirm('最后确认：将删除所有bin中的实验数据，确定继续吗？')) {
+                return;
+            }
+            
+            try {
+                updateDatabaseStatus('正在清空所有bin数据...', 'loading');
+                
+                if (!multiBinManager) {
+                    await initializeMultiBinManager();
+                }
+                
+                await multiBinManager.clearAllData();
+                
+                updateDatabaseStatus('所有数据已清空', 'success');
+                await refreshStats();
+                
+            } catch (error) {
+                console.error('清空失败:', error);
+                updateDatabaseStatus('清空失败', 'error');
+                alert('清空失败：' + error.message);
+            }
+        }
+
+        // ====================================================================
         // 页面初始化
         // ====================================================================
         document.addEventListener('DOMContentLoaded', async function() {
             console.log('街景问卷系统启动 - 多Bin版本');
             
+            // 初始化多bin管理器
             try {
                 await initializeMultiBinManager();
                 console.log('多bin系统初始化成功');
@@ -2408,429 +2423,4 @@
         });
     </script>
 </body>
-</html>< minImagesNeeded) {
-                console.log(`图片数量不足(${fullImageLibrary.length}张)，需要至少${minImagesNeeded}张`);
-                const originalLibrary = [...fullImageLibrary];
-                while (fullImageLibrary.length < minImagesNeeded) {
-                    fullImageLibrary.push(...originalLibrary.map((img, index) => ({
-                        ...img,
-                        id: fullImageLibrary.length + index + 1
-                    })));
-                }
-                console.log(`已调整完整图片库到${fullImageLibrary.length}张图片`);
-            }
-            
-            isImageLibraryLoaded = true;
-            console.log(`完整图片库初始化完成，共 ${fullImageLibrary.length} 张图片`);
-        }
-
-        async function loadImageUrlsFromFile() {
-            try {
-                const response = await fetch('image_list.txt');
-                if (!response.ok) throw new Error('文件不存在');
-                
-                const text = await response.text();
-                const urls = text.split('\n')
-                    .map(line => line.trim())
-                    .filter(line => line.length > 0 && !line.startsWith('#'))
-                    .filter(line => line.startsWith('http'));
-                
-                console.log(`从文件加载了 ${urls.length} 个图片URL`);
-                return urls;
-            } catch (error) {
-                console.log(`加载图片列表文件失败: ${error.message}`);
-                return null;
-            }
-        }
-
-        function selectImagesForCurrentGroup() {
-            console.log(`为第${currentGroupNumber}组选择新的图片...`);
-            
-            const minImagesNeeded = 20;
-            
-            if (fullImageLibrary.length >= minImagesNeeded) {
-                const shuffled = [...fullImageLibrary].sort(() => 0.5 - Math.random());
-                imageLibrary = shuffled.slice(0, minImagesNeeded);
-            } else {
-                imageLibrary = [];
-                const originalCount = fullImageLibrary.length;
-                for (let i = 0; i < minImagesNeeded; i++) {
-                    const originalImg = fullImageLibrary[i % originalCount];
-                    imageLibrary.push({
-                        ...originalImg,
-                        id: i + 1
-                    });
-                }
-                imageLibrary.sort(() => 0.5 - Math.random());
-            }
-            
-            console.log(`第${currentGroupNumber}组图片选择完成，共 ${imageLibrary.length} 张图片`);
-        }
-
-        function loadImageWithFallback(imgElement, imageData, callback) {
-            console.log(`加载图片: ${imageData.name}`);
-            
-            const preloadedImageKey = `${imageData.id}_${imageData.url}`;
-            if (preloadedImages.has(preloadedImageKey)) {
-                const preloadedImg = preloadedImages.get(preloadedImageKey);
-                if (preloadedImg.complete && preloadedImg.naturalHeight !== 0) {
-                    console.log(`使用预加载的图片: ${imageData.name}`);
-                    imgElement.src = preloadedImg.src;
-                    if (callback) callback(true);
-                    return;
-                }
-            }
-            
-            imgElement.onload = function() {
-                console.log(`图片 ${imageData.name} 原始URL加载成功`);
-                if (callback) callback(true);
-            };
-            
-            imgElement.onerror = function() {
-                console.log(`图片 ${imageData.name} 原始URL加载失败，尝试备用图片`);
-                
-                imgElement.onload = function() {
-                    console.log(`图片 ${imageData.name} 通过备用源加载成功`);
-                    if (callback) callback(true);
-                };
-                
-                imgElement.onerror = function() {
-                    console.log(`图片 ${imageData.name} 所有源都无法加载`);
-                    imgElement.src = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjY2IiBoZWlnaHQ9IjUwMCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cmVjdCB3aWR0aD0iMTAwJSIgaGVpZ2h0PSIxMDAlIiBmaWxsPSIjZjNmNGY2Ii8+PHRleHQgeD0iNTAlIiB5PSI1MCUiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIxNiIgZmlsbD0iIzk5YTNhZiIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZHk9Ii4zZW0iPuWbvueJh+aauOaXoOazleWKoOi9rTwvdGV4dD48L3N2Zz4=';
-                    if (callback) callback(false);
-                };
-                
-                imgElement.src = imageData.fallbackUrl;
-            };
-            
-            imgElement.src = imageData.url;
-        }
-
-        function preloadImage(imageData) {
-            return new Promise((resolve) => {
-                const preloadedImageKey = `${imageData.id}_${imageData.url}`;
-                
-                if (preloadedImages.has(preloadedImageKey)) {
-                    resolve(preloadedImages.get(preloadedImageKey));
-                    return;
-                }
-                
-                const img = new Image();
-                
-                img.onload = function() {
-                    console.log(`预加载成功: ${imageData.name}`);
-                    preloadedImages.set(preloadedImageKey, img);
-                    resolve(img);
-                };
-                
-                img.onerror = function() {
-                    console.log(`预加载原始URL失败，尝试备用URL: ${imageData.name}`);
-                    
-                    const fallbackImg = new Image();
-                    fallbackImg.onload = function() {
-                        console.log(`预加载备用URL成功: ${imageData.name}`);
-                        preloadedImages.set(preloadedImageKey, fallbackImg);
-                        resolve(fallbackImg);
-                    };
-                    
-                    fallbackImg.onerror = function() {
-                        console.log(`预加载所有URL都失败: ${imageData.name}`);
-                        resolve(null);
-                    };
-                    
-                    fallbackImg.src = imageData.fallbackUrl;
-                };
-                
-                img.src = imageData.url;
-            });
-        }
-
-        function preloadNextPair() {
-            const nextIndex = currentComparisonIndex + 1;
-            if (nextIndex < comparisonPairs.length) {
-                const nextPair = comparisonPairs[nextIndex];
-                console.log(`开始预加载下一对图片 (${nextIndex + 1}/${comparisonPairs.length})`);
-                
-                Promise.all([
-                    preloadImage(nextPair.imageA),
-                    preloadImage(nextPair.imageB)
-                ]).then(() => {
-                    console.log(`下一对图片预加载完成`);
-                }).catch((error) => {
-                    console.log(`预加载失败: ${error}`);
-                });
-            }
-        }
-
-        function cleanupPreloadCache() {
-            const keepKeys = new Set();
-            
-            const displayIndex = Math.min(currentComparisonIndex, comparisonPairs.length - 1);
-            if (displayIndex >= 0 && displayIndex < comparisonPairs.length) {
-                const currentPair = comparisonPairs[displayIndex];
-                keepKeys.add(`${currentPair.imageA.id}_${currentPair.imageA.url}`);
-                keepKeys.add(`${currentPair.imageB.id}_${currentPair.imageB.url}`);
-                console.log(`保留当前显示图片 (索引 ${displayIndex}): ${currentPair.imageA.name}, ${currentPair.imageB.name}`);
-            }
-            
-            const nextIndex = currentComparisonIndex + 1;
-            if (nextIndex < comparisonPairs.length) {
-                const nextPair = comparisonPairs[nextIndex];
-                keepKeys.add(`${nextPair.imageA.id}_${nextPair.imageA.url}`);
-                keepKeys.add(`${nextPair.imageB.id}_${nextPair.imageB.url}`);
-                console.log(`保留下一对预加载图片 (索引 ${nextIndex}): ${nextPair.imageA.name}, ${nextPair.imageB.name}`);
-            }
-            
-            const beforeCleanup = preloadedImages.size;
-            for (const key of preloadedImages.keys()) {
-                if (!keepKeys.has(key)) {
-                    preloadedImages.delete(key);
-                }
-            }
-            const afterCleanup = preloadedImages.size;
-            
-            if (beforeCleanup !== afterCleanup) {
-                console.log(`缓存清理完成: ${beforeCleanup} -> ${afterCleanup} 张图片`);
-            }
-        }
-
-        // 进度更新函数
-        function updateOverallProgress() {
-            const overallProgressTitle = document.getElementById('overallProgressTitle');
-            const overallProgressText = document.getElementById('overallProgressText');
-            const overallProgressDetail = document.getElementById('overallProgressDetail');
-            const overallProgressFill = document.getElementById('overallProgressFill');
-            
-            if (currentLanguage === 'zh') {
-                overallProgressTitle.textContent = '实验进度';
-                overallProgressText.textContent = `第 ${currentGroupNumber} 组 / 共 ${MAX_GROUPS} 组`;
-                overallProgressDetail.textContent = `当前组进度: ${currentComparisonIndex + 1}/20`;
-            } else {
-                overallProgressTitle.textContent = 'Experiment Progress';
-                overallProgressText.textContent = `Group ${currentGroupNumber} / ${MAX_GROUPS}`;
-                overallProgressDetail.textContent = `Current group: ${currentComparisonIndex + 1}/20`;
-            }
-            
-            const groupProgress = (currentGroupNumber - 1) / MAX_GROUPS;
-            const currentGroupProgress = (currentComparisonIndex + 1) / 20 / MAX_GROUPS;
-            const totalProgress = (groupProgress + currentGroupProgress) * 100;
-            
-            overallProgressFill.style.width = `${Math.min(totalProgress, 100)}%`;
-        }
-
-        function updateContinueProgress() {
-            const continueProgressText = document.getElementById('continueProgressText');
-            const continueProgressFill = document.getElementById('continueProgressFill');
-            
-            if (currentLanguage === 'zh') {
-                continueProgressText.textContent = `已完成 ${currentGroupNumber}/${MAX_GROUPS} 组`;
-            } else {
-                continueProgressText.textContent = `Completed ${currentGroupNumber}/${MAX_GROUPS} groups`;
-            }
-            
-            const progressPercentage = (currentGroupNumber / MAX_GROUPS) * 100;
-            continueProgressFill.style.width = `${progressPercentage}%`;
-        }
-
-        // 问卷逻辑函数
-        const texts = {
-            zh: {
-                surveyTitle: '街景感知问卷：第一部分',
-                reminderTitle: '📋 实验提醒',
-                reminderText: '请认真作答。本实验需要完成5组，每组20次图片对比，耗时约20分钟，才能获得最终报酬。',
-                reminderDevice: '为保证实验效果，请使用电脑或平板电脑作答。',
-                nicknameLabel: '您的昵称是：',
-                nicknameHint: '请记忆，以用于兑换被试费用。建议使用姓名拼音。',
-                genderLabel: '您的性别是：',
-                maleLabel: '男',
-                femaleLabel: '女',
-                ageLabel: '您的年龄：',
-                professionalLabel: '您来自城市规划/建筑/风景园林相关专业吗？',
-                yesLabel: '是',
-                noLabel: '否',
-                consentTitle: '实验知情同意',
-                consentAgree: '我已阅读并理解上述说明，同意参与本实验',
-                nextButton: '下一部分',
-                compareTitle: '以下两张街景中，您认为哪张更加适合"坐"的行为：',
-                hintTitle: '提示',
-                instructions: '在此调研中，您需要对每对图片回答四个不同的行为问题。请根据您的直觉选择您认为更加适合进行各种活动的街景。所有问题都必须回答完毕才能进入下一对图片。',
-                continueTitle: '本组对比已完成',
-                continueButton: '继续下一组',
-                exitButton: '退出实验',
-                exitWarningTitle: '⚠️ 退出警告',
-                exitWarningMessage: '您还未完成全部5组实验，现在退出将无法获得报酬。\n\n确定要退出吗？',
-                backButton: '返回继续实验',
-                forceExitButton: '确定退出',
-                finishButton: '完成实验',
-                thankYouTitle: '🎉 感谢您的参与！',
-                thankYouMessage: '您已成功完成全部5组实验，数据已提交！\n\n感谢您为街景感知研究做出的贡献！请联系研究人员兑换报酬。',
-                restartButton: '重新开始',
-                nicknameConfirmText: '感谢您的参与！',
-                imageALabel: '图片 A',
-                imageBLabel: '图片 B',
-                optionA: '图片 A',
-                optionB: '图片 B',
-                question1: '以下两张街景中，您认为哪张更加适合"坐憩"的行为：',
-                question2: '以下两张街景中，您认为哪张更加适合"漫步"的行为：',
-                question3: '以下两张街景中，您认为哪张更加适合"慢跑"的行为：',
-                question4: '以下两张街景中，您认为哪张更加适合"聚会或聚集"的行为：',
-                confirmButtonText: '确认并继续',
-                timeWarningText: '请仔细观察图片至少6秒后再进行选择'
-            },
-            en: {
-                surveyTitle: 'Street View Perception Questionnaire: Part 1',
-                reminderTitle: '📋 Experiment Reminder',
-                reminderText: 'Please answer carefully. This experiment requires completing 5 groups, with 20 image comparisons each, taking about 20 minutes total to receive the final compensation.',
-                reminderDevice: 'For best results, please use a computer or tablet.',
-                nicknameLabel: 'Your nickname is:',
-                nicknameHint: 'Keep this in mind for getting the participant fees. It is recommended to use your First Name.',
-                genderLabel: 'Your gender is:',
-                maleLabel: 'Male',
-                femaleLabel: 'Female',
-                ageLabel: 'Your age:',
-                professionalLabel: 'Are you from urban planning/architecture/landscape architecture related majors?',
-                yesLabel: 'Yes',
-                noLabel: 'No',
-                consentTitle: 'Informed Consent',
-                consentAgree: 'I have read and understood the above information and agree to participate in this experiment',
-                nextButton: 'Next Part',
-                compareTitle: 'Which of the following two street views do you think is more suitable for sitting:',
-                hintTitle: 'Hint',
-                instructions: 'In this survey, you need to answer four different behavioral questions for each pair of images. Please choose the street view you think is more suitable for various activities based on your intuition. All questions must be answered before proceeding to the next pair of images.',
-                continueTitle: 'Group Comparison Completed',
-                continueButton: 'Continue Next Group',
-                exitButton: 'Exit Experiment',
-                exitWarningTitle: '⚠️ Exit Warning',
-                exitWarningMessage: 'You have not completed all 5 groups yet. Exiting now means you will not receive compensation.\n\nAre you sure you want to exit?',
-                backButton: 'Return to Continue',
-                forceExitButton: 'Confirm Exit',
-                finishButton: 'Complete Experiment',
-                thankYouTitle: '🎉 Thank You for Your Participation!',
-                thankYouMessage: 'You have successfully completed all 5 groups! Your data has been submitted.\n\nThank you for contributing to street view perception research! Please contact the researchers to claim your compensation.',
-                restartButton: 'Start Over',
-                nicknameConfirmText: 'Thank you for your participation!',
-                imageALabel: 'Image A',
-                imageBLabel: 'Image B',
-                optionA: 'Image A',
-                optionB: 'Image B',
-                question1: 'Which of the following two street views do you think is more suitable for "sitting":',
-                question2: 'Which of the following two street views do you think is more suitable for "strolling":',
-                question3: 'Which of the following two street views do you think is more suitable for "jogging":',
-                question4: 'Which of the following two street views do you think is more suitable for "gathering":',
-                confirmButtonText: 'Confirm and Continue',
-                timeWarningText: 'Please observe the images carefully for at least 6 seconds before making a selection'
-            }
-        };
-
-        function selectLanguage(lang) {
-            currentLanguage = lang;
-            updateTexts();
-            showPage('surveyPage');
-        }
-
-        function updateTexts() {
-            const t = texts[currentLanguage];
-            
-            Object.keys(t).forEach(key => {
-                const element = document.getElementById(key);
-                if (element) {
-                    if (key === 'continueMessage' || key === 'thankYouMessage' || key === 'exitWarningMessage') {
-                        element.innerHTML = t[key].replace(/\n/g, '<br>');
-                    } else {
-                        element.textContent = t[key];
-                    }
-                }
-            });
-            
-            const optionAElements = document.querySelectorAll('.optionA');
-            const optionBElements = document.querySelectorAll('.optionB');
-            
-            optionAElements.forEach(element => {
-                element.textContent = t.optionA;
-            });
-            
-            optionBElements.forEach(element => {
-                element.textContent = t.optionB;
-            });
-
-            if (currentLanguage === 'en') {
-                document.getElementById('consentText').innerHTML = `
-                    <p class="mb-3"><strong>Research Institution:</strong> Urban Morphology Studio (UMS), Urban Governance and Design Thrust, Hong Kong University of Science and Technology (Guangzhou)</p>
-                    <p class="mb-3"><strong>Research Purpose:</strong> This experiment aims to understand people's perception and preference for behavioral suitability in different street environments. Through systematic comparison of street view images, we seek to identify patterns in how individuals assess spatial affordances for various human activities, contributing to evidence-based urban design practices.</p>
-                    <p class="mb-3"><strong>Experimental Process:</strong> During the experiment, we will record:</p>
-                    <ul class="list-disc list-inside mb-3 ml-4">
-                        <li>Your basic information (nickname, gender, age, professional background)</li>
-                        <li>Your choices regarding behavioral suitability of different street view images</li>
-                        <li>Your response time and viewing duration</li>
-                        <li>Timestamps of your participation</li>
-                    </ul>
-                    <p class="mb-3"><strong>Data Usage:</strong> All collected data will be used solely for scientific research related to urban design and spatial perception.</p>
-                    <p class="mb-3"><strong>We commit to:</strong></p>
-                    <ul class="list-disc list-inside mb-3 ml-4">
-                        <li>Strict confidentiality of your personal information</li>
-                        <li>Use of data for academic research purposes only</li>
-                        <li>Publication of research results in anonymized form</li>
-                        <li>Your right to withdraw from the experiment at any time</li>
-                    </ul>
-                    <p class="mb-3"><strong>Contact Information:</strong> If you have any questions, please contact the research team.</p>
-                    <p class="font-semibold">Participation in this experiment indicates that you have fully understood the above content and voluntarily participate.</p>
-                `;
-            }
-
-            updateContinueMessage();
-        }
-
-        function updateContinueMessage() {
-            const continueMessage = document.getElementById('continueMessage');
-            if (!continueMessage) return;
-
-            const remainingGroups = MAX_GROUPS - currentGroupNumber;
-            
-            if (currentLanguage === 'zh') {
-                if (currentGroupNumber < MAX_GROUPS) {
-                    continueMessage.innerHTML = `您已完成了第${currentGroupNumber}组图片对比！<br>还需要完成${remainingGroups}组才能获得报酬。`;
-                } else {
-                    continueMessage.innerHTML = `恭喜！您已完成全部${MAX_GROUPS}组实验！<br>可以提交数据并获得报酬了。`;
-                }
-            } else {
-                if (currentGroupNumber < MAX_GROUPS) {
-                    continueMessage.innerHTML = `You have completed group ${currentGroupNumber}!<br>You need to complete ${remainingGroups} more groups to receive compensation.`;
-                } else {
-                    continueMessage.innerHTML = `Congratulations! You have completed all ${MAX_GROUPS} groups!<br>You can now submit your data and receive compensation.`;
-                }
-            }
-        }
-
-        function showPage(pageId) {
-            const pages = ['languagePage', 'surveyPage', 'comparisonPage', 'continuePage', 'exitWarningPage', 'thankYouPage'];
-            pages.forEach(page => {
-                document.getElementById(page).classList.add('hidden');
-            });
-            document.getElementById(pageId).classList.remove('hidden');
-            document.getElementById(pageId).classList.add('fade-in');
-        }
-
-        async function startComparisons() {
-            const nickname = document.getElementById('nicknameInput').value.trim();
-            const gender = document.querySelector('input[name="gender"]:checked');
-            const age = document.getElementById('ageInput').value;
-            const professional = document.querySelector('input[name="professional"]:checked');
-            const consent = document.getElementById('consentCheckbox').checked;
-
-            if (!nickname || !gender || !age || !professional || !consent) {
-                alert(currentLanguage === 'zh' ? '请完整填写所有必填项并同意参与实验！' : 'Please fill in all required fields and agree to participate!');
-                return;
-            }
-
-            userData = {
-                nickname: nickname,
-                gender: gender.value,
-                age: age,
-                isProfessional: professional.value
-            };
-
-            if (!isImageLibraryLoaded) {
-                await initializeImageLibrary();
-            }
-
-            if (fullImageLibrary.length
+</html>
