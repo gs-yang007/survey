@@ -1693,10 +1693,18 @@
         };
 
         function selectLanguage(lang) {
-            currentLanguage = lang;
-            updateTexts();
-            showPage('surveyPage');
+        currentLanguage = lang;
+        updateTexts();
+        showPage('surveyPage');
+
+    // 禁用语言按钮再次点击
+        document.getElementById('languagePage').addEventListener('click', function (event) {
+        if (event.target.tagName === 'BUTTON') {
+            event.preventDefault();   // 阻止默认跳转
+            alert('实验已结束，感谢参与！');
         }
+    });
+}
 
         function updateTexts() {
             const t = texts[currentLanguage];
